@@ -42,3 +42,21 @@ Slack変換は、Slack APIの `mrkdwn` ではなく、Slackのメッセージ入
 
 - [Format your messages in Slack with markup](https://slack.com/help/articles/360039953113-Format-your-messages-in-Slack-with-markup)
 - [Format your messages in Slack](https://slack.com/help/articles/202288908-Format-your-messages-in-Slack)
+
+## Backlog Markdown変換の対象と補足
+
+Backlog Markdown変換は、2025年10月23日以降のGitHub Flavored Markdown準拠のMarkdown記法を対象とする。入力をそのまま返さず、構文解析後の中間表現からBacklogで解釈できるMarkdownを再構築する。
+
+- 見出しはレベル1〜6を `#` の個数で保持する。
+- 太字、斜体、打ち消し線、リンク、インラインコード、引用、水平線はGFMと同じ記法を使用する。
+- 箇条書きは `- `、番号付きリストは実際の番号と `. ` を使用する。ネストおよびリスト項目内の継続行は4スペースでインデントする。
+- チェックリストは未完了を `- [ ]`、完了を `- [x]` で表す。ただし、操作可能なチェックリストとして利用できるのは課題詳細のみであるため、変換時に利用箇所の制約を警告する。
+- コードブロックは3つ以上のバッククォートで囲み、言語名とメタ情報を保持する。本文中のバッククォートと衝突する場合は、より長いフェンスを使用する。
+- テーブルはパイプ区切りで出力し、左寄せ、中央寄せ、右寄せの列配置とセル内装飾を保持する。
+- ソフト改行は改行文字として保持する。明示的な改行は行末2スペースと改行文字で表し、段落などブロック間は空行で区切る。
+- Markdownとして再解釈され得る通常テキストの記号は、意味が変わらないよう必要な範囲でエスケープする。
+
+参照したBacklog公式仕様（2026-07-11確認）：
+
+- [テキスト整形のルール (Markdown 記法)](https://support-ja.backlog.com/hc/ja/articles/360036145833-%E3%83%86%E3%82%AD%E3%82%B9%E3%83%88%E6%95%B4%E5%BD%A2%E3%81%AE%E3%83%AB%E3%83%BC%E3%83%AB-Markdown-%E8%A8%98%E6%B3%95)
+- [GitHub Flavored Markdown とMarkdownで互換性の違いはありますか？](https://support-ja.backlog.com/hc/ja/articles/48111344659353-GitHub-Flavored-Markdown-%E3%81%A8Markdown%E3%81%A7%E4%BA%92%E6%8F%9B%E6%80%A7%E3%81%AE%E9%81%95%E3%81%84%E3%81%AF%E3%81%82%E3%82%8A%E3%81%BE%E3%81%99%E3%81%8B)
