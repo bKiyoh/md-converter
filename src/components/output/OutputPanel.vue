@@ -29,7 +29,13 @@ async function copyOutput(): Promise<void> {
 </script>
 
 <template>
-  <section class="output-panel panel" aria-labelledby="conversion-output-heading">
+  <section
+    id="output-panel"
+    class="output-panel panel"
+    role="tabpanel"
+    aria-labelledby="output-tab"
+    tabindex="0"
+  >
     <div class="panel-header output-header">
       <div>
         <p class="panel-kicker">Output</p>

@@ -18,7 +18,13 @@ function clearValue(): void {
 </script>
 
 <template>
-  <section class="editor-panel panel" aria-labelledby="markdown-input-heading">
+  <section
+    id="input-panel"
+    class="editor-panel panel"
+    role="tabpanel"
+    aria-labelledby="input-tab"
+    tabindex="0"
+  >
     <div class="panel-header">
       <div>
         <p class="panel-kicker">Input</p>

@@ -157,6 +157,10 @@ h2 {
   gap: 20px;
 }
 
+.workspace-tabs {
+  display: none;
+}
+
 .panel {
   display: flex;
   min-width: 0;
@@ -317,4 +321,151 @@ h2 {
   clip: rect(0, 0, 0, 0);
   white-space: nowrap;
   border: 0;
+}
+
+@media (max-width: 1100px) {
+  .app {
+    padding: 24px;
+  }
+
+  .app-header {
+    gap: 24px;
+  }
+
+  .workspace {
+    gap: 16px;
+  }
+
+  .panel {
+    min-height: 560px;
+    padding: 16px;
+  }
+
+  .output-header {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .format-field {
+    width: 100%;
+  }
+}
+
+@media (max-width: 767px) {
+  .app {
+    padding: 20px;
+  }
+
+  .app-header {
+    margin-bottom: 20px;
+    align-items: stretch;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .theme-button {
+    align-self: flex-start;
+  }
+
+  .workspace-tabs {
+    display: block;
+    width: min(100%, 1440px);
+    margin: 0 auto 12px;
+  }
+
+  .workspace-tablist {
+    display: grid;
+    padding: 4px;
+    border: 1px solid var(--border);
+    border-radius: 11px;
+    grid-template-columns: 1fr 1fr;
+    background: var(--surface);
+  }
+
+  .workspace-tab {
+    min-height: 44px;
+    padding: 9px 12px;
+    border: 0;
+    border-radius: 8px;
+    color: var(--muted);
+    background: transparent;
+    font-weight: 700;
+  }
+
+  .workspace-tab--active {
+    color: var(--accent-contrast);
+    background: var(--accent);
+  }
+
+  .workspace {
+    display: block;
+  }
+
+  .workspace[data-active-panel='input'] .output-panel,
+  .workspace[data-active-panel='output'] .editor-panel {
+    display: none;
+  }
+
+  .panel {
+    min-height: 540px;
+  }
+
+  .text-area {
+    min-height: 380px;
+  }
+}
+
+@media (max-width: 480px) {
+  .app {
+    padding: 12px;
+  }
+
+  h1 {
+    font-size: 1.65rem;
+  }
+
+  .app-description {
+    font-size: 0.92rem;
+  }
+
+  .theme-button {
+    width: 100%;
+  }
+
+  .panel {
+    min-height: 500px;
+    padding: 14px;
+    border-radius: 11px;
+  }
+
+  .panel-header {
+    min-height: auto;
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .editor-panel .panel-header {
+    align-items: center;
+    flex-direction: row;
+  }
+
+  .text-area {
+    min-height: 340px;
+    padding: 13px;
+    font-size: 0.9rem;
+  }
+
+  .output-actions {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .output-actions .character-count {
+    margin-left: 0;
+  }
+
+  .copy-button {
+    width: 100%;
+  }
 }

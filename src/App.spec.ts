@@ -45,6 +45,53 @@ describe('App', () => {
     expect(wrapper.get<HTMLTextAreaElement>('#conversion-output').element.value).toBe("''重要''")
   })
 
+  it('狭い画面向けタブで入力と変換結果を切り替えられる', async () => {
+    const wrapper = mount(App, { attachTo: document.body })
+    const inputTab = wrapper.get<HTMLButtonElement>('#input-tab')
+    const outputTab = wrapper.get<HTMLButtonElement>('#output-tab')
+
+    expect(inputTab.attributes('aria-selected')).toBe('true')
+    expect(inputTab.attributes('aria-controls')).toBe('input-panel')
+    expect(outputTab.attributes('aria-selected')).toBe('false')
+    expect(wrapper.get('.workspace').attributes('data-active-panel')).toBe('input')
+    expect(wrapper.get('#input-panel').attributes('role')).toBe('tabpanel')
+    expect(wrapper.get('#output-panel').attributes('role')).toBe('tabpanel')
+
+    await outputTab.trigger('click')
+
+    expect(inputTab.attributes('aria-selected')).toBe('false')
+    expect(inputTab.attributes('tabindex')).toBe('-1')
+    expect(outputTab.attributes('aria-selected')).toBe('true')
+    expect(outputTab.attributes('tabindex')).toBe('0')
+    expect(wrapper.get('.workspace').attributes('data-active-panel')).toBe('output')
+
+    wrapper.unmount()
+  })
+
+  it('狭い画面向けタブを矢印キーとHome・Endキーで操作できる', async () => {
+    const wrapper = mount(App, { attachTo: document.body })
+    const inputTab = wrapper.get<HTMLButtonElement>('#input-tab')
+    const outputTab = wrapper.get<HTMLButtonElement>('#output-tab')
+
+    await inputTab.trigger('keydown', { key: 'ArrowRight' })
+    expect(outputTab.attributes('aria-selected')).toBe('true')
+    expect(document.activeElement).toBe(outputTab.element)
+
+    await outputTab.trigger('keydown', { key: 'Home' })
+    expect(inputTab.attributes('aria-selected')).toBe('true')
+    expect(document.activeElement).toBe(inputTab.element)
+
+    await inputTab.trigger('keydown', { key: 'End' })
+    expect(outputTab.attributes('aria-selected')).toBe('true')
+    expect(document.activeElement).toBe(outputTab.element)
+
+    await outputTab.trigger('keydown', { key: 'ArrowLeft' })
+    expect(inputTab.attributes('aria-selected')).toBe('true')
+    expect(document.activeElement).toBe(inputTab.element)
+
+    wrapper.unmount()
+  })
+
   it('入力を全削除できる', async () => {
     const wrapper = mount(App)
     const input = wrapper.get<HTMLTextAreaElement>('#markdown-input')
