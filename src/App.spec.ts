@@ -1,8 +1,24 @@
-import { mount } from '@vue/test-utils'
-import { describe, expect, it } from 'vitest'
+import { flushPromises, mount } from '@vue/test-utils'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { MARKDOWN_DRAFT_STORAGE_KEY } from './composables/useMarkdownDraft'
+import {
+  THEME_PREFERENCE_SAVE_DELAY_MS,
+  THEME_PREFERENCE_STORAGE_KEY,
+} from './composables/useThemePreference'
 import App from './App.vue'
 
 describe('App', () => {
+  beforeEach(() => {
+    localStorage.clear()
+    vi.useFakeTimers()
+  })
+
+  afterEach(() => {
+    vi.clearAllTimers()
+    vi.useRealTimers()
+    vi.restoreAllMocks()
+  })
+
   it('入力を選択中の形式へリアルタイム変換し、文字数を表示する', async () => {
     const wrapper = mount(App)
     const input = wrapper.get<HTMLTextAreaElement>('#markdown-input')
@@ -51,5 +67,87 @@ describe('App', () => {
 
     expect(wrapper.get('.app').attributes('data-theme')).toBe('dark')
     expect(themeButton.attributes('aria-pressed')).toBe('true')
+  })
+
+  it('ダークモードへの変更を保存して再読み込み時に復元する', async () => {
+    const wrapper = mount(App)
+
+    await wrapper.get<HTMLButtonElement>('.theme-button').trigger('click')
+    await vi.advanceTimersByTimeAsync(THEME_PREFERENCE_SAVE_DELAY_MS)
+
+    expect(localStorage.getItem(THEME_PREFERENCE_STORAGE_KEY)).toBe('dark')
+
+    const reloadedWrapper = mount(App)
+    expect(reloadedWrapper.get('.app').attributes('data-theme')).toBe('dark')
+    expect(reloadedWrapper.get('.theme-button').text()).toBe('ライトモード')
+  })
+
+  it('ダークモードからライトモードへの変更も保存する', async () => {
+    localStorage.setItem(THEME_PREFERENCE_STORAGE_KEY, 'dark')
+    const wrapper = mount(App)
+
+    await wrapper.get<HTMLButtonElement>('.theme-button').trigger('click')
+    await vi.advanceTimersByTimeAsync(THEME_PREFERENCE_SAVE_DELAY_MS)
+
+    expect(wrapper.get('.app').attributes('data-theme')).toBe('light')
+    expect(localStorage.getItem(THEME_PREFERENCE_STORAGE_KEY)).toBe('light')
+  })
+
+  it('保存されたテーマが不正な場合はライトモードを使用する', () => {
+    localStorage.setItem(THEME_PREFERENCE_STORAGE_KEY, 'sepia')
+
+    const wrapper = mount(App)
+
+    expect(wrapper.get('.app').attributes('data-theme')).toBe('light')
+  })
+
+  it('LocalStorageに保存したMarkdown入力を復元する', () => {
+    localStorage.setItem(MARKDOWN_DRAFT_STORAGE_KEY, '# 保存済み')
+
+    const wrapper = mount(App)
+
+    expect(wrapper.get<HTMLTextAreaElement>('#markdown-input').element.value).toBe('# 保存済み')
+    expect(wrapper.get<HTMLTextAreaElement>('#conversion-output').element.value).toBe('*保存済み*')
+  })
+
+  it('選択中の形式名を含むメッセージを表示して変換結果をコピーする', async () => {
+    const writeText = vi.fn(() => Promise.resolve())
+    Object.defineProperty(navigator, 'clipboard', {
+      configurable: true,
+      value: { writeText },
+    })
+    const wrapper = mount(App)
+
+    await wrapper.get<HTMLTextAreaElement>('#markdown-input').setValue('**重要**')
+    await wrapper.get<HTMLSelectElement>('#output-format').setValue('backlog-notation')
+    await wrapper.get<HTMLButtonElement>('.copy-button').trigger('click')
+    await flushPromises()
+
+    expect(writeText).toHaveBeenCalledWith("''重要''")
+    expect(wrapper.get('.app-notice').text()).toBe('Backlog記法形式でコピーしました')
+    expect(wrapper.get('.app-notice').attributes('role')).toBe('status')
+  })
+
+  it('コピー失敗時に手動コピーを案内し、入力と変換結果を維持する', async () => {
+    const writeText = vi.fn(() => Promise.reject(new DOMException('denied')))
+    Object.defineProperty(navigator, 'clipboard', {
+      configurable: true,
+      value: { writeText },
+    })
+    const wrapper = mount(App)
+    const input = wrapper.get<HTMLTextAreaElement>('#markdown-input')
+
+    await input.setValue('失敗しても残る内容')
+    await wrapper.get<HTMLButtonElement>('.copy-button').trigger('click')
+    await flushPromises()
+
+    expect(wrapper.get('.app-notice').text()).toBe(
+      'コピーに失敗しました。変換結果を選択して手動でコピーしてください。',
+    )
+    expect(wrapper.get('.app-notice').attributes('role')).toBe('alert')
+    expect(input.element.value).toBe('失敗しても残る内容')
+    expect(wrapper.get<HTMLTextAreaElement>('#conversion-output').element.value).toBe(
+      '失敗しても残る内容',
+    )
   })
 })

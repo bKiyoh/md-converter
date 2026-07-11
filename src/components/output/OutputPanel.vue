@@ -1,9 +1,13 @@
 <script setup lang="ts">
+import { computed } from 'vue'
+import AppNotice from '../common/AppNotice.vue'
+import { useClipboard } from '../../composables/useClipboard'
+import { outputFormatOptions } from '../../converters/converterRegistry'
 import type { ConversionWarning, OutputFormat } from '../../types/conversion'
 import ConversionWarnings from './ConversionWarnings.vue'
 import OutputFormatSelect from './OutputFormatSelect.vue'
 
-defineProps<{
+const props = defineProps<{
   format: OutputFormat
   output: string
   characterCount: number
@@ -13,6 +17,15 @@ defineProps<{
 const emit = defineEmits<{
   'update:format': [value: OutputFormat]
 }>()
+
+const { copy, notice } = useClipboard()
+const formatLabel = computed<string>(
+  () => outputFormatOptions.find((option) => option.value === props.format)?.label ?? '',
+)
+
+async function copyOutput(): Promise<void> {
+  await copy(props.output, `${formatLabel.value}形式でコピーしました`)
+}
 </script>
 
 <template>
@@ -38,9 +51,21 @@ const emit = defineEmits<{
       placeholder="変換結果がここに表示されます"
     />
 
-    <p id="conversion-output-count" class="character-count" aria-live="polite">
-      {{ characterCount.toLocaleString('ja-JP') }}文字
-    </p>
+    <div class="output-actions">
+      <p id="conversion-output-count" class="character-count" aria-live="polite">
+        {{ characterCount.toLocaleString('ja-JP') }}文字
+      </p>
+      <button
+        class="copy-button"
+        type="button"
+        :disabled="output.length === 0"
+        @click="copyOutput"
+      >
+        コピー
+      </button>
+    </div>
+
+    <AppNotice v-if="notice" :notice="notice" />
 
     <ConversionWarnings :warnings="warnings" />
   </section>

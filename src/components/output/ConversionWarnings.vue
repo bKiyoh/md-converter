@@ -15,7 +15,12 @@ function formatLocation(warning: ConversionWarning): string {
 </script>
 
 <template>
-  <section v-if="warnings.length > 0" class="warnings" aria-labelledby="warnings-heading">
+  <section
+    v-if="warnings.length > 0"
+    class="warnings"
+    aria-labelledby="warnings-heading"
+    aria-live="polite"
+  >
     <h3 id="warnings-heading">変換時の警告</h3>
     <ul>
       <li v-for="(warning, index) in warnings" :key="`${warning.code}-${index}`">

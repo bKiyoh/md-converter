@@ -2,14 +2,16 @@
 import { computed, ref } from 'vue'
 import MarkdownEditor from './components/editor/MarkdownEditor.vue'
 import OutputPanel from './components/output/OutputPanel.vue'
+import { useMarkdownDraft } from './composables/useMarkdownDraft'
+import { useThemePreference } from './composables/useThemePreference'
 import { converterRegistry } from './converters/converterRegistry'
 import { parseMarkdown } from './parser/parseMarkdown'
 import type { ConversionResult, OutputFormat } from './types/conversion'
 import { countCharacters } from './utils/countCharacters'
 
-const markdown = ref('')
+const { markdown } = useMarkdownDraft()
+const { theme } = useThemePreference()
 const selectedFormat = ref<OutputFormat>('slack')
-const isDarkTheme = ref(false)
 
 const conversionResult = computed<ConversionResult>(() => {
   try {
@@ -34,12 +36,12 @@ const outputCharacterCount = computed<number>(() =>
 )
 
 function toggleTheme(): void {
-  isDarkTheme.value = !isDarkTheme.value
+  theme.value = theme.value === 'dark' ? 'light' : 'dark'
 }
 </script>
 
 <template>
-  <div class="app" :data-theme="isDarkTheme ? 'dark' : 'light'">
+  <div class="app" :data-theme="theme">
     <header class="app-header">
       <div>
         <p class="eyebrow">Markdown Converter</p>
@@ -49,10 +51,10 @@ function toggleTheme(): void {
       <button
         class="theme-button"
         type="button"
-        :aria-pressed="isDarkTheme"
+        :aria-pressed="theme === 'dark'"
         @click="toggleTheme"
       >
-        {{ isDarkTheme ? 'ライトモード' : 'ダークモード' }}
+        {{ theme === 'dark' ? 'ライトモード' : 'ダークモード' }}
       </button>
     </header>
 
