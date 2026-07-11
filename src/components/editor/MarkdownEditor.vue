@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { useMarkdownEditor } from '../../composables/useMarkdownEditor'
+
 defineProps<{
   modelValue: string
   characterCount: number
@@ -15,6 +17,8 @@ function updateValue(event: Event): void {
 function clearValue(): void {
   emit('update:modelValue', '')
 }
+
+const { handleKeydown } = useMarkdownEditor((value) => emit('update:modelValue', value))
 </script>
 
 <template>
@@ -49,6 +53,7 @@ function clearValue(): void {
       placeholder="Markdownを入力してください"
       spellcheck="true"
       @input="updateValue"
+      @keydown="handleKeydown"
     />
 
     <p id="markdown-input-count" class="character-count" aria-live="polite">

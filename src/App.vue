@@ -137,6 +137,7 @@ function handleTabKeydown(event: KeyboardEvent, currentPanel: WorkspacePanel): v
         :character-count="inputCharacterCount"
       />
       <OutputPanel
+        :markdown="markdown"
         :format="selectedFormat"
         :output="conversionResult.output"
         :character-count="outputCharacterCount"

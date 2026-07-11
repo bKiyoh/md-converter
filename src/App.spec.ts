@@ -5,6 +5,7 @@ import {
   THEME_PREFERENCE_SAVE_DELAY_MS,
   THEME_PREFERENCE_STORAGE_KEY,
 } from './composables/useThemePreference'
+import { COPY_NOTICE_DURATION_MS } from './composables/useClipboard'
 import App from './App.vue'
 
 describe('App', () => {
@@ -43,6 +44,104 @@ describe('App', () => {
     await format.setValue('backlog-notation')
 
     expect(wrapper.get<HTMLTextAreaElement>('#conversion-output').element.value).toBe("''重要''")
+  })
+
+  it('右ペインの初期表示を変換結果とし、Markdownプレビューへ切り替えられる', async () => {
+    const wrapper = mount(App)
+    const input = wrapper.get<HTMLTextAreaElement>('#markdown-input')
+    const conversionTab = wrapper.get<HTMLButtonElement>('#conversion-view-tab')
+    const previewTab = wrapper.get<HTMLButtonElement>('#preview-view-tab')
+
+    expect(conversionTab.attributes('aria-selected')).toBe('true')
+    expect(wrapper.find('#conversion-output').exists()).toBe(true)
+    expect(wrapper.find('#markdown-preview').exists()).toBe(false)
+
+    await input.setValue('# プレビュー')
+    await previewTab.trigger('click')
+
+    expect(previewTab.attributes('aria-selected')).toBe('true')
+    expect(wrapper.get('#markdown-preview').html()).toContain('<h1>プレビュー</h1>')
+    expect(wrapper.find('#conversion-output').exists()).toBe(false)
+    expect(wrapper.find('.copy-button').exists()).toBe(false)
+    expect(input.element.value).toBe('# プレビュー')
+
+    await conversionTab.trigger('click')
+    expect(wrapper.get<HTMLTextAreaElement>('#conversion-output').element.value).toBe('*プレビュー*')
+  })
+
+  it('プレビュー表示中の入力変更を即時反映し、形式選択を維持する', async () => {
+    const wrapper = mount(App)
+    const input = wrapper.get<HTMLTextAreaElement>('#markdown-input')
+
+    await wrapper.get<HTMLSelectElement>('#output-format').setValue('plain-text')
+    await wrapper.get('#preview-view-tab').trigger('click')
+    await input.setValue('**更新**')
+
+    expect(wrapper.get('#markdown-preview').html()).toContain('<strong>更新</strong>')
+
+    await wrapper.get('#conversion-view-tab').trigger('click')
+    expect(wrapper.get<HTMLSelectElement>('#output-format').element.value).toBe('plain-text')
+    expect(wrapper.get<HTMLTextAreaElement>('#conversion-output').element.value).toBe('更新')
+  })
+
+  it('空の変換結果ではコピーボタンを無効にする', () => {
+    const wrapper = mount(App)
+
+    expect(wrapper.get<HTMLButtonElement>('.copy-button').element.disabled).toBe(true)
+  })
+
+  it('入力欄のMarkdownショートカットを適用して選択範囲を復元する', async () => {
+    const wrapper = mount(App, { attachTo: document.body })
+    const input = wrapper.get<HTMLTextAreaElement>('#markdown-input')
+
+    await input.setValue('hoge')
+    input.element.setSelectionRange(0, 4)
+    await input.trigger('keydown', { key: 'b', ctrlKey: true })
+    await flushPromises()
+
+    expect(input.element.value).toBe('**hoge**')
+    expect(input.element.selectionStart).toBe(2)
+    expect(input.element.selectionEnd).toBe(6)
+    expect(document.activeElement).toBe(input.element)
+
+    await input.trigger('keydown', { key: 'b', metaKey: true })
+    await flushPromises()
+    expect(input.element.value).toBe('hoge')
+
+    wrapper.unmount()
+  })
+
+  it('入力欄でリストを継続し、Tabで階層を変更する', async () => {
+    const wrapper = mount(App)
+    const input = wrapper.get<HTMLTextAreaElement>('#markdown-input')
+
+    await input.setValue('- 親\n- 子')
+    input.element.setSelectionRange(input.element.value.length, input.element.value.length)
+    await input.trigger('keydown', { key: 'Tab' })
+    await flushPromises()
+    expect(input.element.value).toBe('- 親\n  - 子')
+
+    await input.trigger('keydown', { key: 'Enter' })
+    await flushPromises()
+    expect(input.element.value).toBe('- 親\n  - 子\n  - ')
+  })
+
+  it('IME変換中はショートカットを処理せず、通常行のTabを妨げない', async () => {
+    const wrapper = mount(App)
+    const input = wrapper.get<HTMLTextAreaElement>('#markdown-input')
+
+    await input.setValue('日本語')
+    input.element.setSelectionRange(0, 3)
+    await input.trigger('keydown', { key: 'b', ctrlKey: true, isComposing: true })
+    expect(input.element.value).toBe('日本語')
+
+    const tabEvent = new KeyboardEvent('keydown', {
+      key: 'Tab',
+      bubbles: true,
+      cancelable: true,
+    })
+    input.element.dispatchEvent(tabEvent)
+    expect(tabEvent.defaultPrevented).toBe(false)
   })
 
   it('狭い画面向けタブで入力と変換結果を切り替えられる', async () => {
@@ -173,6 +272,9 @@ describe('App', () => {
     expect(writeText).toHaveBeenCalledWith("''重要''")
     expect(wrapper.get('.app-notice').text()).toBe('Backlog記法形式でコピーしました')
     expect(wrapper.get('.app-notice').attributes('role')).toBe('status')
+
+    await vi.advanceTimersByTimeAsync(COPY_NOTICE_DURATION_MS)
+    expect(wrapper.find('.app-notice').exists()).toBe(false)
   })
 
   it('コピー失敗時に手動コピーを案内し、入力と変換結果を維持する', async () => {
