@@ -2,7 +2,7 @@
 
 Markdownで作成した文章を、Slack、Backlog、プレーンテキスト向けの形式へ変換するWebアプリです。
 
-現在はMilestone 1として、Vue 3、TypeScript、Viteを用いた開発基盤だけを構成しています。Markdownの解析・変換機能はまだ実装していません。
+Milestone 2まで完了し、GFM Markdownをアプリ用の中間表現へ解析できます。各出力形式への変換と画面への接続は、後続のマイルストーンで実装します。
 
 ## 必要環境
 
@@ -41,7 +41,7 @@ npm run build
 
 ビルド結果をローカルで確認する場合は、`npm run preview` を実行します。
 
-## Milestone 1の主要依存関係
+## 主要依存関係
 
 | 依存関係 | 用途 |
 | --- | --- |
@@ -50,5 +50,6 @@ npm run build
 | TypeScript / `vue-tsc` | TypeScriptと `.vue` ファイルの型チェック |
 | Vitest / Vue Test Utils / jsdom | Vueコンポーネントの単体テスト |
 | ESLint / Vue・TypeScript設定 | TypeScriptとVueコンポーネントの静的検査 |
+| unified / remark-parse / remark-gfm | CommonMarkとGFMをmdastへ解析するMarkdownパーサー |
 
-正確な導入バージョンは `package-lock.json` で固定しています。Pinia、Vue Router、UIライブラリ、MarkdownパーサーはMilestone 1の対象外のため導入していません。
+正確な導入バージョンは `package-lock.json` で固定しています。Pinia、Vue Router、UIライブラリは導入していません。パーサーの設計と既知の制約は [`docs/parser-design.md`](docs/parser-design.md) を参照してください。
