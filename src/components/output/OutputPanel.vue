@@ -1,38 +1,22 @@
 <script setup lang="ts">
-import { computed, nextTick, ref } from 'vue'
-import AppNotice from '../common/AppNotice.vue'
-import { useClipboard } from '../../composables/useClipboard'
-import { outputFormatOptions } from '../../converters/converterRegistry'
-import type { ConversionWarning, OutputFormat } from '../../types/conversion'
+import { nextTick, ref } from 'vue'
+import type { ConversionWarning } from '../../types/conversion'
 import ConversionWarnings from './ConversionWarnings.vue'
 import MarkdownPreview from './MarkdownPreview.vue'
-import OutputFormatSelect from './OutputFormatSelect.vue'
 
-const props = defineProps<{
+defineProps<{
   markdown: string
-  format: OutputFormat
   output: string
   characterCount: number
   warnings: ConversionWarning[]
+  editorInternalScroll: boolean
 }>()
 
-const emit = defineEmits<{
-  'update:format': [value: OutputFormat]
-}>()
-
-const { copy, notice } = useClipboard()
 type OutputView = 'preview' | 'conversion'
 
 const activeView = ref<OutputView>('conversion')
 const previewTab = ref<HTMLButtonElement | null>(null)
 const conversionTab = ref<HTMLButtonElement | null>(null)
-const formatLabel = computed<string>(
-  () => outputFormatOptions.find((option) => option.value === props.format)?.label ?? '',
-)
-
-async function copyOutput(): Promise<void> {
-  await copy(props.output, `${formatLabel.value}形式でコピーしました`)
-}
 
 function selectView(view: OutputView): void {
   activeView.value = view
@@ -111,13 +95,10 @@ function handleViewTabKeydown(event: KeyboardEvent, currentView: OutputView): vo
       role="tabpanel"
       aria-labelledby="preview-view-tab"
     >
-      <div class="panel-header output-header">
-        <div>
-          <p class="panel-kicker">Preview</p>
-          <h2>Markdownプレビュー</h2>
-        </div>
-      </div>
-      <MarkdownPreview :markdown="markdown" />
+      <MarkdownPreview
+        :markdown="markdown"
+        :editor-internal-scroll="editorInternalScroll"
+      />
     </div>
 
     <div
@@ -127,17 +108,6 @@ function handleViewTabKeydown(event: KeyboardEvent, currentView: OutputView): vo
       role="tabpanel"
       aria-labelledby="conversion-view-tab"
     >
-      <div class="panel-header output-header">
-        <div>
-          <p class="panel-kicker">Output</p>
-          <h2 id="conversion-output-heading">変換結果</h2>
-        </div>
-        <OutputFormatSelect
-          :model-value="format"
-          @update:model-value="emit('update:format', $event)"
-        />
-      </div>
-
       <label class="visually-hidden" for="conversion-output">変換結果</label>
       <textarea
         id="conversion-output"
@@ -152,17 +122,7 @@ function handleViewTabKeydown(event: KeyboardEvent, currentView: OutputView): vo
         <p id="conversion-output-count" class="character-count" aria-live="polite">
           {{ characterCount.toLocaleString('ja-JP') }}文字
         </p>
-        <button
-          class="copy-button"
-          type="button"
-          :disabled="output.length === 0"
-          @click="copyOutput"
-        >
-          コピー
-        </button>
       </div>
-
-      <AppNotice v-if="notice" :notice="notice" />
 
       <ConversionWarnings :warnings="warnings" />
     </div>

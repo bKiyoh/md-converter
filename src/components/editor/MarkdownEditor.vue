@@ -1,24 +1,50 @@
 <script setup lang="ts">
+import { nextTick, onMounted, ref, watch } from 'vue'
 import { useMarkdownEditor } from '../../composables/useMarkdownEditor'
 
-defineProps<{
+const props = defineProps<{
   modelValue: string
   characterCount: number
+  editorInternalScroll: boolean
 }>()
 
 const emit = defineEmits<{
   'update:modelValue': [value: string]
 }>()
 
-function updateValue(event: Event): void {
-  emit('update:modelValue', (event.target as HTMLTextAreaElement).value)
+const textarea = ref<HTMLTextAreaElement | null>(null)
+
+function resizeTextarea(): void {
+  const element = textarea.value
+
+  if (!element) {
+    return
+  }
+
+  if (props.editorInternalScroll) {
+    element.style.height = ''
+    return
+  }
+
+  element.style.height = 'auto'
+  element.style.height = `${element.scrollHeight}px`
 }
 
-function clearValue(): void {
-  emit('update:modelValue', '')
+async function updateValue(event: Event): Promise<void> {
+  emit('update:modelValue', (event.target as HTMLTextAreaElement).value)
+  await nextTick()
+  resizeTextarea()
 }
 
 const { handleKeydown } = useMarkdownEditor((value) => emit('update:modelValue', value))
+
+watch(
+  () => [props.modelValue, props.editorInternalScroll],
+  resizeTextarea,
+  { flush: 'post' },
+)
+
+onMounted(resizeTextarea)
 </script>
 
 <template>
@@ -34,20 +60,16 @@ const { handleKeydown } = useMarkdownEditor((value) => emit('update:modelValue',
         <p class="panel-kicker">Input</p>
         <h2 id="markdown-input-heading">Markdown入力</h2>
       </div>
-      <button
-        class="secondary-button"
-        type="button"
-        :disabled="modelValue.length === 0"
-        @click="clearValue"
-      >
-        全削除
-      </button>
     </div>
 
     <label class="visually-hidden" for="markdown-input">変換するMarkdown</label>
     <textarea
       id="markdown-input"
+      ref="textarea"
       class="text-area"
+      :class="
+        editorInternalScroll ? 'text-area--internal-scroll' : 'text-area--expand'
+      "
       :value="modelValue"
       aria-describedby="markdown-input-count"
       placeholder="Markdownを入力してください"

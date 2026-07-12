@@ -54,6 +54,12 @@ export function useDebouncedLocalStorage<Value>(
     }
 
     hasPendingSave = true
+
+    if (options.saveDelayMs <= 0) {
+      saveValue()
+      return
+    }
+
     saveTimer = setTimeout(() => {
       saveTimer = undefined
       saveValue()

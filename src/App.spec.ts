@@ -1,6 +1,7 @@
 import { flushPromises, mount } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { MARKDOWN_DRAFT_STORAGE_KEY } from './composables/useMarkdownDraft'
+import { APP_SETTINGS_STORAGE_KEY } from './composables/useAppSettings'
 import {
   THEME_PREFERENCE_SAVE_DELAY_MS,
   THEME_PREFERENCE_STORAGE_KEY,
@@ -33,7 +34,7 @@ describe('App', () => {
     expect(wrapper.get('.warnings').text()).toContain('見出しレベルを表現できない')
   })
 
-  it('4つの出力形式を切り替えられる', async () => {
+  it('4つの変換形式を切り替えられる', async () => {
     const wrapper = mount(App)
     const input = wrapper.get<HTMLInputElement>('#markdown-input')
     const format = wrapper.get<HTMLSelectElement>('#output-format')
@@ -61,12 +62,16 @@ describe('App', () => {
 
     expect(previewTab.attributes('aria-selected')).toBe('true')
     expect(wrapper.get('#markdown-preview').html()).toContain('<h1>プレビュー</h1>')
+    expect(wrapper.get('#markdown-preview').classes()).toContain(
+      'preview-surface--internal-scroll',
+    )
     expect(wrapper.find('#conversion-output').exists()).toBe(false)
-    expect(wrapper.find('.copy-button').exists()).toBe(false)
+    expect(wrapper.findAll('.panel-kicker').some((item) => item.text() === 'Preview')).toBe(false)
     expect(input.element.value).toBe('# プレビュー')
 
     await conversionTab.trigger('click')
     expect(wrapper.get<HTMLTextAreaElement>('#conversion-output').element.value).toBe('*プレビュー*')
+    expect(wrapper.findAll('.panel-kicker').some((item) => item.text() === 'Output')).toBe(false)
   })
 
   it('プレビュー表示中の入力変更を即時反映し、形式選択を維持する', async () => {
@@ -86,8 +91,147 @@ describe('App', () => {
 
   it('空の変換結果ではコピーボタンを無効にする', () => {
     const wrapper = mount(App)
+    const copyButton = wrapper.get<HTMLButtonElement>('.copy-button')
+    const headerActions = wrapper.get('.app-header-actions')
 
-    expect(wrapper.get<HTMLButtonElement>('.copy-button').element.disabled).toBe(true)
+    expect(copyButton.element.disabled).toBe(true)
+    expect(copyButton.attributes('aria-label')).toBe('変換結果をコピー')
+    expect(copyButton.attributes('title')).toBe('コピー')
+    expect(copyButton.find('[data-icon="copy"]').exists()).toBe(true)
+    expect(copyButton.element.parentElement?.classList.contains('header-output-actions')).toBe(true)
+    expect(wrapper.get('#output-format').element.parentElement?.parentElement).toBe(
+      copyButton.element.parentElement,
+    )
+    expect(wrapper.find('.theme-button').exists()).toBe(false)
+    expect(headerActions.element.firstElementChild?.classList.contains('header-output-actions')).toBe(
+      true,
+    )
+    expect(wrapper.get('label[for="output-format"]').text()).toBe('変換形式')
+  })
+
+  it('情報アイコンからタイトルと説明のモーダルを開閉できる', async () => {
+    const wrapper = mount(App, { attachTo: document.body })
+    const infoButton = wrapper.get<HTMLButtonElement>('.info-button')
+
+    expect(infoButton.attributes('aria-label')).toBe('このアプリについて')
+    expect(infoButton.attributes('title')).toBe('このアプリについて')
+    expect(infoButton.find('[data-icon="info"]').exists()).toBe(true)
+    expect(wrapper.find('.info-modal').exists()).toBe(false)
+    expect(wrapper.get('.app-content').attributes()).not.toHaveProperty('inert')
+
+    await infoButton.trigger('click')
+
+    const modal = wrapper.get('.info-modal')
+    const closeButton = wrapper.get<HTMLButtonElement>('.modal-close-button')
+    expect(modal.attributes('role')).toBe('dialog')
+    expect(modal.attributes('aria-modal')).toBe('true')
+    expect(wrapper.get('#info-modal-title').text()).toBe('Markdown変換エディタ')
+    expect(wrapper.get('#info-modal-description').text()).toBe(
+      '貼り付け先に合わせて、ブラウザ内でリアルタイムに変換します。',
+    )
+    expect(wrapper.get('.app-content').attributes()).toHaveProperty('inert')
+    expect(document.activeElement).toBe(closeButton.element)
+
+    await modal.trigger('keydown', { key: 'Escape' })
+
+    expect(wrapper.find('.info-modal').exists()).toBe(false)
+    expect(document.activeElement).toBe(infoButton.element)
+    wrapper.unmount()
+  })
+
+  it('設定ボタンでポップオーバーを開き、再押下で閉じる', async () => {
+    const wrapper = mount(App)
+    const settingsButton = wrapper.get<HTMLButtonElement>('.settings-button')
+
+    expect(settingsButton.attributes('aria-label')).toBe('設定')
+    expect(settingsButton.attributes('title')).toBe('設定')
+    expect(settingsButton.attributes('aria-expanded')).toBe('false')
+    expect(settingsButton.find('[data-icon="settings"]').exists()).toBe(true)
+
+    await settingsButton.trigger('click')
+
+    expect(settingsButton.attributes('aria-expanded')).toBe('true')
+    expect(wrapper.get('#settings-popover-title').text()).toBe('設定')
+
+    await settingsButton.trigger('click')
+
+    expect(settingsButton.attributes('aria-expanded')).toBe('false')
+    expect(wrapper.find('#settings-popover').exists()).toBe(false)
+  })
+
+  it('設定ポップオーバーを外側クリックとEscキーで閉じる', async () => {
+    const wrapper = mount(App, { attachTo: document.body })
+    const settingsButton = wrapper.get<HTMLButtonElement>('.settings-button')
+
+    await settingsButton.trigger('click')
+    document.body.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    await wrapper.vm.$nextTick()
+    expect(wrapper.find('#settings-popover').exists()).toBe(false)
+
+    await settingsButton.trigger('click')
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
+    await wrapper.vm.$nextTick()
+
+    expect(wrapper.find('#settings-popover').exists()).toBe(false)
+    expect(document.activeElement).toBe(settingsButton.element)
+    wrapper.unmount()
+  })
+
+  it('設定内のテーマアイコンでポップオーバーを閉じずにテーマを切り替える', async () => {
+    const wrapper = mount(App)
+
+    await wrapper.get('.settings-button').trigger('click')
+    const themeButton = wrapper.get<HTMLButtonElement>('#dark-mode-setting')
+    const editorScrollSwitch = wrapper.get<HTMLInputElement>('#editor-scroll-setting')
+
+    expect(wrapper.get('.setting-name').text()).toBe('テーマ')
+    expect(themeButton.attributes('aria-pressed')).toBe('false')
+    expect(themeButton.attributes('aria-label')).toBe('ダークモードに切り替える')
+    expect(themeButton.attributes('title')).toBe('ダークモードに切り替える')
+    expect(themeButton.find('[data-icon="moon"]').exists()).toBe(true)
+    expect(editorScrollSwitch.element.checked).toBe(true)
+
+    await themeButton.trigger('click')
+
+    expect(wrapper.get('.app').attributes('data-theme')).toBe('dark')
+    expect(wrapper.find('#settings-popover').exists()).toBe(true)
+    expect(themeButton.attributes('aria-pressed')).toBe('true')
+    expect(themeButton.attributes('aria-label')).toBe('ライトモードに切り替える')
+    expect(themeButton.find('[data-icon="sun"]').exists()).toBe(true)
+
+    await vi.advanceTimersByTimeAsync(THEME_PREFERENCE_SAVE_DELAY_MS)
+    expect(localStorage.getItem(THEME_PREFERENCE_STORAGE_KEY)).toBe('dark')
+
+    await themeButton.trigger('click')
+
+    expect(wrapper.get('.app').attributes('data-theme')).toBe('light')
+    expect(themeButton.attributes('aria-pressed')).toBe('false')
+  })
+
+  it('エディター内部スクロール設定を即時反映・保存・復元する', async () => {
+    const wrapper = mount(App)
+
+    expect(wrapper.get('#markdown-input').classes()).toContain('text-area--internal-scroll')
+
+    await wrapper.get('.settings-button').trigger('click')
+    await wrapper.get<HTMLInputElement>('#editor-scroll-setting').setValue(false)
+
+    expect(wrapper.get('#markdown-input').classes()).toContain('text-area--expand')
+    expect(localStorage.getItem(APP_SETTINGS_STORAGE_KEY)).toBe(
+      JSON.stringify({ editorInternalScroll: false }),
+    )
+
+    await wrapper.get('#preview-view-tab').trigger('click')
+    expect(wrapper.get('#markdown-preview').classes()).toContain('preview-surface--expand')
+
+    wrapper.unmount()
+    const reloadedWrapper = mount(App)
+
+    expect(reloadedWrapper.get('#markdown-input').classes()).toContain('text-area--expand')
+    await reloadedWrapper.get('.settings-button').trigger('click')
+    expect(
+      reloadedWrapper.get<HTMLInputElement>('#editor-scroll-setting').element.checked,
+    ).toBe(false)
   })
 
   it('入力欄のMarkdownショートカットを適用して選択範囲を復元する', async () => {
@@ -191,48 +335,48 @@ describe('App', () => {
     wrapper.unmount()
   })
 
-  it('入力を全削除できる', async () => {
-    const wrapper = mount(App)
-    const input = wrapper.get<HTMLTextAreaElement>('#markdown-input')
-
-    await input.setValue('削除する内容')
-    await wrapper.get('.secondary-button').trigger('click')
-
-    expect(input.element.value).toBe('')
-    expect(wrapper.get<HTMLTextAreaElement>('#conversion-output').element.value).toBe('')
-  })
-
   it('テーマを手動で切り替えられる', async () => {
     const wrapper = mount(App)
-    const themeButton = wrapper.get<HTMLButtonElement>('.theme-button')
+    await wrapper.get('.settings-button').trigger('click')
+    const themeButton = wrapper.get<HTMLButtonElement>('#dark-mode-setting')
 
     expect(wrapper.get('.app').attributes('data-theme')).toBe('light')
     expect(themeButton.attributes('aria-pressed')).toBe('false')
+    expect(themeButton.attributes('aria-label')).toBe('ダークモードに切り替える')
+    expect(themeButton.attributes('title')).toBe('ダークモードに切り替える')
+    expect(themeButton.find('[data-icon="moon"]').exists()).toBe(true)
 
     await themeButton.trigger('click')
 
     expect(wrapper.get('.app').attributes('data-theme')).toBe('dark')
     expect(themeButton.attributes('aria-pressed')).toBe('true')
+    expect(themeButton.attributes('aria-label')).toBe('ライトモードに切り替える')
+    expect(themeButton.find('[data-icon="sun"]').exists()).toBe(true)
   })
 
   it('ダークモードへの変更を保存して再読み込み時に復元する', async () => {
     const wrapper = mount(App)
 
-    await wrapper.get<HTMLButtonElement>('.theme-button').trigger('click')
+    await wrapper.get('.settings-button').trigger('click')
+    await wrapper.get<HTMLButtonElement>('#dark-mode-setting').trigger('click')
     await vi.advanceTimersByTimeAsync(THEME_PREFERENCE_SAVE_DELAY_MS)
 
     expect(localStorage.getItem(THEME_PREFERENCE_STORAGE_KEY)).toBe('dark')
 
     const reloadedWrapper = mount(App)
     expect(reloadedWrapper.get('.app').attributes('data-theme')).toBe('dark')
-    expect(reloadedWrapper.get('.theme-button').text()).toBe('ライトモード')
+    await reloadedWrapper.get('.settings-button').trigger('click')
+    expect(reloadedWrapper.get('#dark-mode-setting').attributes('aria-label')).toBe(
+      'ライトモードに切り替える',
+    )
   })
 
   it('ダークモードからライトモードへの変更も保存する', async () => {
     localStorage.setItem(THEME_PREFERENCE_STORAGE_KEY, 'dark')
     const wrapper = mount(App)
 
-    await wrapper.get<HTMLButtonElement>('.theme-button').trigger('click')
+    await wrapper.get('.settings-button').trigger('click')
+    await wrapper.get<HTMLButtonElement>('#dark-mode-setting').trigger('click')
     await vi.advanceTimersByTimeAsync(THEME_PREFERENCE_SAVE_DELAY_MS)
 
     expect(wrapper.get('.app').attributes('data-theme')).toBe('light')
@@ -270,11 +414,16 @@ describe('App', () => {
     await flushPromises()
 
     expect(writeText).toHaveBeenCalledWith("''重要''")
+    expect(wrapper.get('.copy-button').find('[data-icon="check"]').exists()).toBe(true)
+    expect(wrapper.get('.copy-button').attributes('title')).toBe('コピーしました')
     expect(wrapper.get('.app-notice').text()).toBe('Backlog記法形式でコピーしました')
     expect(wrapper.get('.app-notice').attributes('role')).toBe('status')
+    expect(wrapper.get('.app-notice').classes()).toContain('toast-notice')
 
     await vi.advanceTimersByTimeAsync(COPY_NOTICE_DURATION_MS)
     expect(wrapper.find('.app-notice').exists()).toBe(false)
+    expect(wrapper.get('.copy-button').find('[data-icon="copy"]').exists()).toBe(true)
+    expect(wrapper.get('.copy-button').attributes('title')).toBe('コピー')
   })
 
   it('コピー失敗時に手動コピーを案内し、入力と変換結果を維持する', async () => {
@@ -294,6 +443,7 @@ describe('App', () => {
       'コピーに失敗しました。変換結果を選択して手動でコピーしてください。',
     )
     expect(wrapper.get('.app-notice').attributes('role')).toBe('alert')
+    expect(wrapper.get('.app-notice').classes()).toContain('toast-notice')
     expect(input.element.value).toBe('失敗しても残る内容')
     expect(wrapper.get<HTMLTextAreaElement>('#conversion-output').element.value).toBe(
       '失敗しても残る内容',
