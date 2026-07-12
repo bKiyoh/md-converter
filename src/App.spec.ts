@@ -31,7 +31,51 @@ describe('App', () => {
     expect(output.element.value).toBe('*見出し😀*')
     expect(wrapper.get('#markdown-input-count').text()).toBe('6文字')
     expect(wrapper.get('#conversion-output-count').text()).toBe('6文字')
+    expect(wrapper.get('#markdown-input-count').element.parentElement?.classList).toContain(
+      'panel-footer',
+    )
+    expect(wrapper.get('#conversion-output-count').element.parentElement?.classList).toContain(
+      'panel-footer',
+    )
+    expect(wrapper.get('.warning-summary-button').text()).toBe('⚠ 警告 1件')
+    expect(wrapper.find('.warnings').exists()).toBe(false)
+
+    await wrapper.get('.warning-summary-button').trigger('click')
+
     expect(wrapper.get('.warnings').text()).toContain('見出しレベルを表現できない')
+  })
+
+  it('同じ警告をまとめて件数と位置を重ね表示し、Escapeキーで閉じる', async () => {
+    const wrapper = mount(App, { attachTo: document.body })
+    const input = wrapper.get<HTMLTextAreaElement>('#markdown-input')
+
+    await input.setValue('# 見出し1\n\n## 見出し2')
+
+    const warningButton = wrapper.get<HTMLButtonElement>('.warning-summary-button')
+    expect(warningButton.text()).toBe('⚠ 警告 2件')
+    expect(warningButton.attributes('aria-expanded')).toBe('false')
+    expect(wrapper.find('.warnings').exists()).toBe(false)
+
+    await warningButton.trigger('click')
+
+    expect(warningButton.attributes('aria-expanded')).toBe('true')
+    expect(wrapper.findAll('.warnings li')).toHaveLength(1)
+    expect(wrapper.get('.warning-detail').text()).toBe('2件（1:1、3:1）')
+
+    await warningButton.trigger('keydown', { key: 'Escape' })
+
+    expect(wrapper.find('.warnings').exists()).toBe(false)
+    expect(document.activeElement).toBe(warningButton.element)
+    wrapper.unmount()
+  })
+
+  it('警告がない場合は警告ボタンの領域を表示しない', async () => {
+    const wrapper = mount(App)
+
+    await wrapper.get<HTMLTextAreaElement>('#markdown-input').setValue('通常の文章')
+
+    expect(wrapper.find('.warning-summary-button').exists()).toBe(false)
+    expect(wrapper.find('.warnings-root').exists()).toBe(false)
   })
 
   it('4つの変換形式を切り替えられる', async () => {
@@ -142,11 +186,14 @@ describe('App', () => {
   it('設定ボタンでポップオーバーを開き、再押下で閉じる', async () => {
     const wrapper = mount(App)
     const settingsButton = wrapper.get<HTMLButtonElement>('.settings-button')
+    const infoButton = wrapper.get<HTMLButtonElement>('.info-button')
 
     expect(settingsButton.attributes('aria-label')).toBe('設定')
     expect(settingsButton.attributes('title')).toBe('設定')
     expect(settingsButton.attributes('aria-expanded')).toBe('false')
     expect(settingsButton.find('[data-icon="settings"]').exists()).toBe(true)
+    expect(infoButton.element.nextElementSibling?.classList).toContain('settings-root')
+    expect(wrapper.get('.app-header-actions').find('.settings-button').exists()).toBe(false)
 
     await settingsButton.trigger('click')
 

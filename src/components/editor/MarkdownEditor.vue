@@ -78,8 +78,10 @@ onMounted(resizeTextarea)
       @keydown="handleKeydown"
     />
 
-    <p id="markdown-input-count" class="character-count" aria-live="polite">
-      {{ characterCount.toLocaleString('ja-JP') }}文字
-    </p>
+    <div class="panel-footer">
+      <p id="markdown-input-count" class="character-count" aria-live="polite">
+        {{ characterCount.toLocaleString('ja-JP') }}文字
+      </p>
+    </div>
   </section>
 </template>

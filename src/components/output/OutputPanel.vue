@@ -118,13 +118,12 @@ function handleViewTabKeydown(event: KeyboardEvent, currentView: OutputView): vo
         placeholder="変換結果がここに表示されます"
       />
 
-      <div class="output-actions">
+      <div class="panel-footer">
+        <ConversionWarnings :warnings="warnings" />
         <p id="conversion-output-count" class="character-count" aria-live="polite">
           {{ characterCount.toLocaleString('ja-JP') }}文字
         </p>
       </div>
-
-      <ConversionWarnings :warnings="warnings" />
     </div>
   </section>
 </template>

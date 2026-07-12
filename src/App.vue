@@ -130,6 +130,12 @@ function handleTabKeydown(event: KeyboardEvent, currentPanel: WorkspacePanel): v
           >
             <AppIcon name="info" />
           </IconButton>
+          <SettingsPopover
+            :dark-mode="theme === 'dark'"
+            :editor-internal-scroll="editorInternalScroll"
+            @update:dark-mode="theme = $event ? 'dark' : 'light'"
+            @update:editor-internal-scroll="editorInternalScroll = $event"
+          />
         </div>
         <div class="app-header-actions">
           <div class="header-output-actions">
@@ -144,12 +150,6 @@ function handleTabKeydown(event: KeyboardEvent, currentPanel: WorkspacePanel): v
               <AppIcon :name="copySucceeded ? 'check' : 'copy'" />
             </IconButton>
           </div>
-          <SettingsPopover
-            :dark-mode="theme === 'dark'"
-            :editor-internal-scroll="editorInternalScroll"
-            @update:dark-mode="theme = $event ? 'dark' : 'light'"
-            @update:editor-internal-scroll="editorInternalScroll = $event"
-          />
         </div>
       </header>
 
