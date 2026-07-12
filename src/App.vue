@@ -223,12 +223,15 @@ function handleTabKeydown(event: KeyboardEvent, currentPanel: WorkspacePanel): v
         role="dialog"
         aria-modal="true"
         aria-labelledby="info-modal-title"
-        aria-describedby="info-modal-description"
+        aria-describedby="info-modal-description info-modal-privacy"
         @keydown="handleInfoModalKeydown"
       >
         <h2 id="info-modal-title">Markdown変換エディタ</h2>
         <p id="info-modal-description">
           貼り付け先に合わせて、ブラウザ内でリアルタイムに変換します。
+        </p>
+        <p id="info-modal-privacy">
+          入力内容と設定はこのブラウザのLocalStorageに保存され、外部サーバーには送信されません。ブラウザのサイトデータを削除すると、保存内容も削除されます。
         </p>
         <button
           ref="modalCloseButton"

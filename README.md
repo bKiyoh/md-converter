@@ -15,7 +15,7 @@ Markdownで作成した文章を、Slack、Backlog、プレーンテキスト向
 - Node.js `^20.19.0 || ^22.13.0 || >=24.0.0`
 - npm（Node.jsに同梱されるバージョン）
 
-Node.jsの範囲は、使用するVite、Vitest、ESLintの公式な実行条件を満たす共通範囲です。
+Node.jsの範囲は、使用するVite、Vitest、ESLintの公式な実行条件を満たす共通範囲です。開発環境と公開時のビルド環境には `.node-version` でNode.js `22.20.0`を指定しています。
 
 ## セットアップ
 
@@ -57,8 +57,26 @@ Markdown入力欄へ入力し、ヘッダーの「変換形式」で貼り付け
 | --- | --- |
 | Markdown入力 | `md-converter:draft:v1` |
 | テーマ | `md-converter:theme:v1` |
+| エディター内部スクロール設定 | `md-converter:settings:v1` |
 
-変換結果と変換形式は保存しません。LocalStorageやClipboard APIが利用できない場合も編集と変換は継続でき、コピー失敗時は手動コピーの案内を表示します。
+変換結果と変換形式は保存しません。保存内容は利用中のブラウザのサイトデータを削除すると削除されます。LocalStorageやClipboard APIが利用できない場合も編集と変換は継続でき、コピー失敗時は手動コピーの案内を表示します。
+
+## Cloudflare Pagesへの公開
+
+このアプリは `npm run build` で生成される `dist/` だけで動作する静的Webアプリです。Cloudflare PagesではGitHubリポジトリを接続し、次の値を設定します。
+
+| 設定 | 値 |
+| --- | --- |
+| Production branch | `main` |
+| Build command | `npm run build` |
+| Build output directory | `dist` |
+| Root directory | 空欄（リポジトリルート） |
+| Node.js | `22.20.0`（`.node-version`から取得） |
+| アプリ用環境変数 | なし |
+
+`main`へのpushでproductionを更新し、それ以外のブランチとPull Requestはpreview deploymentとして扱います。Vue Routerは使用しておらず、Cloudflare Pagesが静的サイトのルートを配信するため、`vite.config.ts`の`base`変更やSPA用リダイレクトは不要です。
+
+`public/_headers` はViteによって成果物へコピーされ、Cloudflare Pages上でContent Security Policyなどのセキュリティヘッダーを設定します。入力内容を外部送信しない方針を維持するため、Pages Functions、アクセス解析、エラー監視、外部フォントは使用しません。
 
 ## 主要依存関係
 
