@@ -22,6 +22,11 @@ import type {
 
 type NormalizationContext = {
   definitions: Map<string, Definition>
+  ignoreHtml: boolean
+}
+
+export type MarkdownNormalizationOptions = {
+  ignoreHtml?: boolean
 }
 
 type SourcePoint = {
@@ -138,6 +143,10 @@ function normalizeInlineNode(
     case 'break':
       return [withLocation({ type: 'lineBreak' as const, kind: 'hard' as const }, node.position?.start)]
     case 'html':
+      if (context.ignoreHtml) {
+        return []
+      }
+      throw new Error('MVP対象外のインラインノードです: html')
     case 'image':
     case 'imageReference':
     case 'footnoteReference':
@@ -201,15 +210,23 @@ function normalizeBlockNodes(
   nodes: RootContent[],
   context: NormalizationContext,
 ): BlockNode[] {
-  return nodes.filter(isBlockContent).map((node) => normalizeBlockNode(node, context))
+  return nodes
+    .filter(isBlockContent)
+    .flatMap((node) => {
+      const normalized = normalizeBlockNode(node, context)
+      return normalized ? [normalized] : []
+    })
 }
 
-function normalizeBlockNode(node: BlockContent, context: NormalizationContext): BlockNode {
+function normalizeBlockNode(
+  node: BlockContent,
+  context: NormalizationContext,
+): BlockNode | null {
   switch (node.type) {
     case 'heading':
       return withLocation(
         {
-          type: 'heading',
+          type: 'heading' as const,
           depth: node.depth,
           children: normalizeInlineNodes(node.children, context),
         },
@@ -217,13 +234,13 @@ function normalizeBlockNode(node: BlockContent, context: NormalizationContext): 
       )
     case 'paragraph':
       return withLocation(
-        { type: 'paragraph', children: normalizeInlineNodes(node.children, context) },
+        { type: 'paragraph' as const, children: normalizeInlineNodes(node.children, context) },
         node.position?.start,
       )
     case 'list':
       return withLocation(
         {
-          type: 'list',
+          type: 'list' as const,
           ordered: node.ordered ?? false,
           start: node.ordered ? (node.start ?? 1) : null,
           spread: node.spread ?? false,
@@ -234,7 +251,7 @@ function normalizeBlockNode(node: BlockContent, context: NormalizationContext): 
     case 'blockquote':
       return withLocation(
         {
-          type: 'quote',
+          type: 'quote' as const,
           children: normalizeBlockNodes(node.children, context),
         },
         node.position?.start,
@@ -242,7 +259,7 @@ function normalizeBlockNode(node: BlockContent, context: NormalizationContext): 
     case 'code':
       return withLocation(
         {
-          type: 'codeBlock',
+          type: 'codeBlock' as const,
           value: node.value,
           language: node.lang ?? null,
           meta: node.meta ?? null,
@@ -257,7 +274,7 @@ function normalizeBlockNode(node: BlockContent, context: NormalizationContext): 
 
       return withLocation(
         {
-          type: 'table',
+          type: 'table' as const,
           align: node.align ?? Array.from({ length: header.children.length }, () => null),
           header: normalizeTableRow(header, context),
           rows: rows.map((row) => normalizeTableRow(row, context)),
@@ -266,8 +283,11 @@ function normalizeBlockNode(node: BlockContent, context: NormalizationContext): 
       )
     }
     case 'thematicBreak':
-      return withLocation({ type: 'thematicBreak' }, node.position?.start)
+      return withLocation({ type: 'thematicBreak' as const }, node.position?.start)
     case 'html':
+      if (context.ignoreHtml) {
+        return null
+      }
       throw new Error('MVP対象外のブロックノードです: html')
   }
 }
@@ -286,10 +306,16 @@ function collectDefinitions(nodes: RootContent[], definitions: Map<string, Defin
   }
 }
 
-export function normalizeMarkdownAst(tree: Root): MarkdownDocument {
+export function normalizeMarkdownAst(
+  tree: Root,
+  options: MarkdownNormalizationOptions = {},
+): MarkdownDocument {
   const definitions = new Map<string, Definition>()
   collectDefinitions(tree.children, definitions)
-  const context: NormalizationContext = { definitions }
+  const context: NormalizationContext = {
+    definitions,
+    ignoreHtml: options.ignoreHtml ?? false,
+  }
 
   return {
     blocks: normalizeBlockNodes(tree.children, context),

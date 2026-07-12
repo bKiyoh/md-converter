@@ -1,0 +1,128 @@
+<script setup lang="ts">
+import { onBeforeUnmount, onMounted, ref } from 'vue'
+import AppIcon from './AppIcon.vue'
+import IconButton from './IconButton.vue'
+
+defineProps<{
+  darkMode: boolean
+  editorInternalScroll: boolean
+}>()
+
+const emit = defineEmits<{
+  'update:darkMode': [value: boolean]
+  'update:editorInternalScroll': [value: boolean]
+}>()
+
+const isOpen = ref<boolean>(false)
+const settingsRoot = ref<HTMLElement | null>(null)
+
+function togglePopover(): void {
+  isOpen.value = !isOpen.value
+}
+
+function closePopover(restoreFocus = false): void {
+  if (!isOpen.value) {
+    return
+  }
+
+  isOpen.value = false
+
+  if (restoreFocus) {
+    settingsRoot.value?.querySelector<HTMLButtonElement>('.settings-button')?.focus()
+  }
+}
+
+function handleDocumentClick(event: MouseEvent): void {
+  if (event.target instanceof Node && !settingsRoot.value?.contains(event.target)) {
+    closePopover()
+  }
+}
+
+function handleDocumentKeydown(event: KeyboardEvent): void {
+  if (event.key === 'Escape' && isOpen.value) {
+    event.preventDefault()
+    closePopover(true)
+  }
+}
+
+function readChecked(event: Event): boolean {
+  return (event.target as HTMLInputElement).checked
+}
+
+onMounted(() => {
+  document.addEventListener('click', handleDocumentClick)
+  document.addEventListener('keydown', handleDocumentKeydown)
+})
+
+onBeforeUnmount(() => {
+  document.removeEventListener('click', handleDocumentClick)
+  document.removeEventListener('keydown', handleDocumentKeydown)
+})
+</script>
+
+<template>
+  <div ref="settingsRoot" class="settings-root">
+    <IconButton
+      class="settings-button"
+      accessible-label="設定"
+      title="設定"
+      aria-haspopup="true"
+      :aria-expanded="isOpen"
+      aria-controls="settings-popover"
+      @click="togglePopover"
+    >
+      <AppIcon name="settings" />
+    </IconButton>
+
+    <section
+      v-if="isOpen"
+      id="settings-popover"
+      class="settings-popover"
+      aria-labelledby="settings-popover-title"
+    >
+      <h2 id="settings-popover-title">設定</h2>
+
+      <div class="setting-item">
+        <div class="setting-row setting-row--static">
+          <span class="setting-name">テーマ</span>
+          <IconButton
+            id="dark-mode-setting"
+            class="setting-theme-button"
+            :accessible-label="
+              darkMode ? 'ライトモードに切り替える' : 'ダークモードに切り替える'
+            "
+            :title="darkMode ? 'ライトモードに切り替える' : 'ダークモードに切り替える'"
+            :aria-pressed="darkMode"
+            @click="emit('update:darkMode', !darkMode)"
+          >
+            <AppIcon :name="darkMode ? 'sun' : 'moon'" />
+          </IconButton>
+        </div>
+      </div>
+
+      <div class="setting-item">
+        <label class="setting-row" for="editor-scroll-setting">
+          <span class="setting-name">エディター内部をスクロール</span>
+          <span class="switch-group">
+            <input
+              id="editor-scroll-setting"
+              class="switch-input"
+              type="checkbox"
+              role="switch"
+              :checked="editorInternalScroll"
+              aria-describedby="editor-scroll-description"
+              @change="emit('update:editorInternalScroll', readChecked($event))"
+            />
+            <span class="switch-track" aria-hidden="true">
+              <span class="switch-thumb" />
+            </span>
+            <span class="switch-state">{{ editorInternalScroll ? 'ON' : 'OFF' }}</span>
+          </span>
+        </label>
+        <p id="editor-scroll-description" class="setting-description">
+          OFFにすると、入力内容に合わせてエディターとプレビューが縦に広がります。
+        </p>
+      </div>
+    </section>
+  </div>
+</template>

@@ -6,7 +6,8 @@ describe('App', () => {
   it('Milestone 7のエディタ画面を表示する', () => {
     const wrapper = mount(App)
 
-    expect(wrapper.get('h1').text()).toBe('Markdown変換エディタ')
+    expect(wrapper.get('.brand-heading').text()).toContain('Markdown Converter')
+    expect(wrapper.get('.info-button').attributes('aria-label')).toBe('このアプリについて')
     expect(wrapper.get('#markdown-input').element.tagName).toBe('TEXTAREA')
     expect(wrapper.get('#conversion-output').attributes('readonly')).toBeDefined()
   })

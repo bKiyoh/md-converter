@@ -11,3 +11,8 @@ export function parseMarkdown(markdown: string): MarkdownDocument {
   const tree = markdownParser.parse(markdown) as Root
   return normalizeMarkdownAst(tree)
 }
+
+export function parseMarkdownForPreview(markdown: string): MarkdownDocument {
+  const tree = markdownParser.parse(markdown) as Root
+  return normalizeMarkdownAst(tree, { ignoreHtml: true })
+}
