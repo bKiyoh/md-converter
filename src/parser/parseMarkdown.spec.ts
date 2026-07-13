@@ -194,6 +194,33 @@ describe('parseMarkdown', () => {
     })
   })
 
+  it('ブロックHTMLとインラインHTMLの原文と位置を保持する', () => {
+    const document = parseMarkdown(`通常 <span>インライン</span>
+
+<div>ブロック</div>`)
+
+    expect(document.blocks).toMatchObject([
+      {
+        type: 'paragraph',
+        children: [
+          { type: 'text', value: '通常 ' },
+          {
+            type: 'rawHtmlInline',
+            value: '<span>',
+            location: { line: 1, column: 4 },
+          },
+          { type: 'text', value: 'インライン' },
+          { type: 'rawHtmlInline', value: '</span>' },
+        ],
+      },
+      {
+        type: 'rawHtmlBlock',
+        value: '<div>ブロック</div>',
+        location: { line: 3, column: 1 },
+      },
+    ])
+  })
+
   it('開始位置を警告に利用できる最小情報として保持する', () => {
     const document = parseMarkdown('\n# 見出し')
 

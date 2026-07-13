@@ -78,6 +78,26 @@ describe('App', () => {
     expect(wrapper.find('.warnings-root').exists()).toBe(false)
   })
 
+  it('生HTMLを含んでも他の内容を変換し、具体的な警告を表示する', async () => {
+    const wrapper = mount(App)
+    const input = wrapper.get<HTMLTextAreaElement>('#markdown-input')
+
+    await input.setValue('前の文章\n\n<div>テスト</div>\n\n後の文章')
+
+    expect(wrapper.get<HTMLTextAreaElement>('#conversion-output').element.value).toBe(
+      '前の文章\n\n<div>テスト</div>\n\n後の文章',
+    )
+    expect(wrapper.get('.warning-summary-button').text()).toBe('⚠ 警告 1件')
+
+    await wrapper.get('.warning-summary-button').trigger('click')
+
+    expect(wrapper.get('.warnings').text()).toContain(
+      '生HTMLには対応していないため、文字列として保持しました。',
+    )
+    expect(wrapper.get('.warnings').text()).toContain('3:1')
+    expect(wrapper.get('.warnings').text()).not.toContain('入力内容を確認してください')
+  })
+
   it('4つの変換形式を切り替えられる', async () => {
     const wrapper = mount(App)
     const input = wrapper.get<HTMLInputElement>('#markdown-input')

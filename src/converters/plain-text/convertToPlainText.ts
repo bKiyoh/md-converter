@@ -12,6 +12,7 @@ import type {
   SourceLocation,
   TableNode,
 } from '../../types/markdown'
+import { addRawHtmlWarning } from '../rawHtmlWarning'
 
 type RenderContext = {
   warnings: ConversionWarning[]
@@ -50,6 +51,9 @@ function renderInlineNode(node: InlineNode, context: RenderContext): string {
       return `${renderInlineNodes(node.children, context)}（${node.url}）`
     case 'lineBreak':
       return '\n'
+    case 'rawHtmlInline':
+      addRawHtmlWarning(context.warnings, node.location)
+      return node.value
   }
 }
 
@@ -191,6 +195,9 @@ function renderBlock(block: BlockNode, context: RenderContext): string {
       return renderTable(block, context)
     case 'thematicBreak':
       return '──────────'
+    case 'rawHtmlBlock':
+      addRawHtmlWarning(context.warnings, block.location)
+      return block.value
   }
 }
 

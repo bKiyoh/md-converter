@@ -146,7 +146,12 @@ function normalizeInlineNode(
       if (context.ignoreHtml) {
         return []
       }
-      throw new Error('MVP対象外のインラインノードです: html')
+      return [
+        withLocation(
+          { type: 'rawHtmlInline' as const, value: node.value },
+          node.position?.start,
+        ),
+      ]
     case 'image':
     case 'imageReference':
     case 'footnoteReference':
@@ -288,7 +293,10 @@ function normalizeBlockNode(
       if (context.ignoreHtml) {
         return null
       }
-      throw new Error('MVP対象外のブロックノードです: html')
+      return withLocation(
+        { type: 'rawHtmlBlock' as const, value: node.value },
+        node.position?.start,
+      )
   }
 }
 
