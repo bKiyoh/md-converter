@@ -171,4 +171,28 @@ const value = 1
       warnings: [],
     })
   })
+
+  it('生HTMLを文字列として保持し、他の内容を変換しながら警告する', () => {
+    const result = convert(`前 <span>内</span>
+
+<div>テスト</div>
+
+後`)
+
+    expect(result.output).toBe('前 <span>内</span>\n\n<div>テスト</div>\n\n後')
+    expect(result.warnings).toHaveLength(3)
+    expect(result.warnings).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          code: 'unsupported-node',
+          message: expect.stringContaining('生HTML'),
+          location: { line: 1, column: 3 },
+        }),
+        expect.objectContaining({
+          code: 'unsupported-node',
+          location: { line: 3, column: 1 },
+        }),
+      ]),
+    )
+  })
 })

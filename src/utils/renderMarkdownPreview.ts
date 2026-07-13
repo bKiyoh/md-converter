@@ -50,6 +50,8 @@ function renderInline(node: InlineNode): string {
     }
     case 'lineBreak':
       return node.kind === 'hard' ? '<br>' : '\n'
+    case 'rawHtmlInline':
+      return ''
   }
 }
 
@@ -97,6 +99,8 @@ function renderBlock(node: BlockNode): string {
         .join('')}</tbody></table>`
     case 'thematicBreak':
       return '<hr>'
+    case 'rawHtmlBlock':
+      return ''
   }
 }
 

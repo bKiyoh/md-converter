@@ -12,6 +12,7 @@ import type {
   SourceLocation,
   TableNode,
 } from '../../types/markdown'
+import { addRawHtmlWarning } from '../rawHtmlWarning'
 
 type RenderContext = {
   warnings: ConversionWarning[]
@@ -31,35 +32,46 @@ function addLossyWarning(
   })
 }
 
-function renderInlineNode(node: InlineNode, mode: InlineRenderMode): string {
+function renderInlineNode(
+  node: InlineNode,
+  context: RenderContext,
+  mode: InlineRenderMode,
+): string {
   switch (node.type) {
     case 'text':
       return node.value
     case 'strong': {
-      const content = renderInlineNodes(node.children, mode)
+      const content = renderInlineNodes(node.children, context, mode)
       return mode === 'markup' ? `*${content}*` : content
     }
     case 'emphasis': {
-      const content = renderInlineNodes(node.children, mode)
+      const content = renderInlineNodes(node.children, context, mode)
       return mode === 'markup' ? `_${content}_` : content
     }
     case 'delete': {
-      const content = renderInlineNodes(node.children, mode)
+      const content = renderInlineNodes(node.children, context, mode)
       return mode === 'markup' ? `~${content}~` : content
     }
     case 'inlineCode':
       return mode === 'markup' ? `\`${node.value}\`` : node.value
     case 'link': {
-      const label = renderInlineNodes(node.children, mode)
+      const label = renderInlineNodes(node.children, context, mode)
       return `[${label}](${node.url})`
     }
     case 'lineBreak':
       return '\n'
+    case 'rawHtmlInline':
+      addRawHtmlWarning(context.warnings, node.location)
+      return node.value
   }
 }
 
-function renderInlineNodes(nodes: InlineNode[], mode: InlineRenderMode = 'markup'): string {
-  return nodes.map((node) => renderInlineNode(node, mode)).join('')
+function renderInlineNodes(
+  nodes: InlineNode[],
+  context: RenderContext,
+  mode: InlineRenderMode = 'markup',
+): string {
+  return nodes.map((node) => renderInlineNode(node, context, mode)).join('')
 }
 
 function indentContinuationLines(value: string, indent: string): string {
@@ -124,8 +136,11 @@ function renderList(list: ListNode, depth: number, context: RenderContext): stri
     .join('\n')
 }
 
-function renderTableRow(cells: TableNode['header']['cells']): string {
-  const values = cells.map((cell) => renderInlineNodes(cell.children, 'plain'))
+function renderTableRow(
+  cells: TableNode['header']['cells'],
+  context: RenderContext,
+): string {
+  const values = cells.map((cell) => renderInlineNodes(cell.children, context, 'plain'))
   return `| ${values.join(' | ')} |`
 }
 
@@ -138,9 +153,9 @@ function renderTable(table: TableNode, context: RenderContext): string {
 
   const separator = `| ${table.header.cells.map(() => '---').join(' | ')} |`
   const rows = [
-    renderTableRow(table.header.cells),
+    renderTableRow(table.header.cells, context),
     separator,
-    ...table.rows.map((row) => renderTableRow(row.cells)),
+    ...table.rows.map((row) => renderTableRow(row.cells, context)),
   ]
 
   return `\`\`\`\n${rows.join('\n')}\n\`\`\``
@@ -161,9 +176,9 @@ function renderBlock(block: BlockNode, context: RenderContext): string {
         'Slackでは見出しレベルを表現できないため、太字に変換しました。',
         block.location,
       )
-      return `*${renderInlineNodes(block.children)}*`
+      return `*${renderInlineNodes(block.children, context)}*`
     case 'paragraph':
-      return renderInlineNodes(block.children)
+      return renderInlineNodes(block.children, context)
     case 'list':
       return renderList(block, 0, context)
     case 'quote':
@@ -186,6 +201,9 @@ function renderBlock(block: BlockNode, context: RenderContext): string {
         block.location,
       )
       return '──────────'
+    case 'rawHtmlBlock':
+      addRawHtmlWarning(context.warnings, block.location)
+      return block.value
   }
 }
 

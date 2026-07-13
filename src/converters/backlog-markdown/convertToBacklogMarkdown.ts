@@ -13,6 +13,7 @@ import type {
   TableAlignment,
   TableNode,
 } from '../../types/markdown'
+import { addRawHtmlWarning } from '../rawHtmlWarning'
 
 type RenderContext = {
   warnings: ConversionWarning[]
@@ -20,9 +21,8 @@ type RenderContext = {
 
 type InlineRenderContext = {
   inTable: boolean
+  renderContext: RenderContext
 }
-
-const defaultInlineContext: InlineRenderContext = { inTable: false }
 
 function addChecklistScopeWarning(
   context: RenderContext,
@@ -87,12 +87,15 @@ function renderInlineNode(node: InlineNode, context: InlineRenderContext): strin
     }
     case 'lineBreak':
       return node.kind === 'hard' ? '  \n' : '\n'
+    case 'rawHtmlInline':
+      addRawHtmlWarning(context.renderContext.warnings, node.location)
+      return escapeText(node.value, context)
   }
 }
 
 function renderInlineNodes(
   nodes: InlineNode[],
-  context: InlineRenderContext = defaultInlineContext,
+  context: InlineRenderContext,
 ): string {
   return nodes.map((node) => renderInlineNode(node, context)).join('')
 }
@@ -181,17 +184,21 @@ function renderTableAlignment(alignment: TableAlignment): string {
   }
 }
 
-function renderTableRow(cells: TableNode['header']['cells']): string {
-  const values = cells.map((cell) => renderInlineNodes(cell.children, { inTable: true }))
+function renderTableRow(
+  cells: TableNode['header']['cells'],
+  context: RenderContext,
+): string {
+  const inlineContext: InlineRenderContext = { inTable: true, renderContext: context }
+  const values = cells.map((cell) => renderInlineNodes(cell.children, inlineContext))
   return `| ${values.join(' | ')} |`
 }
 
-function renderTable(table: TableNode): string {
+function renderTable(table: TableNode, context: RenderContext): string {
   const separator = `| ${table.align.map(renderTableAlignment).join(' | ')} |`
   return [
-    renderTableRow(table.header.cells),
+    renderTableRow(table.header.cells, context),
     separator,
-    ...table.rows.map((row) => renderTableRow(row.cells)),
+    ...table.rows.map((row) => renderTableRow(row.cells, context)),
   ].join('\n')
 }
 
@@ -214,11 +221,13 @@ function renderQuote(blocks: BlockNode[], context: RenderContext): string {
 }
 
 function renderBlock(block: BlockNode, context: RenderContext): string {
+  const inlineContext: InlineRenderContext = { inTable: false, renderContext: context }
+
   switch (block.type) {
     case 'heading':
-      return `${'#'.repeat(block.depth)} ${renderInlineNodes(block.children)}`
+      return `${'#'.repeat(block.depth)} ${renderInlineNodes(block.children, inlineContext)}`
     case 'paragraph':
-      return escapeParagraphLineStarts(renderInlineNodes(block.children))
+      return escapeParagraphLineStarts(renderInlineNodes(block.children, inlineContext))
     case 'list':
       return renderList(block, 0, context)
     case 'quote':
@@ -226,9 +235,12 @@ function renderBlock(block: BlockNode, context: RenderContext): string {
     case 'codeBlock':
       return renderCodeBlock(block)
     case 'table':
-      return renderTable(block)
+      return renderTable(block, context)
     case 'thematicBreak':
       return '---'
+    case 'rawHtmlBlock':
+      addRawHtmlWarning(context.warnings, block.location)
+      return escapeParagraphLineStarts(escapeText(block.value, inlineContext))
   }
 }
 

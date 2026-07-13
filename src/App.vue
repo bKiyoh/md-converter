@@ -40,7 +40,8 @@ const conversionResult = computed<ConversionResult>(() => {
       warnings: [
         {
           code: 'invalid-structure',
-          message: 'Markdownを変換できませんでした。入力内容を確認してください。',
+          message:
+            '予期しないエラーが発生し、変換を完了できませんでした。入力内容は保持されています。',
         },
       ],
     }

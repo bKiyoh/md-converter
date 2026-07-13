@@ -19,6 +19,7 @@ export type BlockNode =
   | CodeBlockNode
   | TableNode
   | ThematicBreakNode
+  | RawHtmlBlockNode
 
 export type InlineNode =
   | TextNode
@@ -28,6 +29,7 @@ export type InlineNode =
   | InlineCodeNode
   | LinkNode
   | LineBreakNode
+  | RawHtmlInlineNode
 
 export type HeadingNode = MarkdownNode & {
   type: 'heading'
@@ -90,6 +92,11 @@ export type ThematicBreakNode = MarkdownNode & {
   type: 'thematicBreak'
 }
 
+export type RawHtmlBlockNode = MarkdownNode & {
+  type: 'rawHtmlBlock'
+  value: string
+}
+
 export type TextNode = MarkdownNode & {
   type: 'text'
   value: string
@@ -125,4 +132,9 @@ export type LinkNode = MarkdownNode & {
 export type LineBreakNode = MarkdownNode & {
   type: 'lineBreak'
   kind: 'soft' | 'hard'
+}
+
+export type RawHtmlInlineNode = MarkdownNode & {
+  type: 'rawHtmlInline'
+  value: string
 }
