@@ -1,6 +1,7 @@
 import { mount, type VueWrapper } from '@vue/test-utils'
 import { defineComponent } from 'vue'
 import { describe, expect, it, vi } from 'vitest'
+import { OUTPUT_FORMATS } from '../types/conversion'
 import {
   DEFAULT_OUTPUT_FORMAT,
   OUTPUT_FORMAT_STORAGE_KEY,
@@ -12,14 +13,20 @@ function mountOutputFormatPreference(storage: OutputFormatStorage): VueWrapper {
   return mount(
     defineComponent({
       setup() {
-        return useOutputFormatPreference(storage)
+        return {
+          ...useOutputFormatPreference(storage),
+          outputFormats: OUTPUT_FORMATS,
+        }
       },
       template: `
         <select v-model="selectedFormat">
-          <option value="slack">Slack</option>
-          <option value="backlog-markdown">Backlog Markdown</option>
-          <option value="backlog-notation">Backlog記法</option>
-          <option value="plain-text">プレーンテキスト</option>
+          <option
+            v-for="format in outputFormats"
+            :key="format"
+            :value="format"
+          >
+            {{ format }}
+          </option>
         </select>
       `,
     }),
@@ -39,7 +46,7 @@ describe('useOutputFormatPreference', () => {
     expect(storage.getItem).toHaveBeenCalledWith(OUTPUT_FORMAT_STORAGE_KEY)
   })
 
-  it.each(['slack', 'backlog-markdown', 'backlog-notation', 'plain-text'])(
+  it.each(OUTPUT_FORMATS)(
     '保存済みの変換形式%sを復元する',
     (storedFormat) => {
       const storage = {

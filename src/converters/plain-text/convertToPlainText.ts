@@ -224,7 +224,7 @@ function renderTable(table: TableNode, context: RenderContext): string {
     )
   }
 
-  if (table.header.cells.length === 2) {
+  if (table.header.cells.length === 2 && table.rows.length > 0) {
     return table.rows
       .map((row) => {
         const [label = '', value = ''] = renderTableCells(row.cells, context)
