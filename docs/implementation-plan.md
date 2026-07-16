@@ -554,7 +554,7 @@ Markdown入力は `useMarkdownDraft`、テーマ選択は `useThemePreference`�
 - ポップオーバーを設定ボタンの再押下、外側クリック、Escapeキーで閉じられるようにする。
 - テーマ設定は既存の `useThemePreference`、`data-theme`、CSS変数、LocalStorage保存処理を再利用し、設定内の月／太陽アイコンボタンから操作する。ヘッダーには独立したテーマボタンを表示しない。
 - エディター内部スクロール設定を追加し、アプリ用の版付きLocalStorageキーへJSONで保存・復元する。
-- 内部スクロールONではtextareaとMarkdownプレビューを画面内に収まる高さに固定して `overflow-y: auto` とする。OFFでは入力・貼り付け・削除・外部更新時にtextareaの `scrollHeight` から高さを再計算し、Markdownプレビューは内容に合わせて自然に伸縮させる。
+- 内部スクロールONではアプリ全体を動的ビューポート高に収めるFlexレイアウトとし、ヘッダーなどを除いた残りの高さをエディターと右ペインへ配分する。textareaとMarkdownプレビューは配分された領域内で `overflow-y: auto` とする。OFFでは入力・貼り付け・削除・外部更新時にtextareaの `scrollHeight` から高さを再計算し、Markdownプレビューは内容に合わせて自然に伸縮させる。
 - 設定保存値の欠損、不正JSON、不正型、LocalStorage例外に対するフォールバックを実装する。
 - 設定UI、テーマ同期、保存・復元、textarea伸縮の単体・コンポーネントテストを追加する。
 

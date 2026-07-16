@@ -115,7 +115,11 @@ function handleTabKeydown(event: KeyboardEvent, currentPanel: WorkspacePanel): v
 </script>
 
 <template>
-  <div class="app" :data-theme="theme">
+  <div
+    class="app"
+    :class="{ 'app--internal-scroll': editorInternalScroll }"
+    :data-theme="theme"
+  >
     <div
       class="app-content"
       :aria-hidden="isInfoModalOpen ? 'true' : undefined"

@@ -285,11 +285,13 @@ describe('App', () => {
   it('エディター内部スクロール設定を即時反映・保存・復元する', async () => {
     const wrapper = mount(App)
 
+    expect(wrapper.get('.app').classes()).toContain('app--internal-scroll')
     expect(wrapper.get('#markdown-input').classes()).toContain('text-area--internal-scroll')
 
     await wrapper.get('.settings-button').trigger('click')
     await wrapper.get<HTMLInputElement>('#editor-scroll-setting').setValue(false)
 
+    expect(wrapper.get('.app').classes()).not.toContain('app--internal-scroll')
     expect(wrapper.get('#markdown-input').classes()).toContain('text-area--expand')
     expect(localStorage.getItem(APP_SETTINGS_STORAGE_KEY)).toBe(
       JSON.stringify({ editorInternalScroll: false }),
@@ -301,6 +303,7 @@ describe('App', () => {
     wrapper.unmount()
     const reloadedWrapper = mount(App)
 
+    expect(reloadedWrapper.get('.app').classes()).not.toContain('app--internal-scroll')
     expect(reloadedWrapper.get('#markdown-input').classes()).toContain('text-area--expand')
     await reloadedWrapper.get('.settings-button').trigger('click')
     expect(
