@@ -18,6 +18,10 @@ type RenderContext = {
   warnings: ConversionWarning[]
 }
 
+type InlineRenderOptions = {
+  stripDecoration?: boolean
+}
+
 function addLossyWarning(
   context: RenderContext,
   message: string,
@@ -30,16 +34,24 @@ function addLossyWarning(
   })
 }
 
-function renderInlineNode(node: InlineNode, context: RenderContext): string {
+function renderInlineNode(
+  node: InlineNode,
+  context: RenderContext,
+  options: InlineRenderOptions,
+): string {
   switch (node.type) {
     case 'text':
       return node.value
     case 'strong':
+      if (options.stripDecoration) {
+        return renderInlineNodes(node.children, context, options)
+      }
+      return `「${renderInlineNodes(node.children, context, options)}」`
     case 'emphasis':
     case 'delete':
-      return renderInlineNodes(node.children, context)
+      return renderInlineNodes(node.children, context, options)
     case 'inlineCode':
-      return node.value
+      return `\`${node.value}\``
     case 'link':
       if (node.title !== null) {
         addLossyWarning(
@@ -48,7 +60,7 @@ function renderInlineNode(node: InlineNode, context: RenderContext): string {
           node.location,
         )
       }
-      return `${renderInlineNodes(node.children, context)}（${node.url}）`
+      return `${renderInlineNodes(node.children, context, options)}（${node.url}）`
     case 'lineBreak':
       return '\n'
     case 'rawHtmlInline':
@@ -57,8 +69,23 @@ function renderInlineNode(node: InlineNode, context: RenderContext): string {
   }
 }
 
-function renderInlineNodes(nodes: InlineNode[], context: RenderContext): string {
-  return nodes.map((node) => renderInlineNode(node, context)).join('')
+function renderInlineNodes(
+  nodes: InlineNode[],
+  context: RenderContext,
+  options: InlineRenderOptions = {},
+): string {
+  return nodes.map((node) => renderInlineNode(node, context, options)).join('')
+}
+
+function renderParagraph(
+  block: Extract<BlockNode, { type: 'paragraph' }>,
+  context: RenderContext,
+): string {
+  if (block.children.length === 1 && block.children[0]?.type === 'strong') {
+    return `【${renderInlineNodes(block.children[0].children, context)}】`
+  }
+
+  return renderInlineNodes(block.children, context)
 }
 
 function indentContinuationLines(value: string, indent: string): string {
@@ -133,7 +160,7 @@ function renderList(list: ListNode, depth: number, context: RenderContext): stri
 function renderQuote(blocks: BlockNode[], context: RenderContext): string {
   return renderBlocks(blocks, context)
     .split('\n')
-    .map((line) => (line.length > 0 ? `引用：${line}` : ''))
+    .map((line) => (line.length > 0 ? `> ${line}` : '>'))
     .join('\n')
 }
 
@@ -155,36 +182,84 @@ function renderCodeBlock(
     .join('\n')
 }
 
-function renderTableRow(cells: TableNode['header']['cells'], context: RenderContext): string {
-  return cells.map((cell) => renderInlineNodes(cell.children, context)).join('\t')
+function containsDecoration(nodes: InlineNode[]): boolean {
+  return nodes.some((node) => {
+    switch (node.type) {
+      case 'strong':
+      case 'emphasis':
+      case 'delete':
+        return true
+      case 'link':
+        return containsDecoration(node.children)
+      default:
+        return false
+    }
+  })
+}
+
+function renderTableCells(
+  cells: TableNode['header']['cells'],
+  context: RenderContext,
+): string[] {
+  return cells.map((cell) =>
+    renderInlineNodes(cell.children, context, { stripDecoration: true }),
+  )
+}
+
+function tableContainsDecoration(table: TableNode): boolean {
+  return [table.header, ...table.rows].some((row) =>
+    row.cells.some((cell) => containsDecoration(cell.children)),
+  )
 }
 
 function renderTable(table: TableNode, context: RenderContext): string {
-  if (table.align.some((alignment) => alignment !== null)) {
+  if (
+    table.align.some((alignment) => alignment !== null) ||
+    tableContainsDecoration(table)
+  ) {
     addLossyWarning(
       context,
-      'プレーンテキストではテーブルの列配置を保持できないため、省略しました。',
+      'プレーンテキストではテーブルの列配置またはセル内装飾を保持できないため、省略しました。',
       table.location,
     )
   }
 
-  return [
-    renderTableRow(table.header.cells, context),
-    ...table.rows.map((row) => renderTableRow(row.cells, context)),
-  ].join('\n')
+  if (table.header.cells.length === 2) {
+    return table.rows
+      .map((row) => {
+        const [label = '', value = ''] = renderTableCells(row.cells, context)
+        return `${label}：${value}`
+      })
+      .join('\n')
+  }
+
+  return [table.header, ...table.rows]
+    .map((row) => renderTableCells(row.cells, context).join('\t'))
+    .join('\n')
 }
 
 function renderBlock(block: BlockNode, context: RenderContext): string {
   switch (block.type) {
     case 'heading':
-      addLossyWarning(
-        context,
-        'プレーンテキストでは見出しレベルを保持できないため、共通の括弧表現に変換しました。',
-        block.location,
-      )
-      return `【${renderInlineNodes(block.children, context)}】`
+      if (block.depth >= 4) {
+        addLossyWarning(
+          context,
+          'プレーンテキストではレベル4以降の見出し階層を保持できないため、共通の小見出し表現に統合しました。',
+          block.location,
+        )
+      }
+      if (block.depth === 1) {
+        return `【${renderInlineNodes(block.children, context)}】`
+      }
+      if (block.depth === 2) {
+        return `■ ${renderInlineNodes(block.children, context)}`
+      }
+      if (block.depth === 3) {
+        return `▼ ${renderInlineNodes(block.children, context)}`
+      }
+      return `● ${renderInlineNodes(block.children, context)}`
     case 'paragraph':
-      return renderInlineNodes(block.children, context)
+      return renderParagraph(block, context)
     case 'list':
       return renderList(block, 0, context)
     case 'quote':
@@ -202,7 +277,10 @@ function renderBlock(block: BlockNode, context: RenderContext): string {
 }
 
 function renderBlocks(blocks: BlockNode[], context: RenderContext): string {
-  return blocks.map((block) => renderBlock(block, context)).join('\n\n')
+  return blocks
+    .map((block) => renderBlock(block, context))
+    .filter((output) => output.length > 0)
+    .join('\n\n')
 }
 
 export function convertToPlainText(document: MarkdownDocument): ConversionResult {

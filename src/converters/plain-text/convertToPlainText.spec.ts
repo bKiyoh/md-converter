@@ -19,27 +19,57 @@ describe('convertToPlainText', () => {
     expect(convert('')).toEqual({ output: '', warnings: [] })
   })
 
-  it('見出しを共通の括弧表現へ変換し、見出しごとにレベル消失を警告する', () => {
-    const result = convert('# 見出し1\n\n### 見出し3')
+  it('見出しレベル1〜3を異なる表現へ警告なしで変換する', () => {
+    expect(convert('# 見出し1\n\n## 見出し2\n\n### 見出し3')).toEqual({
+      output: '【見出し1】\n\n■ 見出し2\n\n▼ 見出し3',
+      warnings: [],
+    })
+  })
 
-    expect(result.output).toBe('【見出し1】\n\n【見出し3】')
+  it('見出しレベル4〜6を共通の小見出し表現へ変換し、各見出しを警告する', () => {
+    const result = convert('#### 見出し4\n\n##### 見出し5\n\n###### 見出し6')
+
+    expect(result.output).toBe('● 見出し4\n\n● 見出し5\n\n● 見出し6')
     expect(result.warnings).toEqual([
       expect.objectContaining({
         code: 'lossy-conversion',
-        message: expect.stringContaining('見出しレベル'),
+        message: expect.stringContaining('レベル4以降'),
         location: { line: 1, column: 1 },
       }),
       expect.objectContaining({
         code: 'lossy-conversion',
-        message: expect.stringContaining('見出しレベル'),
+        message: expect.stringContaining('レベル4以降'),
         location: { line: 3, column: 1 },
+      }),
+      expect.objectContaining({
+        code: 'lossy-conversion',
+        message: expect.stringContaining('レベル4以降'),
+        location: { line: 5, column: 1 },
       }),
     ])
   })
 
-  it('通常の装飾とインラインコードは本文だけを警告なしで保持する', () => {
-    expect(convert('通常 **太字の中に *斜体*** ~~取消~~ `*code*`')).toEqual({
-      output: '通常 太字の中に 斜体 取消 *code*',
+  it('見出しと他のブロックの間を1行の空行で区切り、先頭と末尾へ余分な空行を作らない', () => {
+    expect(convert('\n\n前の本文\n\n\n# 見出し\n\n\n後の本文\n\n')).toEqual({
+      output: '前の本文\n\n【見出し】\n\n後の本文',
+      warnings: [],
+    })
+  })
+
+  it('文中の太字をかぎ括弧にし、斜体と打ち消し線の記号だけを警告なしで除去する', () => {
+    expect(convert('これは**重要**で、*補足*と~~廃止~~を含みます。')).toEqual({
+      output: 'これは「重要」で、補足と廃止を含みます。',
+      warnings: [],
+    })
+  })
+
+  it('太字だけで構成された段落を隅付き括弧で表し、見出しの警告を返さない', () => {
+    expect(convert('**重要**')).toEqual({ output: '【重要】', warnings: [] })
+  })
+
+  it('インラインコードのバッククォートとコード本文を警告なしで保持する', () => {
+    expect(convert('`npm run dev` を実行します。')).toEqual({
+      output: '`npm run dev` を実行します。',
       warnings: [],
     })
   })
@@ -61,10 +91,10 @@ describe('convertToPlainText', () => {
     ])
   })
 
-  it('開始番号と1階層2スペースのネストを保持する', () => {
-    const result = convert(`- 親
-  - 子
-    - 孫
+  it('箇条書き記号をハイフンに統一し、1階層2スペースのネストを保持する', () => {
+    const result = convert(`* 親
+  + 子
+    * 孫
 
 3. 三番目
 4. 四番目`)
@@ -91,9 +121,9 @@ describe('convertToPlainText', () => {
     ])
   })
 
-  it('引用の空行を保ち、空行以外の各行へ引用ラベルを付ける', () => {
+  it('引用の空行を保ち、各行へ引用記号を付ける', () => {
     expect(convert('> 1行目\n>\n> 2行目')).toEqual({
-      output: '引用：1行目\n\n引用：2行目',
+      output: '> 1行目\n>\n> 2行目',
       warnings: [],
     })
   })
@@ -127,14 +157,37 @@ const value = 1
     ])
   })
 
-  it('日本語テーブルをタブ区切りにし、列配置の消失をテーブルごとに警告する', () => {
+  it('2列テーブルの見出し行を省略し、データ行を項目と値の形式へ変換する', () => {
+    expect(
+      convert(`| 項目 | 内容 |
+| --- | --- |
+| 名前 | Markdown変換エディタ |
+| 対象 | Slack、Backlog |`),
+    ).toEqual({
+      output: '名前：Markdown変換エディタ\n対象：Slack、Backlog',
+      warnings: [],
+    })
+  })
+
+  it('3列以上の日本語テーブルを見出し行を含むタブ区切りへ変換する', () => {
+    expect(
+      convert(`| 名前 | 状態 | 担当 |
+| --- | --- | --- |
+| 変換機能 | 完了 | 田中 |`),
+    ).toEqual({
+      output: '名前\t状態\t担当\n変換機能\t完了\t田中',
+      warnings: [],
+    })
+  })
+
+  it('テーブルの列配置とセル内装飾の消失をテーブルごとに1件警告する', () => {
     const result = convert(`| 項目 | 内容 |
 | :--- | ---: |
 | 事象 | **保存できない** |
 | 原因 | A \\| B |`)
 
     expect(result.output).toBe(
-      '項目\t内容\n事象\t保存できない\n原因\tA | B',
+      '事象：保存できない\n原因：A | B',
     )
     expect(result.warnings).toEqual([
       expect.objectContaining({
@@ -145,11 +198,19 @@ const value = 1
     ])
   })
 
-  it('配置指定と装飾がないテーブルは警告なしでセル内容を保持する', () => {
-    expect(convert('| 名前 | 値 |\n| --- | --- |\n| 日本語 | 10 |')).toEqual({
-      output: '名前\t値\n日本語\t10',
-      warnings: [],
-    })
+  it('配置指定がなくてもテーブルのセル内装飾が失われる場合は警告する', () => {
+    const result = convert(`| 項目 | 内容 |
+| --- | --- |
+| 状態 | *完了* |`)
+
+    expect(result.output).toBe('状態：完了')
+    expect(result.warnings).toEqual([
+      expect.objectContaining({
+        code: 'lossy-conversion',
+        message: expect.stringContaining('セル内装飾'),
+        location: { line: 1, column: 1 },
+      }),
+    ])
   })
 
   it('ソフト改行と明示改行を保持し、ブロック間を空行で区切る', () => {
@@ -161,6 +222,13 @@ const value = 1
 
   it('水平線を罫線文字へ警告なしで変換する', () => {
     expect(convert('---')).toEqual({ output: '──────────', warnings: [] })
+  })
+
+  it('水平線の前後を他のブロックと1行の空行で区切る', () => {
+    expect(convert('前\n\n---\n\n後')).toEqual({
+      output: '前\n\n──────────\n\n後',
+      warnings: [],
+    })
   })
 
   it('不完全なMarkdownをテキストとして欠落させない', () => {

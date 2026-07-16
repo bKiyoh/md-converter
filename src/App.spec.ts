@@ -150,7 +150,7 @@ describe('App', () => {
 
     await wrapper.get('#conversion-view-tab').trigger('click')
     expect(wrapper.get<HTMLSelectElement>('#output-format').element.value).toBe('plain-text')
-    expect(wrapper.get<HTMLTextAreaElement>('#conversion-output').element.value).toBe('更新')
+    expect(wrapper.get<HTMLTextAreaElement>('#conversion-output').element.value).toBe('【更新】')
   })
 
   it('空の変換結果ではコピーボタンを無効にする', () => {
