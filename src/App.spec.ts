@@ -1,6 +1,7 @@
 import { flushPromises, mount } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { MARKDOWN_DRAFT_STORAGE_KEY } from './composables/useMarkdownDraft'
+import { OUTPUT_FORMAT_STORAGE_KEY } from './composables/useOutputFormatPreference'
 import { APP_SETTINGS_STORAGE_KEY } from './composables/useAppSettings'
 import {
   THEME_PREFERENCE_SAVE_DELAY_MS,
@@ -150,7 +151,7 @@ describe('App', () => {
 
     await wrapper.get('#conversion-view-tab').trigger('click')
     expect(wrapper.get<HTMLSelectElement>('#output-format').element.value).toBe('plain-text')
-    expect(wrapper.get<HTMLTextAreaElement>('#conversion-output').element.value).toBe('更新')
+    expect(wrapper.get<HTMLTextAreaElement>('#conversion-output').element.value).toBe('【更新】')
   })
 
   it('空の変換結果ではコピーボタンを無効にする', () => {
@@ -284,11 +285,13 @@ describe('App', () => {
   it('エディター内部スクロール設定を即時反映・保存・復元する', async () => {
     const wrapper = mount(App)
 
+    expect(wrapper.get('.app').classes()).toContain('app--internal-scroll')
     expect(wrapper.get('#markdown-input').classes()).toContain('text-area--internal-scroll')
 
     await wrapper.get('.settings-button').trigger('click')
     await wrapper.get<HTMLInputElement>('#editor-scroll-setting').setValue(false)
 
+    expect(wrapper.get('.app').classes()).not.toContain('app--internal-scroll')
     expect(wrapper.get('#markdown-input').classes()).toContain('text-area--expand')
     expect(localStorage.getItem(APP_SETTINGS_STORAGE_KEY)).toBe(
       JSON.stringify({ editorInternalScroll: false }),
@@ -300,6 +303,7 @@ describe('App', () => {
     wrapper.unmount()
     const reloadedWrapper = mount(App)
 
+    expect(reloadedWrapper.get('.app').classes()).not.toContain('app--internal-scroll')
     expect(reloadedWrapper.get('#markdown-input').classes()).toContain('text-area--expand')
     await reloadedWrapper.get('.settings-button').trigger('click')
     expect(
@@ -471,6 +475,32 @@ describe('App', () => {
 
     expect(wrapper.get<HTMLTextAreaElement>('#markdown-input').element.value).toBe('# 保存済み')
     expect(wrapper.get<HTMLTextAreaElement>('#conversion-output').element.value).toBe('*保存済み*')
+  })
+
+  it('選択した変換形式を保存し、再読み込み後も同じ形式で変換する', async () => {
+    localStorage.setItem(MARKDOWN_DRAFT_STORAGE_KEY, '**重要**')
+    const wrapper = mount(App)
+
+    await wrapper.get<HTMLSelectElement>('#output-format').setValue('backlog-notation')
+
+    expect(localStorage.getItem(OUTPUT_FORMAT_STORAGE_KEY)).toBe('backlog-notation')
+
+    const reloadedWrapper = mount(App)
+
+    expect(reloadedWrapper.get<HTMLSelectElement>('#output-format').element.value).toBe(
+      'backlog-notation',
+    )
+    expect(reloadedWrapper.get<HTMLTextAreaElement>('#conversion-output').element.value).toBe(
+      "''重要''",
+    )
+  })
+
+  it('保存された変換形式が不正な場合はSlackを使用する', () => {
+    localStorage.setItem(OUTPUT_FORMAT_STORAGE_KEY, 'unknown-format')
+
+    const wrapper = mount(App)
+
+    expect(wrapper.get<HTMLSelectElement>('#output-format').element.value).toBe('slack')
   })
 
   it('選択中の形式名を含むメッセージを表示して変換結果をコピーする', async () => {

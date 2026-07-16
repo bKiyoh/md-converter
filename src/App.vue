@@ -10,17 +10,18 @@ import OutputPanel from './components/output/OutputPanel.vue'
 import { useClipboard } from './composables/useClipboard'
 import { useAppSettings } from './composables/useAppSettings'
 import { useMarkdownDraft } from './composables/useMarkdownDraft'
+import { useOutputFormatPreference } from './composables/useOutputFormatPreference'
 import { useThemePreference } from './composables/useThemePreference'
 import { converterRegistry, outputFormatOptions } from './converters/converterRegistry'
 import { parseMarkdown } from './parser/parseMarkdown'
-import type { ConversionResult, OutputFormat } from './types/conversion'
+import type { ConversionResult } from './types/conversion'
 import { countCharacters } from './utils/countCharacters'
 
 const { markdown } = useMarkdownDraft()
 const { theme } = useThemePreference()
+const { selectedFormat } = useOutputFormatPreference()
 const { editorInternalScroll } = useAppSettings()
 const { copy, notice } = useClipboard()
-const selectedFormat = ref<OutputFormat>('slack')
 const activePanel = ref<WorkspacePanel>('input')
 const inputTab = ref<HTMLButtonElement | null>(null)
 const outputTab = ref<HTMLButtonElement | null>(null)
@@ -114,7 +115,11 @@ function handleTabKeydown(event: KeyboardEvent, currentPanel: WorkspacePanel): v
 </script>
 
 <template>
-  <div class="app" :data-theme="theme">
+  <div
+    class="app"
+    :class="{ 'app--internal-scroll': editorInternalScroll }"
+    :data-theme="theme"
+  >
     <div
       class="app-content"
       :aria-hidden="isInfoModalOpen ? 'true' : undefined"

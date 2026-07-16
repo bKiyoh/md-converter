@@ -2,19 +2,23 @@ import { backlogMarkdownConverter } from './backlog-markdown/convertToBacklogMar
 import { backlogNotationConverter } from './backlog-notation/convertToBacklogNotation'
 import { plainTextConverter } from './plain-text/convertToPlainText'
 import { slackConverter } from './slack/convertToSlack'
-import type { Converter, OutputFormat } from '../types/conversion'
+import { OUTPUT_FORMATS, type Converter, type OutputFormat } from '../types/conversion'
 
 export type OutputFormatOption = {
   value: OutputFormat
   label: string
 }
 
-export const outputFormatOptions: readonly OutputFormatOption[] = [
-  { value: 'slack', label: 'Slack' },
-  { value: 'backlog-markdown', label: 'Backlog Markdown' },
-  { value: 'backlog-notation', label: 'Backlog記法' },
-  { value: 'plain-text', label: 'プレーンテキスト' },
-]
+const outputFormatLabels: Readonly<Record<OutputFormat, string>> = {
+  slack: 'Slack',
+  'backlog-markdown': 'Backlog Markdown',
+  'backlog-notation': 'Backlog記法',
+  'plain-text': 'プレーンテキスト',
+}
+
+export const outputFormatOptions: readonly OutputFormatOption[] = OUTPUT_FORMATS.map(
+  (value) => ({ value, label: outputFormatLabels[value] }),
+)
 
 export const converterRegistry: Readonly<Record<OutputFormat, Converter>> = {
   slack: slackConverter,
