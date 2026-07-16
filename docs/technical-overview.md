@@ -272,6 +272,7 @@ UIにはVue 3のComposition APIを使用しているが、MVPではPiniaを導�
 | --- | --- |
 | `useMarkdownDraft` | Markdown入力の復元と保存 |
 | `useThemePreference` | ライト・ダーク設定の復元と保存 |
+| `useOutputFormatPreference` | 選択中の変換形式の検証、復元、保存 |
 | `useAppSettings` | エディター表示設定の復元と保存 |
 | `useClipboard` | コピー処理と成功・失敗通知 |
 | `useMarkdownEditor` | textareaのキー操作と選択範囲の復元 |
@@ -281,7 +282,7 @@ UIにはVue 3のComposition APIを使用しているが、MVPではPiniaを導�
 
 ## LocalStorage障害を通常系から切り離す
 
-Markdown入力とテーマは変更から500ミリ秒後に保存する。入力のたびに同期的なStorage書き込みを行わず、最後の変更をまとめるためである。アプリ設定は操作頻度が低く、小さなJSONなので即時保存している。
+Markdown入力とテーマは変更から500ミリ秒後に保存する。入力のたびに同期的なStorage書き込みを行わず、最後の変更をまとめるためである。変換形式とアプリ設定は操作頻度が低く、変更直後の再読み込みでも選択を失わないよう即時保存している。
 
 保存処理は汎用の`useDebouncedLocalStorage`へ集約した。
 
@@ -301,9 +302,10 @@ LocalStorageはブラウザ設定、容量制限、プライベートブラウ�
 | --- | --- |
 | Markdown入力 | `md-converter:draft:v1` |
 | テーマ | `md-converter:theme:v1` |
+| 変換形式 | `md-converter:output-format:v1` |
 | アプリ設定 | `md-converter:settings:v1` |
 
-将来データ構造を変更したとき、旧形式を誤って読むのを避け、移行の境界を明確にするためである。なお、変換結果と選択中の出力形式は保存しない。変換結果は入力から再計算でき、出力形式は再読み込み時にSlackへ戻す仕様としている。
+将来データ構造を変更したとき、旧形式を誤って読むのを避け、移行の境界を明確にするためである。変換形式は共通の形式ID一覧に含まれる値だけを復元し、未保存または不正な値はSlackへフォールバックする。変換結果は入力と変換形式から再計算できるため保存しない。
 
 ## エディター支援は純粋関数とDOM操作に分ける
 

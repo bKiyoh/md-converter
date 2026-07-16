@@ -6,7 +6,7 @@ Markdownで作成した文章を、Slack、Backlog、プレーンテキスト向
 
 - Slack、Backlog Markdown、Backlog記法、プレーンテキストへのリアルタイム変換
 - 変換結果のコピーと、情報損失がある場合の警告表示
-- Markdown入力とライト・ダークモードのLocalStorageへの自動保存
+- Markdown入力、ライト・ダークモード、変換形式のLocalStorageへの自動保存
 - PCの2カラム表示と、767px以下の画面での入力・変換結果タブ
 - 見出し、装飾、リスト、チェックリスト、引用、コード、リンク、テーブル、水平線、改行への対応
 
@@ -51,15 +51,16 @@ npm run build
 
 Markdown入力欄へ入力し、ヘッダーの「変換形式」で貼り付け先を選択します。変換結果はリアルタイムに更新されます。
 
-767px以下の画面では「入力」と「変換結果」のタブを使用します。タブへフォーカスした状態で、左右矢印キー、Homeキー、Endキーでも切り替えられます。入力内容とテーマは変更から500ms後に次のキーへ保存されます。
+767px以下の画面では「入力」と「変換結果」のタブを使用します。タブへフォーカスした状態で、左右矢印キー、Homeキー、Endキーでも切り替えられます。入力内容とテーマは変更から500ms後、変換形式とエディター内部スクロール設定は変更時に次のキーへ保存されます。
 
 | 保存対象 | LocalStorageキー |
 | --- | --- |
 | Markdown入力 | `md-converter:draft:v1` |
 | テーマ | `md-converter:theme:v1` |
+| 変換形式 | `md-converter:output-format:v1` |
 | エディター内部スクロール設定 | `md-converter:settings:v1` |
 
-変換結果と変換形式は保存しません。保存内容は利用中のブラウザのサイトデータを削除すると削除されます。LocalStorageやClipboard APIが利用できない場合も編集と変換は継続でき、コピー失敗時は手動コピーの案内を表示します。
+変換結果は入力から再計算できるため保存しません。変換形式の保存値がない場合または不正な場合はSlackを使用します。保存内容は利用中のブラウザのサイトデータを削除すると削除されます。LocalStorageやClipboard APIが利用できない場合も編集と変換は継続でき、コピー失敗時は手動コピーの案内を表示します。
 
 ## Cloudflare Pagesへの公開
 
@@ -90,6 +91,8 @@ Markdown入力欄へ入力し、ヘッダーの「変換形式」で貼り付け
 | unified / remark-parse / remark-gfm | CommonMarkとGFMをmdastへ解析するMarkdownパーサー |
 
 正確な導入バージョンは `package-lock.json` で固定しています。Pinia、Vue Router、UIライブラリは導入していません。パーサーの設計と既知の制約は [`docs/parser-design.md`](docs/parser-design.md) を参照してください。
+
+パーサー、中間表現、出力先別Converter、変換警告、安全なプレビュー、ブラウザ内保存を含む実装全体の解説は、[`docs/technical-overview.md`](docs/technical-overview.md) にまとめています。
 
 ## 既知の制約
 
