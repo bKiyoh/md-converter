@@ -67,11 +67,11 @@ describe('useEditorTabs', () => {
     vi.useRealTimers()
   })
 
-  it('旧単一文書を文章1へ移行し、新形式の保存後に旧キーを削除する', () => {
+  it('旧単一文書をUntitledへ移行し、新形式の保存後に旧キーを削除する', () => {
     const storage = createStorage({ [LEGACY_MARKDOWN_DRAFT_STORAGE_KEY]: '# 旧文書' })
     const { tabs } = mountTabs(storage)
 
-    expect(tabs.activeTab.value.name).toBe('文章1')
+    expect(tabs.activeTab.value.name).toBe('Untitled')
     expect(tabs.markdown.value).toBe('# 旧文書')
     expect(storage.values.has(EDITOR_STATE_STORAGE_KEY)).toBe(true)
     expect(storage.removeItem).toHaveBeenCalledWith(LEGACY_MARKDOWN_DRAFT_STORAGE_KEY)
@@ -104,19 +104,19 @@ describe('useEditorTabs', () => {
     }
 
     expect(tabs.tabs.value.map((tab) => tab.name)).toEqual([
-      '文章1',
-      '文章2',
-      '文章3',
-      '文章4',
-      '文章5',
-      '文章6',
-      '文章7',
+      'Untitled',
+      'Untitled 2',
+      'Untitled 3',
+      'Untitled 4',
+      'Untitled 5',
+      'Untitled 6',
+      'Untitled 7',
     ])
     expect(tabs.canAddTab.value).toBe(false)
     expect(tabs.addTab()).toBeNull()
 
     tabs.deleteTab(tabs.tabs.value[2]!.id)
-    expect(tabs.addTab()?.name).toBe('文章3')
+    expect(tabs.addTab()?.name).toBe('Untitled 3')
   })
 
   it('タブごとの入力を保持して切り替え、同名への変更も許可する', () => {
@@ -126,8 +126,8 @@ describe('useEditorTabs', () => {
     const second = tabs.addTab()!
     tabs.markdown.value = '次の内容'
 
-    expect(tabs.renameTab(second.id, '  文章1  ')).toBe(true)
-    expect(tabs.activeTab.value.name).toBe('文章1')
+    expect(tabs.renameTab(second.id, '  Untitled  ')).toBe(true)
+    expect(tabs.activeTab.value.name).toBe('Untitled')
     expect(tabs.selectTab(firstId)).toBe(true)
     expect(tabs.markdown.value).toBe('最初の内容')
     expect(tabs.selectTab('missing')).toBe(false)
@@ -157,6 +157,11 @@ describe('useEditorTabs', () => {
     const emptyDefaultTab = tabs.addTab()!
 
     tabs.deleteTab(emptyDefaultTab.id)
+    expect(tabs.deletedTabs.value).toHaveLength(0)
+
+    const legacyDefaultTab = tabs.addTab()!
+    tabs.renameTab(legacyDefaultTab.id, '文章2')
+    tabs.deleteTab(legacyDefaultTab.id)
     expect(tabs.deletedTabs.value).toHaveLength(0)
 
     const renamedEmptyTab = tabs.addTab()!
@@ -218,7 +223,7 @@ describe('useEditorTabs', () => {
     const added = tabs.addTab()
     await vi.advanceTimersByTimeAsync(EDITOR_CONTENT_SAVE_DELAY_MS)
 
-    expect(added?.name).toBe('文章2')
+    expect(added?.name).toBe('Untitled 2')
     expect(tabs.tabs.value[0]?.content).toBe('保存できなくても残る内容')
     expect(tabs.tabs.value).toHaveLength(2)
   })

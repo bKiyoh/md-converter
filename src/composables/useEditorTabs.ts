@@ -46,10 +46,10 @@ function findAvailableTabName(tabs: EditorTab[]): string {
   const usedNumbers = new Set<number>()
 
   for (const tab of tabs) {
-    const match = /^文章([1-9]\d*)$/.exec(tab.name)
+    const number = getDefaultTabNumber(tab.name)
 
-    if (match) {
-      usedNumbers.add(Number(match[1]))
+    if (number !== null) {
+      usedNumbers.add(number)
     }
   }
 
@@ -59,11 +59,27 @@ function findAvailableTabName(tabs: EditorTab[]): string {
     number += 1
   }
 
-  return `文章${number}`
+  return number === 1 ? 'Untitled' : `Untitled ${number}`
+}
+
+function getDefaultTabNumber(name: string): number | null {
+  if (name === 'Untitled') {
+    return 1
+  }
+
+  const match = /^Untitled ([1-9]\d*)$/.exec(name)
+
+  if (!match) {
+    return null
+  }
+
+  const number = Number(match[1])
+  return number >= 2 ? number : null
 }
 
 function shouldPermanentlyDeleteImmediately(tab: EditorTab): boolean {
-  return tab.content === '' && /^文章[1-9]\d*$/.test(tab.name)
+  const isLegacyDefaultName = /^文章[1-9]\d*$/.test(tab.name)
+  return tab.content === '' && (getDefaultTabNumber(tab.name) !== null || isLegacyDefaultName)
 }
 
 export function useEditorTabs(options: UseEditorTabsOptions = {}): UseEditorTabsResult {

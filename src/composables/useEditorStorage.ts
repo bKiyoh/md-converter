@@ -106,7 +106,7 @@ export function createInitialEditorState(
   const timestamp = now()
   const tab: EditorTab = {
     id: createId(),
-    name: '文章1',
+    name: 'Untitled',
     content,
     createdAt: timestamp,
     updatedAt: timestamp,

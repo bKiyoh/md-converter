@@ -163,7 +163,7 @@ describe('App', () => {
     const editorPanel = wrapper.get('.editor-panel')
 
     expect(wrapper.findAll('.document-tab-button')).toHaveLength(1)
-    expect(wrapper.get('.document-tab-button').text()).toBe('文章1')
+    expect(wrapper.get('.document-tab-button').text()).toBe('Untitled')
     expect(editorPanel.element.firstElementChild?.classList).toContain('document-tabs')
     expect(editorPanel.find('#markdown-input-heading').exists()).toBe(false)
     expect(editorPanel.find('.panel-kicker').exists()).toBe(false)
@@ -180,7 +180,7 @@ describe('App', () => {
     await wrapper.get<HTMLButtonElement>('.document-tab-add-button').trigger('click')
 
     expect(wrapper.findAll('.document-tab-button')).toHaveLength(2)
-    expect(wrapper.findAll('.document-tab-button')[1]?.text()).toBe('文章2')
+    expect(wrapper.findAll('.document-tab-button')[1]?.text()).toBe('Untitled 2')
     expect(
       wrapper.get('.document-tab-add-button').element.previousElementSibling,
     ).toBe(wrapper.findAll('.document-tab-item')[1]!.element)
@@ -242,8 +242,8 @@ describe('App', () => {
     await wrapper.get<HTMLButtonElement>('.deleted-tab-action--restore').trigger('click')
 
     expect(wrapper.findAll('.document-tab-button').map((item) => item.text())).toEqual([
-      '文章1',
-      '文章2',
+      'Untitled',
+      'Untitled 2',
     ])
     expect(wrapper.find('.app-notice').exists()).toBe(false)
   })
@@ -274,10 +274,10 @@ describe('App', () => {
     const permanentDeleteButton = wrapper.get<HTMLButtonElement>(
       '.deleted-tab-action--permanent-delete',
     )
-    expect(restoreButton.attributes('aria-label')).toBe('文章2を復元')
+    expect(restoreButton.attributes('aria-label')).toBe('Untitled 2を復元')
     expect(restoreButton.attributes('title')).toBe('復元')
     expect(restoreButton.find('[data-icon="rotate-ccw"]').exists()).toBe(true)
-    expect(permanentDeleteButton.attributes('aria-label')).toBe('文章2を完全に削除')
+    expect(permanentDeleteButton.attributes('aria-label')).toBe('Untitled 2を完全に削除')
     expect(permanentDeleteButton.attributes('title')).toBe('完全に削除')
     expect(permanentDeleteButton.find('[data-icon="trash-x"]').exists()).toBe(true)
 

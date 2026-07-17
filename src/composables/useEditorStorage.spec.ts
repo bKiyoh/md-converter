@@ -103,7 +103,7 @@ describe('loadEditorState', () => {
     expect(result.state.tabs).toEqual([
       {
         id: 'initial-id',
-        name: '文章1',
+        name: 'Untitled',
         content: '',
         createdAt: 500,
         updatedAt: 500,
