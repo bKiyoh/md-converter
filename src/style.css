@@ -635,7 +635,8 @@ h2 {
   box-shadow: 0 12px 36px rgb(31 45 72 / 8%);
 }
 
-.panel.editor-panel {
+.panel.editor-panel,
+.panel.output-panel {
   padding-top: 0;
 }
 
@@ -649,29 +650,39 @@ h2 {
 }
 
 .output-view-tablist {
-  display: grid;
-  min-height: 58px;
-  margin-bottom: 16px;
-  padding: 4px;
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  grid-template-columns: 1fr 1fr;
+  display: flex;
+  width: calc(100% + 40px);
+  margin: 0 -20px 16px;
+  padding: 10px 12px 0;
+  border-bottom: 1px solid var(--border);
+  border-radius: 13px 13px 0 0;
+  align-items: flex-end;
   background: var(--surface-muted);
 }
 
 .output-view-tab {
-  min-height: 42px;
-  padding: 8px 12px;
-  border: 0;
-  border-radius: 7px;
+  min-width: 0;
+  min-height: 40px;
+  margin-bottom: -1px;
+  padding: 8px 16px;
+  border: 1px solid transparent;
+  border-bottom: 0;
+  border-radius: 9px 9px 0 0;
+  flex: 1;
   color: var(--muted);
   background: transparent;
   font-weight: 700;
+  white-space: nowrap;
 }
 
 .output-view-tab--active {
-  color: var(--accent-contrast);
-  background: var(--accent);
+  border-color: var(--border);
+  color: var(--text);
+  background: var(--surface);
+}
+
+.output-view-tab:hover:not(.output-view-tab--active) {
+  background: var(--surface);
 }
 
 .output-view-panel {
@@ -1031,7 +1042,8 @@ h2 {
     padding: 16px;
   }
 
-  .editor-panel > .document-tabs {
+  .editor-panel > .document-tabs,
+  .output-panel > .output-view-tablist {
     width: calc(100% + 32px);
     margin-right: -16px;
     margin-left: -16px;
@@ -1139,7 +1151,8 @@ h2 {
     min-height: 540px;
   }
 
-  .editor-panel > .document-tabs {
+  .editor-panel > .document-tabs,
+  .output-panel > .output-view-tablist {
     width: calc(100% + 32px);
     margin-right: -16px;
     margin-left: -16px;
@@ -1190,11 +1203,18 @@ h2 {
     border-radius: 11px;
   }
 
-  .editor-panel > .document-tabs {
+  .editor-panel > .document-tabs,
+  .output-panel > .output-view-tablist {
     width: calc(100% + 28px);
     margin-right: -14px;
     margin-left: -14px;
     border-radius: 10px 10px 0 0;
+  }
+
+  .output-view-tab {
+    padding-right: 8px;
+    padding-left: 8px;
+    font-size: 0.82rem;
   }
 
   .panel-header {
