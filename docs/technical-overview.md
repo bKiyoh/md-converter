@@ -270,7 +270,8 @@ UIにはVue 3のComposition APIを使用しているが、MVPではPiniaを導�
 
 | Composable / Utility | 責務 |
 | --- | --- |
-| `useMarkdownDraft` | Markdown入力の復元と保存 |
+| `useEditorTabs` | Markdownタブの追加、選択、名称変更、削除、復元 |
+| `useEditorStorage` | タブ状態の検証、移行、復元、即時・デバウンス保存 |
 | `useThemePreference` | ライト・ダーク設定の復元と保存 |
 | `useOutputFormatPreference` | 選択中の変換形式の検証、復元、保存 |
 | `useAppSettings` | エディター表示設定の復元と保存 |
@@ -282,9 +283,9 @@ UIにはVue 3のComposition APIを使用しているが、MVPではPiniaを導�
 
 ## LocalStorage障害を通常系から切り離す
 
-Markdown入力とテーマは変更から500ミリ秒後に保存する。入力のたびに同期的なStorage書き込みを行わず、最後の変更をまとめるためである。変換形式とアプリ設定は操作頻度が低く、変更直後の再読み込みでも選択を失わないよう即時保存している。
+Markdown入力とテーマは変更から500ミリ秒後に保存する。入力のたびに同期的なStorage書き込みを行わず、最後の変更をまとめるためである。タブ追加・切り替え・名称変更・削除・復元・完全削除、変換形式、アプリ設定は、変更直後の再読み込みでも状態を失わないよう即時保存している。
 
-保存処理は汎用の`useDebouncedLocalStorage`へ集約した。
+テーマ、変換形式、アプリ設定の保存は汎用の`useDebouncedLocalStorage`へ集約した。複数タブの版付きJSON、旧単一文書からの移行、削除済みタブの期限処理は`useEditorStorage`へ分離した。
 
 ```ts
 try {
@@ -300,12 +301,12 @@ LocalStorageはブラウザ設定、容量制限、プライベートブラウ�
 
 | 保存対象 | キー |
 | --- | --- |
-| Markdown入力 | `md-converter:draft:v1` |
+| Markdownタブ、選択中のタブ、削除済みタブ | `markdown-editor-state-v1` |
 | テーマ | `md-converter:theme:v1` |
 | 変換形式 | `md-converter:output-format:v1` |
 | アプリ設定 | `md-converter:settings:v1` |
 
-将来データ構造を変更したとき、旧形式を誤って読むのを避け、移行の境界を明確にするためである。変換形式は共通の形式ID一覧に含まれる値だけを復元し、未保存または不正な値はSlackへフォールバックする。変換結果は入力と変換形式から再計算できるため保存しない。
+将来データ構造を変更したとき、旧形式を誤って読むのを避け、移行の境界を明確にするためである。タブ状態は必須項目、件数、一意のID、選択中IDを検証し、破損時は初期状態へ戻す。`md-converter:draft:v1` だけがある場合は内容を「文章1」へ移行し、削除後30日以上のタブは起動時に除去する。変換形式は共通の形式ID一覧に含まれる値だけを復元し、未保存または不正な値はSlackへフォールバックする。変換結果は選択中タブの入力と変換形式から再計算できるため保存しない。
 
 ## エディター支援は純粋関数とDOM操作に分ける
 

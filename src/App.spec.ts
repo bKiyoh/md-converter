@@ -1,6 +1,9 @@
 import { flushPromises, mount } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { MARKDOWN_DRAFT_STORAGE_KEY } from './composables/useMarkdownDraft'
+import {
+  EDITOR_STATE_STORAGE_KEY,
+  LEGACY_MARKDOWN_DRAFT_STORAGE_KEY,
+} from './composables/useEditorStorage'
 import { OUTPUT_FORMAT_STORAGE_KEY } from './composables/useOutputFormatPreference'
 import { APP_SETTINGS_STORAGE_KEY } from './composables/useAppSettings'
 import {
@@ -152,6 +155,154 @@ describe('App', () => {
     await wrapper.get('#conversion-view-tab').trigger('click')
     expect(wrapper.get<HTMLSelectElement>('#output-format').element.value).toBe('plain-text')
     expect(wrapper.get<HTMLTextAreaElement>('#conversion-output').element.value).toBe('【更新】')
+  })
+
+  it('Markdownタブを追加して文書ごとの入力と変換結果を切り替える', async () => {
+    const wrapper = mount(App)
+    const input = wrapper.get<HTMLTextAreaElement>('#markdown-input')
+    const editorPanel = wrapper.get('.editor-panel')
+
+    expect(wrapper.findAll('.document-tab-button')).toHaveLength(1)
+    expect(wrapper.get('.document-tab-button').text()).toBe('文章1')
+    expect(editorPanel.element.firstElementChild?.classList).toContain('document-tabs')
+    expect(editorPanel.find('#markdown-input-heading').exists()).toBe(false)
+    expect(editorPanel.find('.panel-kicker').exists()).toBe(false)
+    expect(wrapper.get('.document-tab-item').classes()).toContain(
+      'document-tab-item--active',
+    )
+    expect(wrapper.get('.document-tab-add-button').element.parentElement?.classList).toContain(
+      'document-tablist',
+    )
+    expect(
+      wrapper.get('.document-tab-add-button').element.previousElementSibling?.classList,
+    ).toContain('document-tab-item')
+    await input.setValue('# 最初')
+    await wrapper.get<HTMLButtonElement>('.document-tab-add-button').trigger('click')
+
+    expect(wrapper.findAll('.document-tab-button')).toHaveLength(2)
+    expect(wrapper.findAll('.document-tab-button')[1]?.text()).toBe('文章2')
+    expect(
+      wrapper.get('.document-tab-add-button').element.previousElementSibling,
+    ).toBe(wrapper.findAll('.document-tab-item')[1]!.element)
+    expect(input.element.value).toBe('')
+    await input.setValue('2つ目')
+    expect(wrapper.get<HTMLTextAreaElement>('#conversion-output').element.value).toBe('2つ目')
+
+    await wrapper.findAll<HTMLButtonElement>('.document-tab-button')[0]!.trigger('click')
+    expect(input.element.value).toBe('# 最初')
+    expect(wrapper.get<HTMLTextAreaElement>('#conversion-output').element.value).toBe('*最初*')
+  })
+
+  it('タブ名をダブルクリックで変更し、Escapeでは取り消す', async () => {
+    const wrapper = mount(App)
+    const tab = wrapper.get<HTMLButtonElement>('.document-tab-button')
+
+    await tab.trigger('dblclick')
+    const nameInput = wrapper.get<HTMLInputElement>('.document-tab-name-input')
+    await nameInput.setValue('  議事録  ')
+    await nameInput.trigger('keydown', { key: 'Enter' })
+    expect(wrapper.get('.document-tab-button').text()).toBe('議事録')
+
+    await wrapper.get('.document-tab-button').trigger('dblclick')
+    await wrapper.get<HTMLInputElement>('.document-tab-name-input').setValue('変更しない')
+    await wrapper.get<HTMLInputElement>('.document-tab-name-input').trigger('keydown', {
+      key: 'Escape',
+    })
+    expect(wrapper.get('.document-tab-button').text()).toBe('議事録')
+
+    const deleteButton = wrapper.get<HTMLButtonElement>('.document-tab-delete-button')
+    expect(deleteButton.element.disabled).toBe(true)
+    expect(deleteButton.attributes('aria-label')).toBe('議事録を削除')
+    expect(deleteButton.find('[data-icon="close"]').exists()).toBe(true)
+    expect(wrapper.find('.document-tab-menu').exists()).toBe(false)
+  })
+
+  it('デフォルト名の空タブは削除済み一覧へ残さない', async () => {
+    const wrapper = mount(App)
+    await wrapper.get('.document-tab-add-button').trigger('click')
+    await wrapper.findAll<HTMLButtonElement>('.document-tab-delete-button')[1]!.trigger('click')
+
+    expect(wrapper.findAll('.document-tab-button')).toHaveLength(1)
+    expect(wrapper.find('.app-notice').exists()).toBe(false)
+
+    await wrapper.get('.deleted-tabs-toggle').trigger('click')
+    expect(wrapper.get('.deleted-tabs-empty').text()).toBe('削除済みタブはありません。')
+    expect(wrapper.find('.deleted-tab-action--restore').exists()).toBe(false)
+  })
+
+  it('内容があるタブは通知を表示せず、削除済み一覧から元の位置へ戻せる', async () => {
+    const wrapper = mount(App)
+    await wrapper.get('.document-tab-add-button').trigger('click')
+    await wrapper.get<HTMLTextAreaElement>('#markdown-input').setValue('復元する内容')
+    await wrapper.findAll<HTMLButtonElement>('.document-tab-delete-button')[1]!.trigger('click')
+
+    expect(wrapper.find('.app-notice').exists()).toBe(false)
+
+    await wrapper.get('.deleted-tabs-toggle').trigger('click')
+    await wrapper.get<HTMLButtonElement>('.deleted-tab-action--restore').trigger('click')
+
+    expect(wrapper.findAll('.document-tab-button').map((item) => item.text())).toEqual([
+      '文章1',
+      '文章2',
+    ])
+    expect(wrapper.find('.app-notice').exists()).toBe(false)
+  })
+
+  it('7件時は追加を無効化し、削除済みタブの復元上限を案内する', async () => {
+    const wrapper = mount(App)
+
+    for (let index = 0; index < 6; index += 1) {
+      await wrapper.get('.document-tab-add-button').trigger('click')
+    }
+
+    const addButton = wrapper.get<HTMLButtonElement>('.document-tab-add-button')
+    expect(addButton.element.disabled).toBe(true)
+    expect(addButton.attributes('title')).toBe('タブは最大7つまで作成できます')
+
+    await wrapper.findAll<HTMLButtonElement>('.document-tab-button')[1]!.trigger('click')
+    await wrapper.get<HTMLTextAreaElement>('#markdown-input').setValue('削除済みに残す内容')
+    await wrapper.findAll<HTMLButtonElement>('.document-tab-delete-button')[1]!.trigger('click')
+    await addButton.trigger('click')
+    const deletedTabsToggle = wrapper.get<HTMLButtonElement>('.deleted-tabs-toggle')
+    expect(deletedTabsToggle.attributes('aria-label')).toBe('削除済みタブを表示')
+    expect(deletedTabsToggle.find('[data-icon="trash"]').exists()).toBe(true)
+    expect(deletedTabsToggle.get('.deleted-tabs-count').text()).toBe('1')
+
+    await deletedTabsToggle.trigger('click')
+
+    const restoreButton = wrapper.get<HTMLButtonElement>('.deleted-tab-action--restore')
+    const permanentDeleteButton = wrapper.get<HTMLButtonElement>(
+      '.deleted-tab-action--permanent-delete',
+    )
+    expect(restoreButton.attributes('aria-label')).toBe('文章2を復元')
+    expect(restoreButton.attributes('title')).toBe('復元')
+    expect(restoreButton.find('[data-icon="rotate-ccw"]').exists()).toBe(true)
+    expect(permanentDeleteButton.attributes('aria-label')).toBe('文章2を完全に削除')
+    expect(permanentDeleteButton.attributes('title')).toBe('完全に削除')
+    expect(permanentDeleteButton.find('[data-icon="trash-x"]').exists()).toBe(true)
+
+    await restoreButton.trigger('click')
+
+    expect(wrapper.get('.app-notice').text()).toContain('タブは最大7つまでです。')
+    expect(wrapper.get('.app-notice').text()).toContain(
+      '復元するには、現在のタブを1つ削除してください。',
+    )
+  })
+
+  it('削除済みタブ一覧の外側をクリックすると閉じる', async () => {
+    const wrapper = mount(App, { attachTo: document.body })
+    const toggle = wrapper.get<HTMLButtonElement>('.deleted-tabs-toggle')
+
+    await toggle.trigger('click')
+    await wrapper.get('.deleted-tabs-panel').trigger('click')
+    expect(wrapper.find('.deleted-tabs-panel').exists()).toBe(true)
+
+    document.body.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    await wrapper.vm.$nextTick()
+
+    expect(wrapper.find('.deleted-tabs-panel').exists()).toBe(false)
+    expect(toggle.attributes('aria-expanded')).toBe('false')
+    wrapper.unmount()
   })
 
   it('空の変換結果ではコピーボタンを無効にする', () => {
@@ -469,16 +620,18 @@ describe('App', () => {
   })
 
   it('LocalStorageに保存したMarkdown入力を復元する', () => {
-    localStorage.setItem(MARKDOWN_DRAFT_STORAGE_KEY, '# 保存済み')
+    localStorage.setItem(LEGACY_MARKDOWN_DRAFT_STORAGE_KEY, '# 保存済み')
 
     const wrapper = mount(App)
 
     expect(wrapper.get<HTMLTextAreaElement>('#markdown-input').element.value).toBe('# 保存済み')
     expect(wrapper.get<HTMLTextAreaElement>('#conversion-output').element.value).toBe('*保存済み*')
+    expect(localStorage.getItem(EDITOR_STATE_STORAGE_KEY)).not.toBeNull()
+    expect(localStorage.getItem(LEGACY_MARKDOWN_DRAFT_STORAGE_KEY)).toBeNull()
   })
 
   it('選択した変換形式を保存し、再読み込み後も同じ形式で変換する', async () => {
-    localStorage.setItem(MARKDOWN_DRAFT_STORAGE_KEY, '**重要**')
+    localStorage.setItem(LEGACY_MARKDOWN_DRAFT_STORAGE_KEY, '**重要**')
     const wrapper = mount(App)
 
     await wrapper.get<HTMLSelectElement>('#output-format').setValue('backlog-notation')

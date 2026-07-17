@@ -1,15 +1,16 @@
 <script setup lang="ts">
-import { computed, nextTick, ref } from 'vue'
+import { computed, nextTick, onBeforeUnmount, ref } from 'vue'
 import AppIcon from './components/common/AppIcon.vue'
 import AppNotice from './components/common/AppNotice.vue'
 import IconButton from './components/common/IconButton.vue'
 import SettingsPopover from './components/common/SettingsPopover.vue'
+import EditorTabs from './components/editor/EditorTabs.vue'
 import MarkdownEditor from './components/editor/MarkdownEditor.vue'
 import OutputFormatSelect from './components/output/OutputFormatSelect.vue'
 import OutputPanel from './components/output/OutputPanel.vue'
 import { useClipboard } from './composables/useClipboard'
 import { useAppSettings } from './composables/useAppSettings'
-import { useMarkdownDraft } from './composables/useMarkdownDraft'
+import { useEditorTabs } from './composables/useEditorTabs'
 import { useOutputFormatPreference } from './composables/useOutputFormatPreference'
 import { useThemePreference } from './composables/useThemePreference'
 import { converterRegistry, outputFormatOptions } from './converters/converterRegistry'
@@ -17,7 +18,20 @@ import { parseMarkdown } from './parser/parseMarkdown'
 import type { ConversionResult } from './types/conversion'
 import { countCharacters } from './utils/countCharacters'
 
-const { markdown } = useMarkdownDraft()
+const {
+  tabs,
+  deletedTabs,
+  activeTabId,
+  markdown,
+  canAddTab,
+  canDeleteTab,
+  addTab,
+  selectTab,
+  renameTab,
+  deleteTab,
+  restoreTab,
+  permanentlyDeleteTab,
+} = useEditorTabs()
 const { theme } = useThemePreference()
 const { selectedFormat } = useOutputFormatPreference()
 const { editorInternalScroll } = useAppSettings()
@@ -28,6 +42,16 @@ const outputTab = ref<HTMLButtonElement | null>(null)
 const modalCloseButton = ref<HTMLButtonElement | null>(null)
 const isInfoModalOpen = ref<boolean>(false)
 let infoTrigger: HTMLElement | null = null
+let tabNoticeTimer: ReturnType<typeof setTimeout> | undefined
+
+const TAB_NOTICE_DURATION_MS = 5_000
+
+type TabNotice = {
+  kind: 'error'
+  message: string
+}
+
+const tabNotice = ref<TabNotice | null>(null)
 
 type WorkspacePanel = 'input' | 'output'
 
@@ -60,6 +84,40 @@ const copySucceeded = computed<boolean>(() => notice.value?.kind === 'success')
 
 async function copyOutput(): Promise<void> {
   await copy(conversionResult.value.output, `${formatLabel.value}形式でコピーしました`)
+}
+
+function showTabNotice(nextNotice: TabNotice): void {
+  tabNotice.value = nextNotice
+
+  if (tabNoticeTimer !== undefined) {
+    clearTimeout(tabNoticeTimer)
+  }
+
+  tabNoticeTimer = setTimeout(() => {
+    tabNotice.value = null
+    tabNoticeTimer = undefined
+  }, TAB_NOTICE_DURATION_MS)
+}
+
+function handleDeleteTab(id: string): void {
+  deleteTab(id)
+}
+
+function handleRestoreTab(id: string): void {
+  const result = restoreTab(id)
+
+  if (result === 'limit') {
+    showTabNotice({
+      kind: 'error',
+      message: 'タブは最大7つまでです。復元するには、現在のタブを1つ削除してください。',
+    })
+  } else if (result === 'restored') {
+    tabNotice.value = null
+  }
+}
+
+function handlePermanentlyDeleteTab(id: string): void {
+  permanentlyDeleteTab(id)
 }
 
 async function openInfoModal(event: MouseEvent): Promise<void> {
@@ -112,6 +170,12 @@ function handleTabKeydown(event: KeyboardEvent, currentPanel: WorkspacePanel): v
     void selectPanelAndFocus(nextPanel)
   }
 }
+
+onBeforeUnmount(() => {
+  if (tabNoticeTimer !== undefined) {
+    clearTimeout(tabNoticeTimer)
+  }
+})
 </script>
 
 <template>
@@ -160,7 +224,12 @@ function handleTabKeydown(event: KeyboardEvent, currentPanel: WorkspacePanel): v
       </header>
 
       <Transition name="toast">
-        <AppNotice v-if="notice" class="toast-notice" :notice="notice" />
+        <AppNotice
+          v-if="tabNotice"
+          class="toast-notice"
+          :notice="tabNotice"
+        />
+        <AppNotice v-else-if="notice" class="toast-notice" :notice="notice" />
       </Transition>
 
       <nav class="workspace-tabs" aria-label="編集エリア">
@@ -208,7 +277,23 @@ function handleTabKeydown(event: KeyboardEvent, currentPanel: WorkspacePanel): v
           v-model="markdown"
           :character-count="inputCharacterCount"
           :editor-internal-scroll="editorInternalScroll"
-        />
+        >
+          <template #document-tabs>
+            <EditorTabs
+              :tabs="tabs"
+              :deleted-tabs="deletedTabs"
+              :active-tab-id="activeTabId"
+              :can-add-tab="canAddTab"
+              :can-delete-tab="canDeleteTab"
+              @add="addTab"
+              @select="selectTab"
+              @rename="renameTab"
+              @delete="handleDeleteTab"
+              @restore="handleRestoreTab"
+              @permanently-delete="handlePermanentlyDeleteTab"
+            />
+          </template>
+        </MarkdownEditor>
         <OutputPanel
           :markdown="markdown"
           :output="conversionResult.output"

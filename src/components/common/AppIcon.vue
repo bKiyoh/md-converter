@@ -1,6 +1,16 @@
 <script setup lang="ts">
 defineProps<{
-  name: 'sun' | 'moon' | 'copy' | 'check' | 'info' | 'settings'
+  name:
+    | 'sun'
+    | 'moon'
+    | 'copy'
+    | 'check'
+    | 'info'
+    | 'settings'
+    | 'close'
+    | 'trash'
+    | 'rotate-ccw'
+    | 'trash-x'
 }>()
 </script>
 
@@ -29,6 +39,17 @@ defineProps<{
     <template v-else-if="name === 'info'">
       <circle cx="12" cy="12" r="10" />
       <path d="M12 16v-4M12 8h.01" />
+    </template>
+    <path v-else-if="name === 'close'" d="M18 6 6 18M6 6l12 12" />
+    <template v-else-if="name === 'trash'">
+      <path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6M10 10v6M14 10v6" />
+    </template>
+    <path
+      v-else-if="name === 'rotate-ccw'"
+      d="M3 12a9 9 0 1 0 3-6.7L3 8M3 3v5h5"
+    />
+    <template v-else-if="name === 'trash-x'">
+      <path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6M10 11l4 4M14 11l-4 4" />
     </template>
     <template v-else>
       <circle cx="12" cy="12" r="3" />

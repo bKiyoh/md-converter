@@ -55,12 +55,7 @@ onMounted(resizeTextarea)
     aria-labelledby="input-tab"
     tabindex="0"
   >
-    <div class="panel-header">
-      <div>
-        <p class="panel-kicker">Input</p>
-        <h2 id="markdown-input-heading">Markdown入力</h2>
-      </div>
-    </div>
+    <slot name="document-tabs" />
 
     <label class="visually-hidden" for="markdown-input">変換するMarkdown</label>
     <textarea
