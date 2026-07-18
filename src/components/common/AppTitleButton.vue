@@ -16,7 +16,7 @@ const emit = defineEmits<{
   <IconButton
     class="brand-title-button"
     accessible-label="このアプリについて"
-    title="このアプリについて"
+    tooltip="このアプリについて"
     @click="emit('click', $event)"
   >
     <img

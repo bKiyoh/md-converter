@@ -1,20 +1,22 @@
 <script setup lang="ts">
+import { tooltipDirective as vTooltip } from '../../directives/tooltip'
+
 withDefaults(
   defineProps<{
     accessibleLabel: string
-    title: string
+    tooltip?: string
     disabled?: boolean
   }>(),
-  { disabled: false },
+  { tooltip: undefined, disabled: false },
 )
 </script>
 
 <template>
   <button
+    v-tooltip="tooltip"
     class="icon-button"
     type="button"
     :aria-label="accessibleLabel"
-    :title="title"
     :disabled="disabled"
   >
     <slot />

@@ -2,6 +2,7 @@
 import { nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import AppIcon from '../common/AppIcon.vue'
 import { useMarkdownEditor } from '../../composables/useMarkdownEditor'
+import { tooltipDirective as vTooltip } from '../../directives/tooltip'
 import type { MarkdownEditorViewState } from '../../types/editorView'
 import EditorInputGuideContent from './EditorInputGuideContent.vue'
 
@@ -169,13 +170,13 @@ defineExpose({ captureViewState, restoreViewState, isConnected })
     <div v-show="!focusMode" class="panel-footer">
       <div class="input-guide-root">
         <button
+          v-tooltip="isInputGuideOpen ? '入力支援を閉じる' : '入力支援を表示'"
           ref="inputGuideButton"
           class="input-guide-button"
           type="button"
           :aria-expanded="isInputGuideOpen"
           :aria-label="isInputGuideOpen ? '入力支援を閉じる' : '入力支援を表示'"
           aria-controls="markdown-input-guide"
-          :title="isInputGuideOpen ? '入力支援を閉じる' : '入力支援を表示'"
           @click="toggleInputGuide"
         >
           <AppIcon name="help" />

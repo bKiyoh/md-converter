@@ -252,6 +252,33 @@ h2 {
   background: var(--surface-muted);
 }
 
+.app-tooltip {
+  position: fixed;
+  z-index: 100;
+  width: max-content;
+  max-width: min(280px, calc(100vw - 16px));
+  padding: 6px 9px;
+  border-radius: 6px;
+  color: #fff;
+  background: #252b36;
+  box-shadow: 0 4px 14px rgb(0 0 0 / 18%);
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1.4;
+  pointer-events: none;
+  text-align: center;
+  white-space: normal;
+}
+
+.tooltip-target {
+  display: inline-flex;
+  min-width: 0;
+}
+
+.copy-tooltip-target {
+  flex: 0 0 auto;
+}
+
 .app-icon {
   width: 20px;
   height: 20px;
@@ -460,7 +487,19 @@ h2 {
   font-weight: 800;
 }
 
-.document-tab-button--active + .document-tab-delete-button {
+.document-tab-delete-tooltip-target {
+  width: 30px;
+  min-height: 40px;
+  flex: 0 0 auto;
+}
+
+.document-tab-delete-tooltip-target .document-tab-delete-button {
+  width: 100%;
+}
+
+.document-tab-button--active
+  + .document-tab-delete-tooltip-target
+  .document-tab-delete-button {
   color: var(--muted);
   background: var(--surface);
 }
@@ -482,7 +521,7 @@ h2 {
 }
 
 .document-tab-add-button {
-  width: 40px;
+  width: 100%;
   min-height: 40px;
   padding: 0;
   border: 0;
@@ -492,6 +531,12 @@ h2 {
   background: transparent;
   font-size: 1.25rem;
   font-weight: 800;
+}
+
+.document-tab-add-tooltip-target {
+  width: 40px;
+  min-height: 40px;
+  flex: 0 0 auto;
 }
 
 .deleted-tabs-toggle {

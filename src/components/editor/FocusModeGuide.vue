@@ -19,7 +19,7 @@ defineEmits<{
       <IconButton
         class="focus-mode-exit-button"
         accessible-label="フォーカスモードを終了"
-        title="フォーカスモードを終了（Esc）"
+        tooltip="フォーカスモードを終了（Esc）"
         @click="$emit('exit')"
       >
         <AppIcon name="close" />
@@ -27,7 +27,7 @@ defineEmits<{
       <IconButton
         class="focus-mode-help-button"
         :accessible-label="helpOpen ? '入力支援の解説を閉じる' : '入力支援の解説を開く'"
-        :title="helpOpen ? '入力支援の解説を閉じる' : '入力支援の解説を開く'"
+        :tooltip="helpOpen ? '入力支援の解説を閉じる' : '入力支援の解説を開く'"
         :aria-expanded="helpOpen"
         aria-controls="focus-mode-help"
         @click="$emit('toggleHelp')"

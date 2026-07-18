@@ -30,7 +30,8 @@ describe('MarkdownEditor', () => {
 
     expect(guideButton.text()).toBe('')
     expect(guideButton.attributes('aria-label')).toBe('入力支援を表示')
-    expect(guideButton.attributes('title')).toBe('入力支援を表示')
+    expect(guideButton.attributes('title')).toBeUndefined()
+    expect(guideButton.attributes('data-tooltip')).toBe('入力支援を表示')
     expect(guideButton.find('[data-icon="help"]').exists()).toBe(true)
     expect(guideButton.attributes('aria-expanded')).toBe('false')
     expect(wrapper.get('.character-count').text()).toBe('0文字')

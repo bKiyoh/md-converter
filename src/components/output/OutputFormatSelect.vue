@@ -3,6 +3,7 @@ import { ref } from 'vue'
 import AppIcon from '../common/AppIcon.vue'
 import IconButton from '../common/IconButton.vue'
 import { outputFormatOptions } from '../../converters/converterRegistry'
+import { tooltipDirective as vTooltip } from '../../directives/tooltip'
 import type { OutputFormat } from '../../types/conversion'
 
 defineProps<{
@@ -45,11 +46,10 @@ function openFormatSelect(event: MouseEvent): void {
 </script>
 
 <template>
-  <div class="format-field">
+  <div v-tooltip="'変換先'" class="format-field">
     <IconButton
       class="format-field-prefix"
       accessible-label="変換先"
-      title="変換先"
       @click="openFormatSelect"
     >
       <AppIcon name="file-output" />
@@ -58,7 +58,6 @@ function openFormatSelect(event: MouseEvent): void {
     <select
       id="output-format"
       ref="formatSelect"
-      title="変換先"
       :value="modelValue"
       @change="updateFormat"
     >

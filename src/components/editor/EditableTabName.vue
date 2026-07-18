@@ -86,7 +86,6 @@ function updateEditingName(event: Event): void {
     :data-document-tab-id="variant === 'document-tab' ? tab.id : undefined"
     :aria-pressed="variant === 'document-tab' ? active : undefined"
     :aria-label="variant === 'focus' ? `${tab.name}の名前を変更` : undefined"
-    :title="variant === 'focus' ? 'ダブルクリックで名前を変更' : undefined"
     @click="emit('select', tab.id)"
     @dblclick="startRenaming"
     @keydown="emit('keydown', $event)"
