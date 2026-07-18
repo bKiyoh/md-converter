@@ -206,7 +206,7 @@ onBeforeUnmount(() => {
               type="button"
               :aria-label="`${tab.name}を復元`"
               title="復元"
-              @click="emit('restore', tab.id)"
+              @click.stop="emit('restore', tab.id)"
             >
               <AppIcon name="rotate-ccw" />
             </button>
@@ -215,7 +215,7 @@ onBeforeUnmount(() => {
               type="button"
               :aria-label="`${tab.name}を完全に削除`"
               title="完全に削除"
-              @click="emit('permanentlyDelete', tab.id)"
+              @click.stop="emit('permanentlyDelete', tab.id)"
             >
               <AppIcon name="trash-x" />
             </button>

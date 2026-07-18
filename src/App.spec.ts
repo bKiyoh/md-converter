@@ -315,6 +315,38 @@ describe('App', () => {
     wrapper.unmount()
   })
 
+  it('削除済みタブを復元または完全削除しても一覧を閉じない', async () => {
+    const wrapper = mount(App, { attachTo: document.body })
+
+    await wrapper.get('.document-tab-add-button').trigger('click')
+    await wrapper.get<HTMLTextAreaElement>('#markdown-input').setValue('復元する内容')
+    await wrapper.get('.document-tab-add-button').trigger('click')
+    await wrapper.get<HTMLTextAreaElement>('#markdown-input').setValue('完全削除する内容')
+    await wrapper.findAll<HTMLButtonElement>('.document-tab-delete-button')[2]!.trigger('click')
+    await wrapper.findAll<HTMLButtonElement>('.document-tab-delete-button')[1]!.trigger('click')
+    await wrapper.get<HTMLButtonElement>('.deleted-tabs-toggle').trigger('click')
+
+    await wrapper
+      .findAll<HTMLButtonElement>('.deleted-tab-action--restore')[0]!
+      .trigger('click')
+
+    expect(wrapper.find('.deleted-tabs-panel').exists()).toBe(true)
+    expect(wrapper.get<HTMLButtonElement>('.deleted-tabs-toggle').attributes('aria-expanded')).toBe(
+      'true',
+    )
+
+    await wrapper
+      .get<HTMLButtonElement>('.deleted-tab-action--permanent-delete')
+      .trigger('click')
+
+    expect(wrapper.find('.deleted-tabs-panel').exists()).toBe(true)
+    expect(wrapper.get('.deleted-tabs-empty').text()).toBe('削除済みタブはありません。')
+    expect(wrapper.get<HTMLButtonElement>('.deleted-tabs-toggle').attributes('aria-expanded')).toBe(
+      'true',
+    )
+    wrapper.unmount()
+  })
+
   it('空の変換結果ではコピーボタンを無効にする', () => {
     const wrapper = mount(App)
     const copyButton = wrapper.get<HTMLButtonElement>('.copy-button')
