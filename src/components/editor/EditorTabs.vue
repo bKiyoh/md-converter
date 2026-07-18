@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
+import { nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import type { DeletedTab, EditorTab } from '../../types/editorTabs'
 import { MAX_TAB_NAME_LENGTH } from '../../composables/useEditorStorage'
 import AppIcon from '../common/AppIcon.vue'
@@ -65,6 +65,33 @@ async function selectAndFocus(id: string): Promise<void> {
   Array.from(buttons ?? []).find((button) => button.dataset.documentTabId === id)?.focus()
 }
 
+function scrollActiveTabIntoView(): void {
+  const buttons = root.value?.querySelectorAll<HTMLButtonElement>('[data-document-tab-id]')
+  const activeButton = Array.from(buttons ?? []).find(
+    (button) => button.dataset.documentTabId === props.activeTabId,
+  )
+  const activeTab = activeButton?.closest('.document-tab-item') as HTMLElement | null
+
+  scrollTabControlIntoView(activeTab)
+}
+
+function scrollTabControlIntoView(control: HTMLElement | null): void {
+  const tablist = root.value?.querySelector<HTMLElement>('.document-tablist')
+
+  if (!control || !tablist) {
+    return
+  }
+
+  const tablistRect = tablist.getBoundingClientRect()
+  const controlRect = control.getBoundingClientRect()
+
+  if (controlRect.left < tablistRect.left) {
+    tablist.scrollLeft += controlRect.left - tablistRect.left
+  } else if (controlRect.right > tablistRect.right) {
+    tablist.scrollLeft += controlRect.right - tablistRect.right
+  }
+}
+
 function handleTabKeydown(event: KeyboardEvent, index: number): void {
   let nextIndex: number | null = null
 
@@ -88,6 +115,14 @@ function requestDelete(id: string): void {
   emit('delete', id)
 }
 
+async function addTabAndKeepControlsVisible(): Promise<void> {
+  emit('add')
+  await nextTick()
+
+  const addButton = root.value?.querySelector<HTMLElement>('.document-tab-add-button')
+  scrollTabControlIntoView(addButton ?? null)
+}
+
 function handleDocumentClick(event: MouseEvent): void {
   if (
     !deletedTabsOpen.value ||
@@ -103,7 +138,10 @@ function handleDocumentClick(event: MouseEvent): void {
 
 onMounted(() => {
   document.addEventListener('click', handleDocumentClick)
+  scrollActiveTabIntoView()
 })
+
+watch(() => props.activeTabId, scrollActiveTabIntoView, { flush: 'post' })
 
 onBeforeUnmount(() => {
   document.removeEventListener('click', handleDocumentClick)
@@ -161,7 +199,7 @@ onBeforeUnmount(() => {
           aria-label="新しいタブを追加"
           :disabled="!canAddTab"
           :title="canAddTab ? '新しいタブを追加' : 'タブは最大7つまで作成できます'"
-          @click="emit('add')"
+          @click="addTabAndKeepControlsVisible"
         >
           ＋
         </button>

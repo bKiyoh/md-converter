@@ -487,7 +487,7 @@ describe('App', () => {
     expect(wrapper.get('.app').classes()).not.toContain('app--internal-scroll')
     expect(wrapper.get('#markdown-input').classes()).toContain('text-area--expand')
     expect(localStorage.getItem(APP_SETTINGS_STORAGE_KEY)).toBe(
-      JSON.stringify({ editorInternalScroll: false }),
+      JSON.stringify({ editorInternalScroll: false, workspaceSplitRatio: 0.5 }),
     )
 
     await wrapper.get('#preview-view-tab').trigger('click')
@@ -603,6 +603,75 @@ describe('App', () => {
     expect(document.activeElement).toBe(inputTab.element)
 
     wrapper.unmount()
+  })
+
+  it('左右ペインの区切りをキーボードで調整し、ダブルクリックで均等へ戻す', async () => {
+    const wrapper = mount(App)
+    const splitter = wrapper.get<HTMLElement>('.workspace-splitter')
+
+    expect(splitter.attributes('role')).toBe('separator')
+    expect(splitter.attributes('aria-orientation')).toBe('vertical')
+    expect(splitter.attributes('aria-valuenow')).toBe('50')
+    expect(splitter.attributes('aria-valuetext')).toBe('左ペイン50%、右ペイン50%')
+
+    await splitter.trigger('keydown', { key: 'ArrowRight' })
+
+    expect(splitter.attributes('aria-valuenow')).toBe('55')
+    expect(JSON.parse(localStorage.getItem(APP_SETTINGS_STORAGE_KEY) ?? '{}')).toMatchObject({
+      workspaceSplitRatio: 0.55,
+    })
+
+    await splitter.trigger('keydown', { key: 'End' })
+    expect(splitter.attributes('aria-valuenow')).toBe('80')
+
+    await splitter.trigger('dblclick')
+    expect(splitter.attributes('aria-valuenow')).toBe('50')
+  })
+
+  it('区切りをドラッグして各ペインの最小幅を保ちながら比率を変更する', async () => {
+    const wrapper = mount(App)
+    const workspace = wrapper.get<HTMLElement>('.workspace')
+    const splitter = wrapper.get<HTMLElement>('.workspace-splitter')
+
+    vi.spyOn(workspace.element, 'getBoundingClientRect').mockReturnValue({
+      width: 1000,
+      height: 620,
+      top: 0,
+      right: 1000,
+      bottom: 620,
+      left: 0,
+      x: 0,
+      y: 0,
+      toJSON: () => ({}),
+    })
+
+    function dispatchPointerEvent(type: string, clientX: number): void {
+      const event = new MouseEvent(type, {
+        bubbles: true,
+        cancelable: true,
+        button: 0,
+        clientX,
+      })
+      Object.defineProperty(event, 'pointerId', { value: 1 })
+      splitter.element.dispatchEvent(event)
+    }
+
+    dispatchPointerEvent('pointerdown', 500)
+    dispatchPointerEvent('pointermove', 700)
+    await flushPromises()
+
+    expect(splitter.attributes('aria-valuenow')).toBe('70')
+    expect(workspace.element.style.gridTemplateColumns).toBe('690.018px 20px 289.982px')
+    expect(wrapper.get('.workspace').classes()).toContain('workspace--resizing')
+
+    dispatchPointerEvent('pointermove', 50)
+    await flushPromises()
+    expect(splitter.attributes('aria-valuenow')).toBe('29')
+    expect(workspace.element.style.gridTemplateColumns).toBe('280px 20px 700px')
+
+    dispatchPointerEvent('pointerup', 50)
+    await flushPromises()
+    expect(wrapper.get('.workspace').classes()).not.toContain('workspace--resizing')
   })
 
   it('テーマを手動で切り替えられる', async () => {
