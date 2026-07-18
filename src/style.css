@@ -809,7 +809,7 @@ h2 {
   gap: 8px;
 }
 
-.header-output-actions .format-field label {
+.header-output-actions > label {
   flex: 0 0 auto;
   white-space: nowrap;
 }
@@ -1058,12 +1058,12 @@ h2 {
   .app-header {
     margin-bottom: 20px;
     align-items: center;
-    flex-wrap: wrap;
-    gap: 16px;
+    gap: 12px;
   }
 
   .app-header-actions {
-    width: 100%;
+    min-width: 0;
+    margin-left: auto;
   }
 
   .brand-heading .settings-popover {
@@ -1080,8 +1080,8 @@ h2 {
   }
 
   .header-output-actions .format-field {
-    min-width: 0;
-    flex: 1;
+    min-width: 160px;
+    flex: 0 1 190px;
   }
 
   .document-tabs-main {
@@ -1169,6 +1169,23 @@ h2 {
   .markdown-preview,
   .preview-placeholder {
     min-height: 380px;
+  }
+}
+
+@media (max-width: 580px) {
+  .app-header {
+    flex-wrap: wrap;
+    gap: 16px;
+  }
+
+  .app-header-actions {
+    width: 100%;
+    margin-left: 0;
+  }
+
+  .header-output-actions .format-field {
+    min-width: 0;
+    flex: 1;
   }
 }
 
