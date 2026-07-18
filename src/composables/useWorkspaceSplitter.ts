@@ -34,6 +34,10 @@ function clamp(value: number, minimum: number, maximum: number): number {
   return Math.min(Math.max(value, minimum), maximum)
 }
 
+function roundPixel(value: number): number {
+  return Math.round(value * 1000) / 1000
+}
+
 export function useWorkspaceSplitter(splitRatio: Ref<number>): UseWorkspaceSplitterResult {
   const workspace = ref<HTMLElement | null>(null)
   const workspaceWidth = ref<number>(0)
@@ -67,10 +71,18 @@ export function useWorkspaceSplitter(splitRatio: Ref<number>): UseWorkspaceSplit
   const maximumSplitRatioPercent = computed<number>(() =>
     Math.floor(maximumSplitRatio.value * 100),
   )
-  const workspaceGridTemplateColumns = computed<string>(
-    () =>
-      `minmax(${MIN_PANE_WIDTH_PX}px, ${effectiveSplitRatio.value}fr) ${SPLITTER_WIDTH_PX}px minmax(${MIN_PANE_WIDTH_PX}px, ${1 - effectiveSplitRatio.value}fr)`,
-  )
+  const workspaceGridTemplateColumns = computed<string>(() => {
+    const availableWidth = workspaceWidth.value - SPLITTER_WIDTH_PX
+
+    if (availableWidth <= 0) {
+      return `${MIN_PANE_WIDTH_PX}px ${SPLITTER_WIDTH_PX}px ${MIN_PANE_WIDTH_PX}px`
+    }
+
+    const leftPaneWidth = roundPixel(availableWidth * effectiveSplitRatio.value)
+    const rightPaneWidth = roundPixel(availableWidth - leftPaneWidth)
+
+    return `${leftPaneWidth}px ${SPLITTER_WIDTH_PX}px ${rightPaneWidth}px`
+  })
 
   function measureWorkspace(): void {
     workspaceWidth.value = workspace.value?.getBoundingClientRect().width ?? 0

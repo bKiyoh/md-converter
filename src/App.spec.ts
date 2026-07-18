@@ -661,11 +661,13 @@ describe('App', () => {
     await flushPromises()
 
     expect(splitter.attributes('aria-valuenow')).toBe('70')
+    expect(workspace.element.style.gridTemplateColumns).toBe('690.018px 20px 289.982px')
     expect(wrapper.get('.workspace').classes()).toContain('workspace--resizing')
 
     dispatchPointerEvent('pointermove', 50)
     await flushPromises()
     expect(splitter.attributes('aria-valuenow')).toBe('29')
+    expect(workspace.element.style.gridTemplateColumns).toBe('280px 20px 700px')
 
     dispatchPointerEvent('pointerup', 50)
     await flushPromises()
