@@ -161,10 +161,10 @@ const value = 1
     expect(
       convert(`| 項目 | 内容 |
 | --- | --- |
-| 名前 | Markdown変換エディタ |
+| 名前 | Markdown Converter |
 | 対象 | Slack、Backlog |`),
     ).toEqual({
-      output: '名前：Markdown変換エディタ\n対象：Slack、Backlog',
+      output: '名前：Markdown Converter\n対象：Slack、Backlog',
       warnings: [],
     })
   })

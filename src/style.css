@@ -169,14 +169,12 @@ select:focus-visible {
   text-transform: uppercase;
 }
 
-.brand-heading .eyebrow {
-  margin-bottom: 0;
-}
-
-.brand-title {
-  display: grid;
-  line-height: 1.05;
-  gap: 2px;
+.brand-title-icon {
+  display: block;
+  width: 40px;
+  height: 40px;
+  object-fit: cover;
+  object-position: center;
 }
 
 h1,
@@ -208,11 +206,6 @@ h2 {
   flex: 0 0 auto;
   color: var(--text);
   background: transparent;
-}
-
-.info-button {
-  width: 40px;
-  height: 40px;
 }
 
 .modal-backdrop {
@@ -827,20 +820,33 @@ h2 {
 }
 
 .format-field {
-  display: grid;
+  position: relative;
+  display: flex;
   min-width: 190px;
-  gap: 5px;
 }
 
-.format-field label {
+.format-field-prefix {
+  position: absolute;
+  z-index: 1;
+  top: 50%;
+  left: 11px;
+  display: grid;
+  width: 20px;
+  height: 20px;
+  place-items: center;
   color: var(--muted);
-  font-size: 0.78rem;
-  font-weight: 700;
+  transform: translateY(-50%);
+}
+
+.format-field-prefix .app-icon {
+  width: 18px;
+  height: 18px;
 }
 
 .format-field select {
+  width: 100%;
   min-height: 40px;
-  padding: 8px 34px 8px 10px;
+  padding: 8px 34px 8px 40px;
   border: 1px solid var(--border);
   border-radius: 8px;
   color: var(--text);
@@ -848,14 +854,7 @@ h2 {
 }
 
 .header-output-actions .format-field {
-  display: flex;
   align-items: center;
-  gap: 8px;
-}
-
-.header-output-actions > label {
-  flex: 0 0 auto;
-  white-space: nowrap;
 }
 
 .header-output-actions .format-field select {
@@ -914,6 +913,55 @@ h2 {
   align-items: center;
   justify-content: space-between;
   gap: 16px;
+}
+
+.input-guide-root {
+  display: flex;
+  min-width: 0;
+}
+
+.input-guide-button {
+  display: inline-grid;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 0;
+  border-radius: 7px;
+  place-items: center;
+  color: var(--muted);
+  background: transparent;
+}
+
+.input-guide-button:hover {
+  color: var(--text);
+  background: var(--surface-muted);
+}
+
+.input-guide-button .app-icon {
+  width: 17px;
+  height: 17px;
+}
+
+.input-guide-panel {
+  width: 100%;
+  height: clamp(160px, 28vh, 220px);
+  min-height: 0;
+  margin-top: 12px;
+  padding: 18px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  flex: 0 0 auto;
+  overflow-y: auto;
+  color: var(--text);
+  background: var(--surface);
+}
+
+.input-guide-panel .editor-input-guide h2 {
+  font-size: 1rem;
+}
+
+.editor-panel--guide-open .text-area--internal-scroll {
+  min-height: 240px;
 }
 
 .app-notice {
@@ -1114,49 +1162,49 @@ h2 {
   box-shadow: 0 12px 32px rgb(31 45 72 / 10%);
 }
 
-.focus-mode-help h2 {
+.editor-input-guide h2 {
   margin-bottom: 18px;
 }
 
-.focus-mode-help section + section {
+.editor-input-guide section + section {
   margin-top: 22px;
   padding-top: 18px;
   border-top: 1px solid var(--border);
 }
 
-.focus-mode-help h3 {
+.editor-input-guide h3 {
   margin: 0 0 10px;
   font-size: 0.92rem;
 }
 
-.focus-mode-help p {
+.editor-input-guide p {
   margin: 0;
   color: var(--muted);
   font-size: 0.82rem;
   line-height: 1.65;
 }
 
-.focus-mode-help p + p {
+.editor-input-guide p + p {
   margin-top: 8px;
 }
 
-.focus-mode-help dl {
+.editor-input-guide dl {
   display: grid;
   margin: 0;
   gap: 10px;
 }
 
-.focus-mode-help dl > div {
+.editor-input-guide dl > div {
   display: grid;
   gap: 3px;
 }
 
-.focus-mode-help dt {
+.editor-input-guide dt {
   font-size: 0.82rem;
   font-weight: 700;
 }
 
-.focus-mode-help dd {
+.editor-input-guide dd {
   margin: 0;
   color: var(--muted);
   font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;

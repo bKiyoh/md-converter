@@ -2,6 +2,7 @@
 import { computed, nextTick, onBeforeUnmount, ref } from 'vue'
 import AppIcon from './components/common/AppIcon.vue'
 import AppNotice from './components/common/AppNotice.vue'
+import AppTitleButton from './components/common/AppTitleButton.vue'
 import IconButton from './components/common/IconButton.vue'
 import SettingsPopover from './components/common/SettingsPopover.vue'
 import EditorTabs from './components/editor/EditorTabs.vue'
@@ -241,18 +242,10 @@ onBeforeUnmount(() => {
           >
             <AppIcon name="focus" />
           </IconButton>
-          <p class="eyebrow brand-title" aria-label="Markdown Converter">
-            <span>Markdown</span>
-            <span>Converter</span>
-          </p>
-          <IconButton
-            class="info-button"
-            accessible-label="このアプリについて"
-            title="このアプリについて"
+          <AppTitleButton
+            :dark-mode="theme === 'dark'"
             @click="openInfoModal"
-          >
-            <AppIcon name="info" />
-          </IconButton>
+          />
           <SettingsPopover
             :dark-mode="theme === 'dark'"
             :editor-internal-scroll="editorInternalScroll"
@@ -415,7 +408,7 @@ onBeforeUnmount(() => {
         aria-describedby="info-modal-description info-modal-privacy"
         @keydown="handleInfoModalKeydown"
       >
-        <h2 id="info-modal-title">Markdown変換エディタ</h2>
+        <h2 id="info-modal-title">Markdown Converter</h2>
         <p id="info-modal-description">
           貼り付け先に合わせて、ブラウザ内でリアルタイムに変換します。
         </p>
