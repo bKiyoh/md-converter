@@ -112,7 +112,6 @@ MVPでは以下に対応する。
 - 画像アップロード
 - AI文章生成
 - 有料プラン
-- 複数文書の管理
 - 高機能Markdownエディタ
 
 ---
@@ -125,6 +124,7 @@ MVPでは以下に対応する。
 - `docs/product-spec.md`
 - `docs/conversion-rules.md`
 - `docs/implementation-plan.md`
+- `docs/tab-management-spec.md`
 
 各ファイルの役割は以下のとおり。
 
@@ -134,6 +134,7 @@ MVPでは以下に対応する。
 | `docs/product-spec.md`        | 画面、機能、MVP範囲              |
 | `docs/conversion-rules.md`    | Markdownから各形式への変換仕様   |
 | `docs/implementation-plan.md` | 技術設計、実装順、マイルストーン |
+| `docs/tab-management-spec.md` | Markdownタブ管理、削除、保存仕様 |
 
 仕様書間に矛盾がある場合は、推測で解決せず報告すること。
 
@@ -298,6 +299,16 @@ MVPでは以下に対応する。
 - MVP完了条件を項目ごとに確認する
 - 実行できなかった確認は残課題として明記する
 
+### Milestone 15：Markdownタブ管理とデータ保存
+
+- Markdown入力を最大7件のタブとして管理する
+- タブ管理と保存処理をComposableへ分離する
+- 既存の単一文書データを初期タブへ移行する
+- タブ追加、切り替え、名前変更、削除、復元、完全削除を実装する
+- 削除済みタブを30日間保持し、期限切れデータを起動時に削除する
+- 独自の編集履歴、複数ウィンドウ同期、競合解決は実装しない
+- 詳細な挙動と保存形式は `docs/tab-management-spec.md` に従う
+
 ---
 
 ## 作業時のルール
@@ -364,3 +375,5 @@ npm run build
 8. 手動で確認すべき操作
 9. 残っている課題
 10. 次のマイルストーンへ持ち越す内容
+
+報告の最後に、作業内容に適した推奨コミットメッセージを1件、コードブロックで記載する。
