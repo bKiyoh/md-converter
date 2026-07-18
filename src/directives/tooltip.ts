@@ -119,9 +119,12 @@ function createTooltipState(element: HTMLElement, text: string): TooltipState {
     }
   }
   state.handleKeydown = (event: KeyboardEvent): void => {
-    if (event.key === 'Escape') {
-      state.hide()
+    if (event.key !== 'Escape' || !state.tooltip) {
+      return
     }
+
+    event.preventDefault()
+    state.hide()
   }
 
   return state

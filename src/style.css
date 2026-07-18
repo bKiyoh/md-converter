@@ -871,8 +871,6 @@ h2 {
   top: 50%;
   left: 11px;
   display: grid;
-  width: 20px;
-  height: 20px;
   place-items: center;
   color: var(--muted);
   transform: translateY(-50%);

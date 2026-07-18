@@ -581,6 +581,62 @@ describe('App', () => {
     wrapper.unmount()
   })
 
+  it('設定が先に処理したEscapeでは入力支援を開いたままにする', async () => {
+    const wrapper = mount(App, { attachTo: document.body })
+    const guideButton = wrapper.get<HTMLButtonElement>('.input-guide-button')
+    const settingsButton = wrapper.get<HTMLButtonElement>('.settings-button')
+
+    await guideButton.trigger('click')
+    await settingsButton.trigger('click')
+
+    document.dispatchEvent(
+      new KeyboardEvent('keydown', {
+        key: 'Escape',
+        bubbles: true,
+        cancelable: true,
+      }),
+    )
+    await flushPromises()
+
+    expect(wrapper.find('#settings-popover').exists()).toBe(false)
+    expect(wrapper.find('.input-guide-panel').exists()).toBe(true)
+    expect(wrapper.get('.app').classes()).not.toContain('app--focus-mode')
+    expect(document.activeElement).toBe(settingsButton.element)
+    wrapper.unmount()
+  })
+
+  it('フォーカス中のツールチップを閉じるEscapeではフォーカスモードへ入らない', async () => {
+    const wrapper = mount(App, { attachTo: document.body })
+    const titleButton = wrapper.get<HTMLButtonElement>('.brand-title-button')
+
+    await titleButton.trigger('focusin')
+    expect(document.querySelector('.app-tooltip')).not.toBeNull()
+
+    const handledEscapeEvent = new KeyboardEvent('keydown', {
+      key: 'Escape',
+      bubbles: true,
+      cancelable: true,
+    })
+    titleButton.element.dispatchEvent(handledEscapeEvent)
+    await flushPromises()
+
+    expect(handledEscapeEvent.defaultPrevented).toBe(true)
+    expect(document.querySelector('.app-tooltip')).toBeNull()
+    expect(wrapper.get('.app').classes()).not.toContain('app--focus-mode')
+
+    const modeEscapeEvent = new KeyboardEvent('keydown', {
+      key: 'Escape',
+      bubbles: true,
+      cancelable: true,
+    })
+    titleButton.element.dispatchEvent(modeEscapeEvent)
+    await flushPromises()
+
+    expect(modeEscapeEvent.defaultPrevented).toBe(true)
+    expect(wrapper.get('.app').classes()).toContain('app--focus-mode')
+    wrapper.unmount()
+  })
+
   it('タブ名編集中のEscapeは名称だけを戻し、それ以外ではフォーカスモードを終了する', async () => {
     const wrapper = mount(App, { attachTo: document.body })
 

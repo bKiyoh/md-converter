@@ -33,7 +33,7 @@ function toggleInputGuide(): void {
 }
 
 function handleDocumentKeydown(event: KeyboardEvent): void {
-  if (!isInputGuideOpen.value || event.key !== 'Escape') {
+  if (event.defaultPrevented || !isInputGuideOpen.value || event.key !== 'Escape') {
     return
   }
 

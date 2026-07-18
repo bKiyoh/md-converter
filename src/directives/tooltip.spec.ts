@@ -86,8 +86,24 @@ describe('tooltipDirective', () => {
     expect(button.attributes('data-tooltip')).toBe('変更後')
     expect(document.querySelector('.app-tooltip')?.textContent).toBe('変更後')
 
-    await button.trigger('keydown', { key: 'Escape' })
+    const handledEscapeEvent = new KeyboardEvent('keydown', {
+      key: 'Escape',
+      bubbles: true,
+      cancelable: true,
+    })
+    button.element.dispatchEvent(handledEscapeEvent)
+
+    expect(handledEscapeEvent.defaultPrevented).toBe(true)
     expect(document.querySelector('.app-tooltip')).toBeNull()
+
+    const unhandledEscapeEvent = new KeyboardEvent('keydown', {
+      key: 'Escape',
+      bubbles: true,
+      cancelable: true,
+    })
+    button.element.dispatchEvent(unhandledEscapeEvent)
+
+    expect(unhandledEscapeEvent.defaultPrevented).toBe(false)
     wrapper.unmount()
   })
 

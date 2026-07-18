@@ -79,6 +79,28 @@ describe('MarkdownEditor', () => {
     wrapper.unmount()
   })
 
+  it('別のUIが処理したEscapeでは入力支援を閉じない', async () => {
+    const wrapper = mountInteractiveEditor('')
+    const guideButton = wrapper.get<HTMLButtonElement>('.input-guide-button')
+    const textarea = wrapper.get<HTMLTextAreaElement>('#markdown-input')
+
+    await guideButton.trigger('click')
+    textarea.element.focus()
+
+    const handledEscapeEvent = new KeyboardEvent('keydown', {
+      key: 'Escape',
+      bubbles: true,
+      cancelable: true,
+    })
+    handledEscapeEvent.preventDefault()
+    document.dispatchEvent(handledEscapeEvent)
+    await nextTick()
+
+    expect(wrapper.find('.input-guide-panel').exists()).toBe(true)
+    expect(document.activeElement).toBe(textarea.element)
+    wrapper.unmount()
+  })
+
   it('ドラッグ選択相当の範囲へキーボードで取り消し線を適用する', async () => {
     const wrapper = mountInteractiveEditor('テスト文章')
     const textarea = wrapper.get<HTMLTextAreaElement>('#markdown-input')
