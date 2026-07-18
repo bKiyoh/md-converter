@@ -426,6 +426,191 @@ describe('App', () => {
     expect(wrapper.find('#settings-popover').exists()).toBe(false)
   })
 
+  it('設定の右隣からフォーカスモードへ切り替え、同じtextareaの編集位置を維持する', async () => {
+    const wrapper = mount(App, { attachTo: document.body })
+    const settingsRoot = wrapper.get('.settings-root')
+    const focusButton = wrapper.get<HTMLButtonElement>('.focus-mode-button')
+    const input = wrapper.get<HTMLTextAreaElement>('#markdown-input')
+    const textareaElement = input.element
+
+    expect(wrapper.get('.brand-heading').element.firstElementChild).toBe(focusButton.element)
+    expect(settingsRoot.element.previousElementSibling?.classList).toContain('info-button')
+    expect(wrapper.findAll('.brand-title span').map((line) => line.text())).toEqual([
+      'Markdown',
+      'Converter',
+    ])
+    expect(wrapper.get('.brand-title').attributes('aria-label')).toBe('Markdown Converter')
+    expect(focusButton.attributes('aria-label')).toBe('フォーカスモードを開始')
+    expect(focusButton.attributes('title')).toBe('フォーカスモードを開始（Esc）')
+    expect(focusButton.find('[data-icon="focus"]').exists()).toBe(true)
+
+    await input.setValue('0123456789')
+    input.element.setSelectionRange(2, 6)
+    input.element.scrollTop = 37
+    input.element.scrollLeft = 4
+    await focusButton.trigger('click')
+    await flushPromises()
+
+    expect(wrapper.get('.app').classes()).toContain('app--focus-mode')
+    expect(wrapper.get<HTMLTextAreaElement>('#markdown-input').element).toBe(textareaElement)
+    expect(input.element.selectionStart).toBe(2)
+    expect(input.element.selectionEnd).toBe(6)
+    expect(input.element.scrollTop).toBe(37)
+    expect(input.element.scrollLeft).toBe(4)
+    expect(document.activeElement).toBe(textareaElement)
+    expect(wrapper.get('.app-header').isVisible()).toBe(false)
+    expect(wrapper.get('.workspace-tabs').isVisible()).toBe(false)
+    expect(wrapper.get('.workspace-splitter').isVisible()).toBe(false)
+    expect(wrapper.get('.output-panel').isVisible()).toBe(false)
+    expect(wrapper.find('.document-tabs').exists()).toBe(false)
+    expect(wrapper.get('.focus-tab-name-button').text()).toBe('Untitled')
+    expect(wrapper.find('.panel-footer').isVisible()).toBe(false)
+    expect(wrapper.get('#input-panel').attributes('role')).toBe('region')
+    expect(wrapper.get('#input-panel').attributes('aria-label')).toBe('Markdown編集')
+
+    input.element.setSelectionRange(5, 8)
+    input.element.scrollTop = 53
+    await wrapper.get('.focus-mode-exit-button').trigger('click')
+    await flushPromises()
+
+    expect(wrapper.get('.app').classes()).not.toContain('app--focus-mode')
+    expect(wrapper.get<HTMLTextAreaElement>('#markdown-input').element).toBe(textareaElement)
+    expect(input.element.selectionStart).toBe(5)
+    expect(input.element.selectionEnd).toBe(8)
+    expect(input.element.scrollTop).toBe(53)
+    expect(document.activeElement).toBe(textareaElement)
+    expect(wrapper.get('.workspace').attributes('data-active-panel')).toBe('input')
+    wrapper.unmount()
+  })
+
+  it('フォーカスモードの解説を開閉し、再度開始したときは閉じる', async () => {
+    const wrapper = mount(App)
+
+    await wrapper.get('.focus-mode-button').trigger('click')
+    const helpButton = wrapper.get<HTMLButtonElement>('.focus-mode-help-button')
+    expect(helpButton.attributes('aria-expanded')).toBe('false')
+    expect(wrapper.find('#focus-mode-help').exists()).toBe(false)
+
+    await helpButton.trigger('click')
+    expect(helpButton.attributes('aria-expanded')).toBe('true')
+    expect(wrapper.get('#focus-mode-help').text()).toContain('Ctrl / Command + B')
+    expect(wrapper.get('#focus-mode-help').text()).toContain('Shift + Tab')
+
+    await wrapper.get('.focus-mode-exit-button').trigger('click')
+    await wrapper.get('.focus-mode-button').trigger('click')
+
+    expect(wrapper.get<HTMLButtonElement>('.focus-mode-help-button').attributes('aria-expanded')).toBe(
+      'false',
+    )
+    expect(wrapper.find('#focus-mode-help').exists()).toBe(false)
+  })
+
+  it('タブ名編集中のEscapeは名称だけを戻し、それ以外ではフォーカスモードを終了する', async () => {
+    const wrapper = mount(App, { attachTo: document.body })
+
+    await wrapper.get('.focus-mode-button').trigger('click')
+    await wrapper.get('.focus-tab-name-button').trigger('dblclick')
+    const nameInput = wrapper.get<HTMLInputElement>('.focus-tab-name-input')
+    await nameInput.setValue('変更しない')
+    await nameInput.trigger('keydown', { key: 'Escape' })
+
+    expect(wrapper.get('.app').classes()).toContain('app--focus-mode')
+    expect(wrapper.get('.focus-tab-name-button').text()).toBe('Untitled')
+
+    await wrapper.get('.focus-tab-name-button').trigger('dblclick')
+    await wrapper.get<HTMLInputElement>('.focus-tab-name-input').setValue('  集中執筆  ')
+    await wrapper.get<HTMLInputElement>('.focus-tab-name-input').trigger('keydown', {
+      key: 'Enter',
+    })
+    expect(wrapper.get('.focus-tab-name-button').text()).toBe('集中執筆')
+
+    wrapper.get<HTMLTextAreaElement>('#markdown-input').element.dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }),
+    )
+    await flushPromises()
+
+    expect(wrapper.get('.app').classes()).not.toContain('app--focus-mode')
+    expect(wrapper.get('.document-tab-button').text()).toBe('集中執筆')
+    wrapper.unmount()
+  })
+
+  it('Escapeキーで通常モードとフォーカスモードを切り替える', async () => {
+    const wrapper = mount(App, { attachTo: document.body })
+    const input = wrapper.get<HTMLTextAreaElement>('#markdown-input')
+    input.element.focus()
+
+    input.element.dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }),
+    )
+    await flushPromises()
+
+    expect(wrapper.get('.app').classes()).toContain('app--focus-mode')
+    expect(document.activeElement).toBe(input.element)
+
+    input.element.dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }),
+    )
+    await flushPromises()
+
+    expect(wrapper.get('.app').classes()).not.toContain('app--focus-mode')
+    expect(document.activeElement).toBe(input.element)
+    wrapper.unmount()
+  })
+
+  it('IME変換中のEscapeキーではフォーカスモードを切り替えない', async () => {
+    const wrapper = mount(App, { attachTo: document.body })
+    const input = wrapper.get<HTMLTextAreaElement>('#markdown-input')
+    input.element.focus()
+
+    const enterEvent = new KeyboardEvent('keydown', {
+      key: 'Escape',
+      isComposing: true,
+      bubbles: true,
+      cancelable: true,
+    })
+    input.element.dispatchEvent(enterEvent)
+    await flushPromises()
+
+    expect(enterEvent.defaultPrevented).toBe(false)
+    expect(wrapper.get('.app').classes()).not.toContain('app--focus-mode')
+
+    await wrapper.get('.focus-mode-button').trigger('click')
+    const exitEvent = new KeyboardEvent('keydown', {
+      key: 'Escape',
+      isComposing: true,
+      bubbles: true,
+      cancelable: true,
+    })
+    input.element.dispatchEvent(exitEvent)
+    await flushPromises()
+
+    expect(exitEvent.defaultPrevented).toBe(false)
+    expect(wrapper.get('.app').classes()).toContain('app--focus-mode')
+    wrapper.unmount()
+  })
+
+  it('フォーカスモード中だけ内部スクロールを強制し、設定値と表示状態を保存しない', async () => {
+    localStorage.setItem(
+      APP_SETTINGS_STORAGE_KEY,
+      JSON.stringify({ editorInternalScroll: false, workspaceSplitRatio: 0.5 }),
+    )
+    const wrapper = mount(App)
+
+    expect(wrapper.get('#markdown-input').classes()).toContain('text-area--expand')
+    await wrapper.get('.focus-mode-button').trigger('click')
+
+    expect(wrapper.get('.app').classes()).toContain('app--internal-scroll')
+    expect(wrapper.get('#markdown-input').classes()).toContain('text-area--internal-scroll')
+    expect(localStorage.getItem(APP_SETTINGS_STORAGE_KEY)).toBe(
+      JSON.stringify({ editorInternalScroll: false, workspaceSplitRatio: 0.5 }),
+    )
+
+    wrapper.unmount()
+    const reloadedWrapper = mount(App)
+    expect(reloadedWrapper.get('.app').classes()).not.toContain('app--focus-mode')
+    expect(reloadedWrapper.get('#markdown-input').classes()).toContain('text-area--expand')
+  })
+
   it('設定ポップオーバーを外側クリックとEscキーで閉じる', async () => {
     const wrapper = mount(App, { attachTo: document.body })
     const settingsButton = wrapper.get<HTMLButtonElement>('.settings-button')
@@ -436,10 +621,13 @@ describe('App', () => {
     expect(wrapper.find('#settings-popover').exists()).toBe(false)
 
     await settingsButton.trigger('click')
-    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
+    settingsButton.element.dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }),
+    )
     await wrapper.vm.$nextTick()
 
     expect(wrapper.find('#settings-popover').exists()).toBe(false)
+    expect(wrapper.get('.app').classes()).not.toContain('app--focus-mode')
     expect(document.activeElement).toBe(settingsButton.element)
     wrapper.unmount()
   })

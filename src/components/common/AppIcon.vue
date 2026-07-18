@@ -11,6 +11,8 @@ defineProps<{
     | 'trash'
     | 'rotate-ccw'
     | 'trash-x'
+    | 'focus'
+    | 'help'
 }>()
 </script>
 
@@ -50,6 +52,13 @@ defineProps<{
     />
     <template v-else-if="name === 'trash-x'">
       <path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6M10 11l4 4M14 11l-4 4" />
+    </template>
+    <template v-else-if="name === 'focus'">
+      <path d="M8 3H3v5M16 3h5v5M21 16v5h-5M8 21H3v-5" />
+    </template>
+    <template v-else-if="name === 'help'">
+      <circle cx="12" cy="12" r="10" />
+      <path d="M9.1 9a3 3 0 1 1 5.8 1c0 2-3 2-3 4M12 18h.01" />
     </template>
     <template v-else>
       <circle cx="12" cy="12" r="3" />
