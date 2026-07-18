@@ -1,6 +1,9 @@
 import { flushPromises, mount } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { MARKDOWN_DRAFT_STORAGE_KEY } from './composables/useMarkdownDraft'
+import {
+  EDITOR_STATE_STORAGE_KEY,
+  LEGACY_MARKDOWN_DRAFT_STORAGE_KEY,
+} from './composables/useEditorStorage'
 import { OUTPUT_FORMAT_STORAGE_KEY } from './composables/useOutputFormatPreference'
 import { APP_SETTINGS_STORAGE_KEY } from './composables/useAppSettings'
 import {
@@ -154,43 +157,269 @@ describe('App', () => {
     expect(wrapper.get<HTMLTextAreaElement>('#conversion-output').element.value).toBe('【更新】')
   })
 
-  it('空の変換結果ではコピーボタンを無効にする', () => {
+  it('Markdownタブを追加して文書ごとの入力と変換結果を切り替える', async () => {
+    const wrapper = mount(App)
+    const input = wrapper.get<HTMLTextAreaElement>('#markdown-input')
+    const editorPanel = wrapper.get('.editor-panel')
+
+    expect(wrapper.findAll('.document-tab-button')).toHaveLength(1)
+    expect(wrapper.get('.document-tab-button').text()).toBe('Untitled')
+    expect(wrapper.get('.document-tablist').attributes('role')).toBe('group')
+    expect(wrapper.get('.document-tab-button').attributes('role')).toBeUndefined()
+    expect(wrapper.get('.document-tab-button').attributes('aria-controls')).toBeUndefined()
+    expect(wrapper.get('.document-tab-button').attributes('aria-selected')).toBeUndefined()
+    expect(wrapper.get('.document-tab-button').attributes('aria-pressed')).toBe('true')
+    expect(wrapper.get('.document-tab-button').attributes('tabindex')).toBeUndefined()
+    expect(editorPanel.element.firstElementChild?.classList).toContain('document-tabs')
+    expect(editorPanel.find('#markdown-input-heading').exists()).toBe(false)
+    expect(editorPanel.find('.panel-kicker').exists()).toBe(false)
+    expect(wrapper.get('.document-tab-item').classes()).toContain(
+      'document-tab-item--active',
+    )
+    expect(wrapper.get('.document-tab-add-button').element.parentElement?.classList).toContain(
+      'document-tab-add-tooltip-target',
+    )
+    expect(
+      wrapper.get('.document-tab-add-tooltip-target').element.previousElementSibling?.classList,
+    ).toContain('document-tab-item')
+    await input.setValue('# 最初')
+    await wrapper.get<HTMLButtonElement>('.document-tab-add-button').trigger('click')
+
+    expect(wrapper.findAll('.document-tab-button')).toHaveLength(2)
+    expect(wrapper.findAll('.document-tab-button')[1]?.text()).toBe('Untitled 2')
+    expect(wrapper.findAll('.document-tab-button')[0]?.attributes('aria-pressed')).toBe('false')
+    expect(wrapper.findAll('.document-tab-button')[1]?.attributes('aria-pressed')).toBe('true')
+    expect(
+      wrapper.get('.document-tab-add-tooltip-target').element.previousElementSibling,
+    ).toBe(wrapper.findAll('.document-tab-item')[1]!.element)
+    expect(input.element.value).toBe('')
+    await input.setValue('2つ目')
+    expect(wrapper.get<HTMLTextAreaElement>('#conversion-output').element.value).toBe('2つ目')
+
+    await wrapper.findAll<HTMLButtonElement>('.document-tab-button')[0]!.trigger('click')
+    expect(input.element.value).toBe('# 最初')
+    expect(wrapper.get<HTMLTextAreaElement>('#conversion-output').element.value).toBe('*最初*')
+    expect(wrapper.findAll('.document-tab-button')[0]?.attributes('aria-pressed')).toBe('true')
+    expect(wrapper.findAll('.document-tab-button')[1]?.attributes('aria-pressed')).toBe('false')
+  })
+
+  it('タブ名をダブルクリックで変更し、Escapeでは取り消す', async () => {
+    const wrapper = mount(App)
+    const tab = wrapper.get<HTMLButtonElement>('.document-tab-button')
+
+    await tab.trigger('dblclick')
+    const nameInput = wrapper.get<HTMLInputElement>('.document-tab-name-input')
+    await nameInput.setValue('  議事録  ')
+    await nameInput.trigger('keydown', { key: 'Enter' })
+    expect(wrapper.get('.document-tab-button').text()).toBe('議事録')
+
+    await wrapper.get('.document-tab-button').trigger('dblclick')
+    await wrapper.get<HTMLInputElement>('.document-tab-name-input').setValue('変更しない')
+    await wrapper.get<HTMLInputElement>('.document-tab-name-input').trigger('keydown', {
+      key: 'Escape',
+    })
+    expect(wrapper.get('.document-tab-button').text()).toBe('議事録')
+
+    const deleteButton = wrapper.get<HTMLButtonElement>('.document-tab-delete-button')
+    expect(deleteButton.element.disabled).toBe(true)
+    expect(deleteButton.attributes('aria-label')).toBe('議事録を削除')
+    expect(deleteButton.find('[data-icon="close"]').exists()).toBe(true)
+    expect(wrapper.find('.document-tab-menu').exists()).toBe(false)
+  })
+
+  it('デフォルト名の空タブは削除済み一覧へ残さない', async () => {
+    const wrapper = mount(App)
+    await wrapper.get('.document-tab-add-button').trigger('click')
+    await wrapper.findAll<HTMLButtonElement>('.document-tab-delete-button')[1]!.trigger('click')
+
+    expect(wrapper.findAll('.document-tab-button')).toHaveLength(1)
+    expect(wrapper.find('.app-notice').exists()).toBe(false)
+
+    await wrapper.get('.deleted-tabs-toggle').trigger('click')
+    expect(wrapper.get('.deleted-tabs-empty').text()).toBe('削除済みタブはありません。')
+    expect(wrapper.find('.deleted-tab-action--restore').exists()).toBe(false)
+  })
+
+  it('内容があるタブは通知を表示せず、削除済み一覧から元の位置へ戻せる', async () => {
+    const wrapper = mount(App)
+    await wrapper.get('.document-tab-add-button').trigger('click')
+    await wrapper.get<HTMLTextAreaElement>('#markdown-input').setValue('復元する内容')
+    await wrapper.findAll<HTMLButtonElement>('.document-tab-delete-button')[1]!.trigger('click')
+
+    expect(wrapper.find('.app-notice').exists()).toBe(false)
+
+    await wrapper.get('.deleted-tabs-toggle').trigger('click')
+    await wrapper.get<HTMLButtonElement>('.deleted-tab-action--restore').trigger('click')
+
+    expect(wrapper.findAll('.document-tab-button').map((item) => item.text())).toEqual([
+      'Untitled',
+      'Untitled 2',
+    ])
+    expect(wrapper.find('.app-notice').exists()).toBe(false)
+  })
+
+  it('7件時は追加を無効化し、削除済みタブの復元上限を案内する', async () => {
+    const wrapper = mount(App)
+
+    for (let index = 0; index < 6; index += 1) {
+      await wrapper.get('.document-tab-add-button').trigger('click')
+    }
+
+    const addButton = wrapper.get<HTMLButtonElement>('.document-tab-add-button')
+    expect(addButton.element.disabled).toBe(true)
+    expect(addButton.attributes('title')).toBeUndefined()
+    expect(addButton.element.parentElement?.dataset.tooltip).toBe(
+      'タブは最大7つまで作成できます',
+    )
+
+    await wrapper.findAll<HTMLButtonElement>('.document-tab-button')[1]!.trigger('click')
+    await wrapper.get<HTMLTextAreaElement>('#markdown-input').setValue('削除済みに残す内容')
+    await wrapper.findAll<HTMLButtonElement>('.document-tab-delete-button')[1]!.trigger('click')
+    await addButton.trigger('click')
+    const deletedTabsToggle = wrapper.get<HTMLButtonElement>('.deleted-tabs-toggle')
+    expect(deletedTabsToggle.attributes('aria-label')).toBe('削除済みタブを表示')
+    expect(deletedTabsToggle.find('[data-icon="trash"]').exists()).toBe(true)
+    expect(deletedTabsToggle.get('.deleted-tabs-count').text()).toBe('1')
+
+    await deletedTabsToggle.trigger('click')
+
+    const restoreButton = wrapper.get<HTMLButtonElement>('.deleted-tab-action--restore')
+    const permanentDeleteButton = wrapper.get<HTMLButtonElement>(
+      '.deleted-tab-action--permanent-delete',
+    )
+    expect(restoreButton.attributes('aria-label')).toBe('Untitled 2を復元')
+    expect(restoreButton.attributes('data-tooltip')).toBe('復元')
+    expect(restoreButton.find('[data-icon="rotate-ccw"]').exists()).toBe(true)
+    expect(permanentDeleteButton.attributes('aria-label')).toBe('Untitled 2を完全に削除')
+    expect(permanentDeleteButton.attributes('data-tooltip')).toBe('完全に削除')
+    expect(permanentDeleteButton.find('[data-icon="trash-x"]').exists()).toBe(true)
+
+    await restoreButton.trigger('click')
+
+    expect(wrapper.get('.app-notice').text()).toContain('タブは最大7つまでです。')
+    expect(wrapper.get('.app-notice').text()).toContain(
+      '復元するには、現在のタブを1つ削除してください。',
+    )
+  })
+
+  it('削除済みタブ一覧の外側をクリックすると閉じる', async () => {
+    const wrapper = mount(App, { attachTo: document.body })
+    const toggle = wrapper.get<HTMLButtonElement>('.deleted-tabs-toggle')
+
+    await toggle.trigger('click')
+    await wrapper.get('.deleted-tabs-panel').trigger('click')
+    expect(wrapper.find('.deleted-tabs-panel').exists()).toBe(true)
+
+    document.body.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    await wrapper.vm.$nextTick()
+
+    expect(wrapper.find('.deleted-tabs-panel').exists()).toBe(false)
+    expect(toggle.attributes('aria-expanded')).toBe('false')
+    wrapper.unmount()
+  })
+
+  it('削除済みタブを復元または完全削除しても一覧を閉じない', async () => {
+    const wrapper = mount(App, { attachTo: document.body })
+
+    await wrapper.get('.document-tab-add-button').trigger('click')
+    await wrapper.get<HTMLTextAreaElement>('#markdown-input').setValue('復元する内容')
+    await wrapper.get('.document-tab-add-button').trigger('click')
+    await wrapper.get<HTMLTextAreaElement>('#markdown-input').setValue('完全削除する内容')
+    await wrapper.findAll<HTMLButtonElement>('.document-tab-delete-button')[2]!.trigger('click')
+    await wrapper.findAll<HTMLButtonElement>('.document-tab-delete-button')[1]!.trigger('click')
+    await wrapper.get<HTMLButtonElement>('.deleted-tabs-toggle').trigger('click')
+
+    await wrapper
+      .findAll<HTMLButtonElement>('.deleted-tab-action--restore')[0]!
+      .trigger('click')
+
+    expect(wrapper.find('.deleted-tabs-panel').exists()).toBe(true)
+    expect(wrapper.get<HTMLButtonElement>('.deleted-tabs-toggle').attributes('aria-expanded')).toBe(
+      'true',
+    )
+
+    await wrapper
+      .get<HTMLButtonElement>('.deleted-tab-action--permanent-delete')
+      .trigger('click')
+
+    expect(wrapper.find('.deleted-tabs-panel').exists()).toBe(true)
+    expect(wrapper.get('.deleted-tabs-empty').text()).toBe('削除済みタブはありません。')
+    expect(wrapper.get<HTMLButtonElement>('.deleted-tabs-toggle').attributes('aria-expanded')).toBe(
+      'true',
+    )
+    wrapper.unmount()
+  })
+
+  it('空の変換結果ではコピーボタンを無効にする', async () => {
     const wrapper = mount(App)
     const copyButton = wrapper.get<HTMLButtonElement>('.copy-button')
     const headerActions = wrapper.get('.app-header-actions')
 
     expect(copyButton.element.disabled).toBe(true)
     expect(copyButton.attributes('aria-label')).toBe('変換結果をコピー')
-    expect(copyButton.attributes('title')).toBe('コピー')
+    expect(copyButton.attributes('title')).toBeUndefined()
+    expect(copyButton.element.parentElement?.dataset.tooltip).toBe('コピー')
     expect(copyButton.find('[data-icon="copy"]').exists()).toBe(true)
-    expect(copyButton.element.parentElement?.classList.contains('header-output-actions')).toBe(true)
-    expect(wrapper.get('#output-format').element.parentElement?.parentElement).toBe(
-      copyButton.element.parentElement,
+    expect(copyButton.element.parentElement?.classList.contains('copy-tooltip-target')).toBe(true)
+    expect(copyButton.element.closest('.header-output-actions')).toBe(
+      wrapper.get('#output-format').element.closest('.header-output-actions'),
+    )
+    expect(wrapper.get('.settings-root').element.nextElementSibling).toBe(
+      wrapper.get('.format-field').element,
+    )
+    expect(wrapper.get('.format-field').element.nextElementSibling).toBe(
+      wrapper.get('.copy-tooltip-target').element,
     )
     expect(wrapper.find('.theme-button').exists()).toBe(false)
     expect(headerActions.element.firstElementChild?.classList.contains('header-output-actions')).toBe(
       true,
     )
-    expect(wrapper.get('label[for="output-format"]').text()).toBe('変換形式')
+    const formatPrefix = wrapper.get<HTMLButtonElement>('.format-field-prefix')
+    const formatLabel = wrapper.get('label.visually-hidden[for="output-format"]')
+    const formatSelect = wrapper.get<HTMLSelectElement>('#output-format')
+    const showPicker = vi.fn()
+    Object.defineProperty(formatSelect.element, 'showPicker', {
+      configurable: true,
+      value: showPicker,
+    })
+
+    expect(formatPrefix.attributes('aria-label')).toBe('変換先')
+    expect(formatPrefix.attributes('title')).toBeUndefined()
+    expect(formatSelect.attributes('title')).toBeUndefined()
+    expect(wrapper.get('.format-field').attributes('data-tooltip')).toBe('変換先')
+    expect(formatPrefix.find('[data-icon="file-output"]').exists()).toBe(true)
+    expect(formatLabel.text()).toBe('変換先')
+    expect(formatSelect.element.labels?.[0]).toBe(formatLabel.element)
+
+    await formatPrefix.trigger('click')
+
+    expect(showPicker).toHaveBeenCalledOnce()
   })
 
-  it('情報アイコンからタイトルと説明のモーダルを開閉できる', async () => {
+  it('タイトルアイコンからタイトルと説明のモーダルを開閉できる', async () => {
     const wrapper = mount(App, { attachTo: document.body })
-    const infoButton = wrapper.get<HTMLButtonElement>('.info-button')
+    const titleButton = wrapper.get<HTMLButtonElement>('.brand-title-button')
 
-    expect(infoButton.attributes('aria-label')).toBe('このアプリについて')
-    expect(infoButton.attributes('title')).toBe('このアプリについて')
-    expect(infoButton.find('[data-icon="info"]').exists()).toBe(true)
+    expect(titleButton.attributes('aria-label')).toBe('このアプリについて')
+    expect(titleButton.attributes('title')).toBeUndefined()
+    expect(titleButton.attributes('data-tooltip')).toBe('このアプリについて')
+    expect(titleButton.get('.brand-title-icon').attributes('alt')).toBe('Markdown Converter')
+    expect(wrapper.find('.info-button').exists()).toBe(false)
     expect(wrapper.find('.info-modal').exists()).toBe(false)
     expect(wrapper.get('.app-content').attributes()).not.toHaveProperty('inert')
 
-    await infoButton.trigger('click')
+    await titleButton.trigger('mouseenter')
+    expect(document.body.querySelector('.app-tooltip')?.textContent).toBe('このアプリについて')
+    await titleButton.trigger('mouseleave')
+    expect(document.body.querySelector('.app-tooltip')).toBeNull()
+
+    await titleButton.trigger('click')
 
     const modal = wrapper.get('.info-modal')
     const closeButton = wrapper.get<HTMLButtonElement>('.modal-close-button')
     expect(modal.attributes('role')).toBe('dialog')
     expect(modal.attributes('aria-modal')).toBe('true')
-    expect(wrapper.get('#info-modal-title').text()).toBe('Markdown変換エディタ')
+    expect(wrapper.get('#info-modal-title').text()).toBe('Markdown Converter')
     expect(wrapper.get('#info-modal-description').text()).toBe(
       '貼り付け先に合わせて、ブラウザ内でリアルタイムに変換します。',
     )
@@ -206,21 +435,25 @@ describe('App', () => {
     await modal.trigger('keydown', { key: 'Escape' })
 
     expect(wrapper.find('.info-modal').exists()).toBe(false)
-    expect(document.activeElement).toBe(infoButton.element)
+    expect(document.activeElement).toBe(titleButton.element)
     wrapper.unmount()
   })
 
   it('設定ボタンでポップオーバーを開き、再押下で閉じる', async () => {
     const wrapper = mount(App)
     const settingsButton = wrapper.get<HTMLButtonElement>('.settings-button')
-    const infoButton = wrapper.get<HTMLButtonElement>('.info-button')
+    const titleButton = wrapper.get<HTMLButtonElement>('.brand-title-button')
 
     expect(settingsButton.attributes('aria-label')).toBe('設定')
-    expect(settingsButton.attributes('title')).toBe('設定')
+    expect(settingsButton.attributes('title')).toBeUndefined()
+    expect(settingsButton.attributes('data-tooltip')).toBe('設定')
     expect(settingsButton.attributes('aria-expanded')).toBe('false')
     expect(settingsButton.find('[data-icon="settings"]').exists()).toBe(true)
-    expect(infoButton.element.nextElementSibling?.classList).toContain('settings-root')
-    expect(wrapper.get('.app-header-actions').find('.settings-button').exists()).toBe(false)
+    expect(titleButton.element.nextElementSibling).toBeNull()
+    expect(wrapper.get('.app-header-actions').find('.settings-button').exists()).toBe(true)
+    expect(wrapper.get('.format-field').element.previousElementSibling?.classList).toContain(
+      'settings-root',
+    )
 
     await settingsButton.trigger('click')
 
@@ -233,6 +466,283 @@ describe('App', () => {
     expect(wrapper.find('#settings-popover').exists()).toBe(false)
   })
 
+  it('ヘッダー左端からフォーカスモードへ切り替え、同じtextareaの編集位置を維持する', async () => {
+    const wrapper = mount(App, { attachTo: document.body })
+    const settingsRoot = wrapper.get('.settings-root')
+    const focusButton = wrapper.get<HTMLButtonElement>('.focus-mode-button')
+    const input = wrapper.get<HTMLTextAreaElement>('#markdown-input')
+    const textareaElement = input.element
+
+    const titleButton = wrapper.get<HTMLButtonElement>('.brand-title-button')
+    expect(wrapper.get('.brand-heading').element.firstElementChild).toBe(focusButton.element)
+    expect(focusButton.element.nextElementSibling).toBe(titleButton.element)
+    expect(settingsRoot.element.nextElementSibling).toBe(wrapper.get('.format-field').element)
+    expect(wrapper.get('.format-field').element.nextElementSibling).toBe(
+      wrapper.get('.copy-tooltip-target').element,
+    )
+    expect(wrapper.get('.brand-title-icon').attributes('alt')).toBe('Markdown Converter')
+    expect(wrapper.get('.brand-title-icon').attributes('src')).toContain('title-icon-light.png')
+    expect(focusButton.attributes('aria-label')).toBe('フォーカスモードを開始')
+    expect(focusButton.attributes('data-tooltip')).toBe('フォーカスモードを開始（Esc）')
+    expect(focusButton.find('[data-icon="focus"]').exists()).toBe(true)
+
+    await input.setValue('0123456789')
+    input.element.setSelectionRange(2, 6)
+    input.element.scrollTop = 37
+    input.element.scrollLeft = 4
+    await wrapper.get('.input-guide-button').trigger('click')
+    expect(wrapper.find('.input-guide-panel').exists()).toBe(true)
+    await focusButton.trigger('click')
+    await flushPromises()
+
+    expect(wrapper.get('.app').classes()).toContain('app--focus-mode')
+    expect(wrapper.find('.input-guide-panel').exists()).toBe(false)
+    expect(wrapper.get<HTMLTextAreaElement>('#markdown-input').element).toBe(textareaElement)
+    expect(input.element.selectionStart).toBe(2)
+    expect(input.element.selectionEnd).toBe(6)
+    expect(input.element.scrollTop).toBe(37)
+    expect(input.element.scrollLeft).toBe(4)
+    expect(document.activeElement).toBe(textareaElement)
+    expect(wrapper.get('.app-header').isVisible()).toBe(false)
+    expect(wrapper.find('.focus-mode-title-button').exists()).toBe(false)
+    expect(wrapper.get('.focus-mode-control-buttons').element.firstElementChild).toBe(
+      wrapper.get('.focus-mode-exit-button').element,
+    )
+    expect(wrapper.get('.focus-mode-exit-button').element.nextElementSibling).toBe(
+      wrapper.get('.focus-mode-help-button').element,
+    )
+    expect(wrapper.get('.workspace-tabs').isVisible()).toBe(false)
+    expect(wrapper.get('.workspace-splitter').isVisible()).toBe(false)
+    expect(wrapper.get('.output-panel').isVisible()).toBe(false)
+    expect(wrapper.find('.document-tabs').exists()).toBe(false)
+    expect(wrapper.get('.focus-tab-name-button').text()).toBe('Untitled')
+    expect(wrapper.get('.focus-tab-name-button').attributes('data-tooltip')).toBeUndefined()
+    expect(wrapper.find('.panel-footer').isVisible()).toBe(false)
+    expect(wrapper.get('#input-panel').attributes('role')).toBe('region')
+    expect(wrapper.get('#input-panel').attributes('aria-label')).toBe('Markdown編集')
+
+    input.element.setSelectionRange(5, 8)
+    input.element.scrollTop = 53
+    await wrapper.get('.focus-mode-exit-button').trigger('click')
+    await flushPromises()
+
+    expect(wrapper.get('.app').classes()).not.toContain('app--focus-mode')
+    expect(wrapper.get<HTMLTextAreaElement>('#markdown-input').element).toBe(textareaElement)
+    expect(input.element.selectionStart).toBe(5)
+    expect(input.element.selectionEnd).toBe(8)
+    expect(input.element.scrollTop).toBe(53)
+    expect(document.activeElement).toBe(textareaElement)
+    expect(wrapper.get('.workspace').attributes('data-active-panel')).toBe('input')
+    wrapper.unmount()
+  })
+
+  it('フォーカスモードの解説を開閉し、再度開始したときは閉じる', async () => {
+    const wrapper = mount(App)
+
+    await wrapper.get('.focus-mode-button').trigger('click')
+    const helpButton = wrapper.get<HTMLButtonElement>('.focus-mode-help-button')
+    expect(helpButton.attributes('aria-expanded')).toBe('false')
+    expect(wrapper.find('#focus-mode-help').exists()).toBe(false)
+
+    await helpButton.trigger('click')
+    expect(helpButton.attributes('aria-expanded')).toBe('true')
+    expect(wrapper.find('#focus-mode-help .editor-input-guide').exists()).toBe(true)
+    expect(wrapper.get('#focus-mode-help').text()).toContain('Ctrl / Command + B')
+    expect(wrapper.get('#focus-mode-help').text()).toContain('Shift + Tab')
+
+    await wrapper.get('.focus-mode-exit-button').trigger('click')
+    await wrapper.get('.focus-mode-button').trigger('click')
+
+    expect(wrapper.get<HTMLButtonElement>('.focus-mode-help-button').attributes('aria-expanded')).toBe(
+      'false',
+    )
+    expect(wrapper.find('#focus-mode-help').exists()).toBe(false)
+  })
+
+  it('通常モードの入力支援をEscapeで閉じたときはフォーカスモードへ入らない', async () => {
+    const wrapper = mount(App, { attachTo: document.body })
+    const guideButton = wrapper.get<HTMLButtonElement>('.input-guide-button')
+
+    await guideButton.trigger('click')
+    expect(wrapper.find('.input-guide-panel').exists()).toBe(true)
+
+    document.dispatchEvent(
+      new KeyboardEvent('keydown', {
+        key: 'Escape',
+        bubbles: true,
+        cancelable: true,
+      }),
+    )
+    await flushPromises()
+
+    expect(wrapper.find('.input-guide-panel').exists()).toBe(false)
+    expect(wrapper.get('.app').classes()).not.toContain('app--focus-mode')
+    expect(document.activeElement).toBe(guideButton.element)
+    wrapper.unmount()
+  })
+
+  it('設定が先に処理したEscapeでは入力支援を開いたままにする', async () => {
+    const wrapper = mount(App, { attachTo: document.body })
+    const guideButton = wrapper.get<HTMLButtonElement>('.input-guide-button')
+    const settingsButton = wrapper.get<HTMLButtonElement>('.settings-button')
+
+    await guideButton.trigger('click')
+    await settingsButton.trigger('click')
+
+    document.dispatchEvent(
+      new KeyboardEvent('keydown', {
+        key: 'Escape',
+        bubbles: true,
+        cancelable: true,
+      }),
+    )
+    await flushPromises()
+
+    expect(wrapper.find('#settings-popover').exists()).toBe(false)
+    expect(wrapper.find('.input-guide-panel').exists()).toBe(true)
+    expect(wrapper.get('.app').classes()).not.toContain('app--focus-mode')
+    expect(document.activeElement).toBe(settingsButton.element)
+    wrapper.unmount()
+  })
+
+  it('フォーカス中のツールチップを閉じるEscapeではフォーカスモードへ入らない', async () => {
+    const wrapper = mount(App, { attachTo: document.body })
+    const titleButton = wrapper.get<HTMLButtonElement>('.brand-title-button')
+
+    await titleButton.trigger('focusin')
+    expect(document.querySelector('.app-tooltip')).not.toBeNull()
+
+    const handledEscapeEvent = new KeyboardEvent('keydown', {
+      key: 'Escape',
+      bubbles: true,
+      cancelable: true,
+    })
+    titleButton.element.dispatchEvent(handledEscapeEvent)
+    await flushPromises()
+
+    expect(handledEscapeEvent.defaultPrevented).toBe(true)
+    expect(document.querySelector('.app-tooltip')).toBeNull()
+    expect(wrapper.get('.app').classes()).not.toContain('app--focus-mode')
+
+    const modeEscapeEvent = new KeyboardEvent('keydown', {
+      key: 'Escape',
+      bubbles: true,
+      cancelable: true,
+    })
+    titleButton.element.dispatchEvent(modeEscapeEvent)
+    await flushPromises()
+
+    expect(modeEscapeEvent.defaultPrevented).toBe(true)
+    expect(wrapper.get('.app').classes()).toContain('app--focus-mode')
+    wrapper.unmount()
+  })
+
+  it('タブ名編集中のEscapeは名称だけを戻し、それ以外ではフォーカスモードを終了する', async () => {
+    const wrapper = mount(App, { attachTo: document.body })
+
+    await wrapper.get('.focus-mode-button').trigger('click')
+    await wrapper.get('.focus-tab-name-button').trigger('dblclick')
+    const nameInput = wrapper.get<HTMLInputElement>('.focus-tab-name-input')
+    await nameInput.setValue('変更しない')
+    await nameInput.trigger('keydown', { key: 'Escape' })
+
+    expect(wrapper.get('.app').classes()).toContain('app--focus-mode')
+    expect(wrapper.get('.focus-tab-name-button').text()).toBe('Untitled')
+
+    await wrapper.get('.focus-tab-name-button').trigger('dblclick')
+    await wrapper.get<HTMLInputElement>('.focus-tab-name-input').setValue('  集中執筆  ')
+    await wrapper.get<HTMLInputElement>('.focus-tab-name-input').trigger('keydown', {
+      key: 'Enter',
+    })
+    expect(wrapper.get('.focus-tab-name-button').text()).toBe('集中執筆')
+
+    wrapper.get<HTMLTextAreaElement>('#markdown-input').element.dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }),
+    )
+    await flushPromises()
+
+    expect(wrapper.get('.app').classes()).not.toContain('app--focus-mode')
+    expect(wrapper.get('.document-tab-button').text()).toBe('集中執筆')
+    wrapper.unmount()
+  })
+
+  it('Escapeキーで通常モードとフォーカスモードを切り替える', async () => {
+    const wrapper = mount(App, { attachTo: document.body })
+    const input = wrapper.get<HTMLTextAreaElement>('#markdown-input')
+    input.element.focus()
+
+    input.element.dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }),
+    )
+    await flushPromises()
+
+    expect(wrapper.get('.app').classes()).toContain('app--focus-mode')
+    expect(document.activeElement).toBe(input.element)
+
+    input.element.dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }),
+    )
+    await flushPromises()
+
+    expect(wrapper.get('.app').classes()).not.toContain('app--focus-mode')
+    expect(document.activeElement).toBe(input.element)
+    wrapper.unmount()
+  })
+
+  it('IME変換中のEscapeキーではフォーカスモードを切り替えない', async () => {
+    const wrapper = mount(App, { attachTo: document.body })
+    const input = wrapper.get<HTMLTextAreaElement>('#markdown-input')
+    input.element.focus()
+
+    const enterEvent = new KeyboardEvent('keydown', {
+      key: 'Escape',
+      isComposing: true,
+      bubbles: true,
+      cancelable: true,
+    })
+    input.element.dispatchEvent(enterEvent)
+    await flushPromises()
+
+    expect(enterEvent.defaultPrevented).toBe(false)
+    expect(wrapper.get('.app').classes()).not.toContain('app--focus-mode')
+
+    await wrapper.get('.focus-mode-button').trigger('click')
+    const exitEvent = new KeyboardEvent('keydown', {
+      key: 'Escape',
+      isComposing: true,
+      bubbles: true,
+      cancelable: true,
+    })
+    input.element.dispatchEvent(exitEvent)
+    await flushPromises()
+
+    expect(exitEvent.defaultPrevented).toBe(false)
+    expect(wrapper.get('.app').classes()).toContain('app--focus-mode')
+    wrapper.unmount()
+  })
+
+  it('フォーカスモード中だけ内部スクロールを強制し、設定値と表示状態を保存しない', async () => {
+    localStorage.setItem(
+      APP_SETTINGS_STORAGE_KEY,
+      JSON.stringify({ editorInternalScroll: false, workspaceSplitRatio: 0.5 }),
+    )
+    const wrapper = mount(App)
+
+    expect(wrapper.get('#markdown-input').classes()).toContain('text-area--expand')
+    await wrapper.get('.focus-mode-button').trigger('click')
+
+    expect(wrapper.get('.app').classes()).toContain('app--internal-scroll')
+    expect(wrapper.get('#markdown-input').classes()).toContain('text-area--internal-scroll')
+    expect(localStorage.getItem(APP_SETTINGS_STORAGE_KEY)).toBe(
+      JSON.stringify({ editorInternalScroll: false, workspaceSplitRatio: 0.5 }),
+    )
+
+    wrapper.unmount()
+    const reloadedWrapper = mount(App)
+    expect(reloadedWrapper.get('.app').classes()).not.toContain('app--focus-mode')
+    expect(reloadedWrapper.get('#markdown-input').classes()).toContain('text-area--expand')
+  })
+
   it('設定ポップオーバーを外側クリックとEscキーで閉じる', async () => {
     const wrapper = mount(App, { attachTo: document.body })
     const settingsButton = wrapper.get<HTMLButtonElement>('.settings-button')
@@ -243,10 +753,13 @@ describe('App', () => {
     expect(wrapper.find('#settings-popover').exists()).toBe(false)
 
     await settingsButton.trigger('click')
-    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
+    settingsButton.element.dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }),
+    )
     await wrapper.vm.$nextTick()
 
     expect(wrapper.find('#settings-popover').exists()).toBe(false)
+    expect(wrapper.get('.app').classes()).not.toContain('app--focus-mode')
     expect(document.activeElement).toBe(settingsButton.element)
     wrapper.unmount()
   })
@@ -261,9 +774,10 @@ describe('App', () => {
     expect(wrapper.get('.setting-name').text()).toBe('テーマ')
     expect(themeButton.attributes('aria-pressed')).toBe('false')
     expect(themeButton.attributes('aria-label')).toBe('ダークモードに切り替える')
-    expect(themeButton.attributes('title')).toBe('ダークモードに切り替える')
+    expect(themeButton.attributes('data-tooltip')).toBe('ダークモードに切り替える')
     expect(themeButton.find('[data-icon="moon"]').exists()).toBe(true)
     expect(editorScrollSwitch.element.checked).toBe(true)
+    expect(wrapper.get('.brand-title-icon').attributes('src')).toContain('title-icon-light.png')
 
     await themeButton.trigger('click')
 
@@ -272,6 +786,7 @@ describe('App', () => {
     expect(themeButton.attributes('aria-pressed')).toBe('true')
     expect(themeButton.attributes('aria-label')).toBe('ライトモードに切り替える')
     expect(themeButton.find('[data-icon="sun"]').exists()).toBe(true)
+    expect(wrapper.get('.brand-title-icon').attributes('src')).toContain('title-icon-dark.png')
 
     await vi.advanceTimersByTimeAsync(THEME_PREFERENCE_SAVE_DELAY_MS)
     expect(localStorage.getItem(THEME_PREFERENCE_STORAGE_KEY)).toBe('dark')
@@ -294,7 +809,7 @@ describe('App', () => {
     expect(wrapper.get('.app').classes()).not.toContain('app--internal-scroll')
     expect(wrapper.get('#markdown-input').classes()).toContain('text-area--expand')
     expect(localStorage.getItem(APP_SETTINGS_STORAGE_KEY)).toBe(
-      JSON.stringify({ editorInternalScroll: false }),
+      JSON.stringify({ editorInternalScroll: false, workspaceSplitRatio: 0.5 }),
     )
 
     await wrapper.get('#preview-view-tab').trigger('click')
@@ -412,6 +927,75 @@ describe('App', () => {
     wrapper.unmount()
   })
 
+  it('左右ペインの区切りをキーボードで調整し、ダブルクリックで均等へ戻す', async () => {
+    const wrapper = mount(App)
+    const splitter = wrapper.get<HTMLElement>('.workspace-splitter')
+
+    expect(splitter.attributes('role')).toBe('separator')
+    expect(splitter.attributes('aria-orientation')).toBe('vertical')
+    expect(splitter.attributes('aria-valuenow')).toBe('50')
+    expect(splitter.attributes('aria-valuetext')).toBe('左ペイン50%、右ペイン50%')
+
+    await splitter.trigger('keydown', { key: 'ArrowRight' })
+
+    expect(splitter.attributes('aria-valuenow')).toBe('55')
+    expect(JSON.parse(localStorage.getItem(APP_SETTINGS_STORAGE_KEY) ?? '{}')).toMatchObject({
+      workspaceSplitRatio: 0.55,
+    })
+
+    await splitter.trigger('keydown', { key: 'End' })
+    expect(splitter.attributes('aria-valuenow')).toBe('80')
+
+    await splitter.trigger('dblclick')
+    expect(splitter.attributes('aria-valuenow')).toBe('50')
+  })
+
+  it('区切りをドラッグして各ペインの最小幅を保ちながら比率を変更する', async () => {
+    const wrapper = mount(App)
+    const workspace = wrapper.get<HTMLElement>('.workspace')
+    const splitter = wrapper.get<HTMLElement>('.workspace-splitter')
+
+    vi.spyOn(workspace.element, 'getBoundingClientRect').mockReturnValue({
+      width: 1000,
+      height: 620,
+      top: 0,
+      right: 1000,
+      bottom: 620,
+      left: 0,
+      x: 0,
+      y: 0,
+      toJSON: () => ({}),
+    })
+
+    function dispatchPointerEvent(type: string, clientX: number): void {
+      const event = new MouseEvent(type, {
+        bubbles: true,
+        cancelable: true,
+        button: 0,
+        clientX,
+      })
+      Object.defineProperty(event, 'pointerId', { value: 1 })
+      splitter.element.dispatchEvent(event)
+    }
+
+    dispatchPointerEvent('pointerdown', 500)
+    dispatchPointerEvent('pointermove', 700)
+    await flushPromises()
+
+    expect(splitter.attributes('aria-valuenow')).toBe('70')
+    expect(workspace.element.style.gridTemplateColumns).toBe('690.018px 20px 289.982px')
+    expect(wrapper.get('.workspace').classes()).toContain('workspace--resizing')
+
+    dispatchPointerEvent('pointermove', 50)
+    await flushPromises()
+    expect(splitter.attributes('aria-valuenow')).toBe('29')
+    expect(workspace.element.style.gridTemplateColumns).toBe('280px 20px 700px')
+
+    dispatchPointerEvent('pointerup', 50)
+    await flushPromises()
+    expect(wrapper.get('.workspace').classes()).not.toContain('workspace--resizing')
+  })
+
   it('テーマを手動で切り替えられる', async () => {
     const wrapper = mount(App)
     await wrapper.get('.settings-button').trigger('click')
@@ -420,7 +1004,7 @@ describe('App', () => {
     expect(wrapper.get('.app').attributes('data-theme')).toBe('light')
     expect(themeButton.attributes('aria-pressed')).toBe('false')
     expect(themeButton.attributes('aria-label')).toBe('ダークモードに切り替える')
-    expect(themeButton.attributes('title')).toBe('ダークモードに切り替える')
+    expect(themeButton.attributes('data-tooltip')).toBe('ダークモードに切り替える')
     expect(themeButton.find('[data-icon="moon"]').exists()).toBe(true)
 
     await themeButton.trigger('click')
@@ -469,16 +1053,18 @@ describe('App', () => {
   })
 
   it('LocalStorageに保存したMarkdown入力を復元する', () => {
-    localStorage.setItem(MARKDOWN_DRAFT_STORAGE_KEY, '# 保存済み')
+    localStorage.setItem(LEGACY_MARKDOWN_DRAFT_STORAGE_KEY, '# 保存済み')
 
     const wrapper = mount(App)
 
     expect(wrapper.get<HTMLTextAreaElement>('#markdown-input').element.value).toBe('# 保存済み')
     expect(wrapper.get<HTMLTextAreaElement>('#conversion-output').element.value).toBe('*保存済み*')
+    expect(localStorage.getItem(EDITOR_STATE_STORAGE_KEY)).not.toBeNull()
+    expect(localStorage.getItem(LEGACY_MARKDOWN_DRAFT_STORAGE_KEY)).toBeNull()
   })
 
   it('選択した変換形式を保存し、再読み込み後も同じ形式で変換する', async () => {
-    localStorage.setItem(MARKDOWN_DRAFT_STORAGE_KEY, '**重要**')
+    localStorage.setItem(LEGACY_MARKDOWN_DRAFT_STORAGE_KEY, '**重要**')
     const wrapper = mount(App)
 
     await wrapper.get<HTMLSelectElement>('#output-format').setValue('backlog-notation')
@@ -518,7 +1104,7 @@ describe('App', () => {
 
     expect(writeText).toHaveBeenCalledWith("''重要''")
     expect(wrapper.get('.copy-button').find('[data-icon="check"]').exists()).toBe(true)
-    expect(wrapper.get('.copy-button').attributes('title')).toBe('コピーしました')
+    expect(wrapper.get('.copy-tooltip-target').attributes('data-tooltip')).toBe('コピーしました')
     expect(wrapper.get('.app-notice').text()).toBe('Backlog記法形式でコピーしました')
     expect(wrapper.get('.app-notice').attributes('role')).toBe('status')
     expect(wrapper.get('.app-notice').classes()).toContain('toast-notice')
@@ -526,7 +1112,7 @@ describe('App', () => {
     await vi.advanceTimersByTimeAsync(COPY_NOTICE_DURATION_MS)
     expect(wrapper.find('.app-notice').exists()).toBe(false)
     expect(wrapper.get('.copy-button').find('[data-icon="copy"]').exists()).toBe(true)
-    expect(wrapper.get('.copy-button').attributes('title')).toBe('コピー')
+    expect(wrapper.get('.copy-tooltip-target').attributes('data-tooltip')).toBe('コピー')
   })
 
   it('コピー失敗時に手動コピーを案内し、入力と変換結果を維持する', async () => {

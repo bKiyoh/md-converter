@@ -65,7 +65,7 @@ onBeforeUnmount(() => {
     <IconButton
       class="settings-button"
       accessible-label="設定"
-      title="設定"
+      tooltip="設定"
       aria-haspopup="true"
       :aria-expanded="isOpen"
       aria-controls="settings-popover"
@@ -91,7 +91,7 @@ onBeforeUnmount(() => {
             :accessible-label="
               darkMode ? 'ライトモードに切り替える' : 'ダークモードに切り替える'
             "
-            :title="darkMode ? 'ライトモードに切り替える' : 'ダークモードに切り替える'"
+            :tooltip="darkMode ? 'ライトモードに切り替える' : 'ダークモードに切り替える'"
             :aria-pressed="darkMode"
             @click="emit('update:darkMode', !darkMode)"
           >

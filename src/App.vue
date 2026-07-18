@@ -1,33 +1,88 @@
 <script setup lang="ts">
-import { computed, nextTick, ref } from 'vue'
+import { computed, nextTick, onBeforeUnmount, ref } from 'vue'
 import AppIcon from './components/common/AppIcon.vue'
 import AppNotice from './components/common/AppNotice.vue'
+import AppTitleButton from './components/common/AppTitleButton.vue'
 import IconButton from './components/common/IconButton.vue'
 import SettingsPopover from './components/common/SettingsPopover.vue'
+import TooltipTarget from './components/common/TooltipTarget.vue'
+import EditorTabs from './components/editor/EditorTabs.vue'
+import EditableTabName from './components/editor/EditableTabName.vue'
+import FocusModeGuide from './components/editor/FocusModeGuide.vue'
 import MarkdownEditor from './components/editor/MarkdownEditor.vue'
 import OutputFormatSelect from './components/output/OutputFormatSelect.vue'
 import OutputPanel from './components/output/OutputPanel.vue'
 import { useClipboard } from './composables/useClipboard'
 import { useAppSettings } from './composables/useAppSettings'
-import { useMarkdownDraft } from './composables/useMarkdownDraft'
+import { useEditorTabs } from './composables/useEditorTabs'
+import { useFocusMode, type MarkdownEditorController } from './composables/useFocusMode'
 import { useOutputFormatPreference } from './composables/useOutputFormatPreference'
 import { useThemePreference } from './composables/useThemePreference'
+import { useWorkspaceSplitter } from './composables/useWorkspaceSplitter'
 import { converterRegistry, outputFormatOptions } from './converters/converterRegistry'
+import { tooltipDirective as vTooltip } from './directives/tooltip'
 import { parseMarkdown } from './parser/parseMarkdown'
 import type { ConversionResult } from './types/conversion'
 import { countCharacters } from './utils/countCharacters'
 
-const { markdown } = useMarkdownDraft()
+const {
+  tabs,
+  deletedTabs,
+  activeTabId,
+  activeTab,
+  markdown,
+  canAddTab,
+  canDeleteTab,
+  addTab,
+  selectTab,
+  renameTab,
+  deleteTab,
+  restoreTab,
+  permanentlyDeleteTab,
+} = useEditorTabs()
 const { theme } = useThemePreference()
 const { selectedFormat } = useOutputFormatPreference()
-const { editorInternalScroll } = useAppSettings()
+const { editorInternalScroll, workspaceSplitRatio } = useAppSettings()
+const {
+  setWorkspaceElement,
+  isResizing,
+  splitRatioPercent,
+  minimumSplitRatioPercent,
+  maximumSplitRatioPercent,
+  workspaceGridTemplateColumns,
+  handlePointerDown: handleSplitterPointerDown,
+  handlePointerMove: handleSplitterPointerMove,
+  handlePointerEnd: handleSplitterPointerEnd,
+  handleKeydown: handleSplitterKeydown,
+  resetSplitRatio,
+} = useWorkspaceSplitter(workspaceSplitRatio)
 const { copy, notice } = useClipboard()
 const activePanel = ref<WorkspacePanel>('input')
+const markdownEditor = ref<MarkdownEditorController | null>(null)
+const {
+  isFocusMode,
+  isFocusModeHelpOpen,
+  enterFocusMode,
+  exitFocusMode,
+  toggleFocusModeHelp,
+} = useFocusMode(markdownEditor, () => {
+  activePanel.value = 'input'
+})
 const inputTab = ref<HTMLButtonElement | null>(null)
 const outputTab = ref<HTMLButtonElement | null>(null)
 const modalCloseButton = ref<HTMLButtonElement | null>(null)
 const isInfoModalOpen = ref<boolean>(false)
 let infoTrigger: HTMLElement | null = null
+let tabNoticeTimer: ReturnType<typeof setTimeout> | undefined
+
+const TAB_NOTICE_DURATION_MS = 5_000
+
+type TabNotice = {
+  kind: 'error'
+  message: string
+}
+
+const tabNotice = ref<TabNotice | null>(null)
 
 type WorkspacePanel = 'input' | 'output'
 
@@ -57,9 +112,46 @@ const formatLabel = computed<string>(
   () => outputFormatOptions.find((option) => option.value === selectedFormat.value)?.label ?? '',
 )
 const copySucceeded = computed<boolean>(() => notice.value?.kind === 'success')
+const effectiveEditorInternalScroll = computed<boolean>(
+  () => isFocusMode.value || editorInternalScroll.value,
+)
 
 async function copyOutput(): Promise<void> {
   await copy(conversionResult.value.output, `${formatLabel.value}形式でコピーしました`)
+}
+
+function showTabNotice(nextNotice: TabNotice): void {
+  tabNotice.value = nextNotice
+
+  if (tabNoticeTimer !== undefined) {
+    clearTimeout(tabNoticeTimer)
+  }
+
+  tabNoticeTimer = setTimeout(() => {
+    tabNotice.value = null
+    tabNoticeTimer = undefined
+  }, TAB_NOTICE_DURATION_MS)
+}
+
+function handleDeleteTab(id: string): void {
+  deleteTab(id)
+}
+
+function handleRestoreTab(id: string): void {
+  const result = restoreTab(id)
+
+  if (result === 'limit') {
+    showTabNotice({
+      kind: 'error',
+      message: 'タブは最大7つまでです。復元するには、現在のタブを1つ削除してください。',
+    })
+  } else if (result === 'restored') {
+    tabNotice.value = null
+  }
+}
+
+function handlePermanentlyDeleteTab(id: string): void {
+  permanentlyDeleteTab(id)
 }
 
 async function openInfoModal(event: MouseEvent): Promise<void> {
@@ -112,12 +204,21 @@ function handleTabKeydown(event: KeyboardEvent, currentPanel: WorkspacePanel): v
     void selectPanelAndFocus(nextPanel)
   }
 }
+
+onBeforeUnmount(() => {
+  if (tabNoticeTimer !== undefined) {
+    clearTimeout(tabNoticeTimer)
+  }
+})
 </script>
 
 <template>
   <div
     class="app"
-    :class="{ 'app--internal-scroll': editorInternalScroll }"
+    :class="{
+      'app--internal-scroll': effectiveEditorInternalScroll,
+      'app--focus-mode': isFocusMode,
+    }"
     :data-theme="theme"
   >
     <div
@@ -125,45 +226,69 @@ function handleTabKeydown(event: KeyboardEvent, currentPanel: WorkspacePanel): v
       :aria-hidden="isInfoModalOpen ? 'true' : undefined"
       :inert="isInfoModalOpen ? true : undefined"
     >
-      <header class="app-header">
+      <FocusModeGuide
+        v-if="isFocusMode"
+        :help-open="isFocusModeHelpOpen"
+        @exit="exitFocusMode"
+        @toggle-help="toggleFocusModeHelp"
+      />
+      <div v-if="isFocusMode" class="focus-mode-spacer" aria-hidden="true" />
+
+      <header v-show="!isFocusMode" class="app-header">
         <div class="brand-heading">
-          <p class="eyebrow">Markdown Converter</p>
           <IconButton
-            class="info-button"
-            accessible-label="このアプリについて"
-            title="このアプリについて"
-            @click="openInfoModal"
+            class="focus-mode-button"
+            accessible-label="フォーカスモードを開始"
+            tooltip="フォーカスモードを開始（Esc）"
+            @click="enterFocusMode"
           >
-            <AppIcon name="info" />
+            <AppIcon name="focus" />
           </IconButton>
-          <SettingsPopover
+          <AppTitleButton
             :dark-mode="theme === 'dark'"
-            :editor-internal-scroll="editorInternalScroll"
-            @update:dark-mode="theme = $event ? 'dark' : 'light'"
-            @update:editor-internal-scroll="editorInternalScroll = $event"
+            @click="openInfoModal"
           />
         </div>
         <div class="app-header-actions">
           <div class="header-output-actions">
+            <SettingsPopover
+              :dark-mode="theme === 'dark'"
+              :editor-internal-scroll="editorInternalScroll"
+              @update:dark-mode="theme = $event ? 'dark' : 'light'"
+              @update:editor-internal-scroll="editorInternalScroll = $event"
+            />
             <OutputFormatSelect v-model="selectedFormat" />
-            <IconButton
-              class="copy-button"
-              accessible-label="変換結果をコピー"
-              :title="copySucceeded ? 'コピーしました' : 'コピー'"
-              :disabled="conversionResult.output.length === 0"
-              @click="copyOutput"
+            <TooltipTarget
+              class="copy-tooltip-target"
+              :text="copySucceeded ? 'コピーしました' : 'コピー'"
             >
-              <AppIcon :name="copySucceeded ? 'check' : 'copy'" />
-            </IconButton>
+              <IconButton
+                class="copy-button"
+                accessible-label="変換結果をコピー"
+                :disabled="conversionResult.output.length === 0"
+                @click="copyOutput"
+              >
+                <AppIcon :name="copySucceeded ? 'check' : 'copy'" />
+              </IconButton>
+            </TooltipTarget>
           </div>
         </div>
       </header>
 
       <Transition name="toast">
-        <AppNotice v-if="notice" class="toast-notice" :notice="notice" />
+        <AppNotice
+          v-if="!isFocusMode && tabNotice"
+          class="toast-notice"
+          :notice="tabNotice"
+        />
+        <AppNotice
+          v-else-if="!isFocusMode && notice"
+          class="toast-notice"
+          :notice="notice"
+        />
       </Transition>
 
-      <nav class="workspace-tabs" aria-label="編集エリア">
+      <nav v-show="!isFocusMode" class="workspace-tabs" aria-label="編集エリア">
         <div
           class="workspace-tablist"
           role="tablist"
@@ -203,13 +328,70 @@ function handleTabKeydown(event: KeyboardEvent, currentPanel: WorkspacePanel): v
         </div>
       </nav>
 
-      <main class="workspace" :data-active-panel="activePanel">
+      <main
+        :ref="setWorkspaceElement"
+        class="workspace"
+        :class="{
+          'workspace--resizing': isResizing,
+          'workspace--focus-mode': isFocusMode,
+        }"
+        :data-active-panel="activePanel"
+        :style="isFocusMode ? {} : { gridTemplateColumns: workspaceGridTemplateColumns }"
+      >
         <MarkdownEditor
+          ref="markdownEditor"
           v-model="markdown"
           :character-count="inputCharacterCount"
-          :editor-internal-scroll="editorInternalScroll"
-        />
+          :editor-internal-scroll="effectiveEditorInternalScroll"
+          :focus-mode="isFocusMode"
+        >
+          <template #document-tabs>
+            <EditorTabs
+              v-if="!isFocusMode"
+              :tabs="tabs"
+              :deleted-tabs="deletedTabs"
+              :active-tab-id="activeTabId"
+              :can-add-tab="canAddTab"
+              :can-delete-tab="canDeleteTab"
+              @add="addTab"
+              @select="selectTab"
+              @rename="renameTab"
+              @delete="handleDeleteTab"
+              @restore="handleRestoreTab"
+              @permanently-delete="handlePermanentlyDeleteTab"
+            />
+            <div v-else class="focus-tab-name">
+              <EditableTabName
+                :tab="activeTab"
+                variant="focus"
+                @rename="renameTab"
+              />
+            </div>
+          </template>
+        </MarkdownEditor>
+        <div
+          v-tooltip="'ドラッグまたは左右キーで幅を調整（ダブルクリックで均等）'"
+          v-show="!isFocusMode"
+          class="workspace-splitter"
+          role="separator"
+          aria-label="左右ペインの幅を調整"
+          aria-orientation="vertical"
+          :aria-valuemin="minimumSplitRatioPercent"
+          :aria-valuemax="maximumSplitRatioPercent"
+          :aria-valuenow="splitRatioPercent"
+          :aria-valuetext="`左ペイン${splitRatioPercent}%、右ペイン${100 - splitRatioPercent}%`"
+          tabindex="0"
+          @pointerdown="handleSplitterPointerDown"
+          @pointermove="handleSplitterPointerMove"
+          @pointerup="handleSplitterPointerEnd"
+          @pointercancel="handleSplitterPointerEnd"
+          @keydown="handleSplitterKeydown"
+          @dblclick="resetSplitRatio"
+        >
+          <span class="workspace-splitter-handle" aria-hidden="true" />
+        </div>
         <OutputPanel
+          v-show="!isFocusMode"
           :markdown="markdown"
           :output="conversionResult.output"
           :character-count="outputCharacterCount"
@@ -232,7 +414,7 @@ function handleTabKeydown(event: KeyboardEvent, currentPanel: WorkspacePanel): v
         aria-describedby="info-modal-description info-modal-privacy"
         @keydown="handleInfoModalKeydown"
       >
-        <h2 id="info-modal-title">Markdown変換エディタ</h2>
+        <h2 id="info-modal-title">Markdown Converter</h2>
         <p id="info-modal-description">
           貼り付け先に合わせて、ブラウザ内でリアルタイムに変換します。
         </p>

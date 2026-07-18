@@ -20,6 +20,14 @@ function mountSettings(storage: LocalStorageAccess | null): VueWrapper {
           v-model="editorInternalScroll"
           type="checkbox"
         />
+        <input
+          data-testid="workspace-split-ratio"
+          v-model.number="workspaceSplitRatio"
+          type="range"
+          min="0.2"
+          max="0.8"
+          step="0.05"
+        />
       `,
     }),
   )
@@ -37,6 +45,9 @@ describe('useAppSettings', () => {
     expect(wrapper.get<HTMLInputElement>('[data-testid="editor-scroll"]').element.checked).toBe(
       true,
     )
+    expect(
+      wrapper.get<HTMLInputElement>('[data-testid="workspace-split-ratio"]').element.value,
+    ).toBe('0.5')
   })
 
   it('変更をJSONで即時保存し、次回起動時に復元する', async () => {
@@ -54,13 +65,61 @@ describe('useAppSettings', () => {
 
     expect(storage.setItem).toHaveBeenCalledWith(
       APP_SETTINGS_STORAGE_KEY,
-      JSON.stringify({ editorInternalScroll: false } satisfies AppSettings),
+      JSON.stringify({
+        editorInternalScroll: false,
+        workspaceSplitRatio: 0.5,
+      } satisfies AppSettings),
     )
 
     const reloadedWrapper = mountSettings(storage)
     expect(
       reloadedWrapper.get<HTMLInputElement>('[data-testid="editor-scroll"]').element.checked,
     ).toBe(false)
+    expect(
+      reloadedWrapper.get<HTMLInputElement>('[data-testid="workspace-split-ratio"]').element.value,
+    ).toBe('0.5')
+  })
+
+  it('左右ペイン比率を即時保存して復元する', async () => {
+    let storedValue: string | null = null
+    const storage = {
+      getItem: vi.fn(() => storedValue),
+      setItem: vi.fn((_key: string, value: string) => {
+        storedValue = value
+      }),
+    }
+    const wrapper = mountSettings(storage)
+
+    await wrapper.get<HTMLInputElement>('[data-testid="workspace-split-ratio"]').setValue('0.65')
+
+    expect(storage.setItem).toHaveBeenLastCalledWith(
+      APP_SETTINGS_STORAGE_KEY,
+      JSON.stringify({
+        editorInternalScroll: true,
+        workspaceSplitRatio: 0.65,
+      } satisfies AppSettings),
+    )
+
+    const reloadedWrapper = mountSettings(storage)
+    expect(
+      reloadedWrapper.get<HTMLInputElement>('[data-testid="workspace-split-ratio"]').element.value,
+    ).toBe('0.65')
+  })
+
+  it('旧保存値では内部スクロール設定を維持して比率を50%へ補完する', () => {
+    const storage = {
+      getItem: vi.fn(() => JSON.stringify({ editorInternalScroll: false })),
+      setItem: vi.fn(),
+    }
+
+    const wrapper = mountSettings(storage)
+
+    expect(wrapper.get<HTMLInputElement>('[data-testid="editor-scroll"]').element.checked).toBe(
+      false,
+    )
+    expect(
+      wrapper.get<HTMLInputElement>('[data-testid="workspace-split-ratio"]').element.value,
+    ).toBe('0.5')
   })
 
   it.each([
@@ -78,6 +137,24 @@ describe('useAppSettings', () => {
     expect(wrapper.get<HTMLInputElement>('[data-testid="editor-scroll"]').element.checked).toBe(
       true,
     )
+  })
+
+  it.each([Number.NaN, 0.1, 0.9])('不正な比率 %s は50%%へフォールバックする', (ratio) => {
+    const storage = {
+      getItem: vi.fn(() =>
+        JSON.stringify({ editorInternalScroll: false, workspaceSplitRatio: ratio }),
+      ),
+      setItem: vi.fn(),
+    }
+
+    const wrapper = mountSettings(storage)
+
+    expect(wrapper.get<HTMLInputElement>('[data-testid="editor-scroll"]').element.checked).toBe(
+      false,
+    )
+    expect(
+      wrapper.get<HTMLInputElement>('[data-testid="workspace-split-ratio"]').element.value,
+    ).toBe('0.5')
   })
 
   it('LocalStorageの読み書きが失敗しても画面上の設定を変更できる', async () => {

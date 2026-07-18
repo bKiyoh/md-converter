@@ -1,17 +1,18 @@
 <script setup lang="ts">
-import type { ClipboardNotice } from '../../composables/useClipboard'
-
 defineProps<{
-  notice: ClipboardNotice
+  notice: {
+    kind: 'success' | 'error'
+    message: string
+  }
 }>()
 </script>
 
 <template>
-  <p
+  <div
     class="app-notice"
     :class="`app-notice--${notice.kind}`"
     :role="notice.kind === 'error' ? 'alert' : 'status'"
   >
-    {{ notice.message }}
-  </p>
+    <span>{{ notice.message }}</span>
+  </div>
 </template>
