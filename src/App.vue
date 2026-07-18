@@ -248,15 +248,15 @@ onBeforeUnmount(() => {
             :dark-mode="theme === 'dark'"
             @click="openInfoModal"
           />
-          <SettingsPopover
-            :dark-mode="theme === 'dark'"
-            :editor-internal-scroll="editorInternalScroll"
-            @update:dark-mode="theme = $event ? 'dark' : 'light'"
-            @update:editor-internal-scroll="editorInternalScroll = $event"
-          />
         </div>
         <div class="app-header-actions">
           <div class="header-output-actions">
+            <SettingsPopover
+              :dark-mode="theme === 'dark'"
+              :editor-internal-scroll="editorInternalScroll"
+              @update:dark-mode="theme = $event ? 'dark' : 'light'"
+              @update:editor-internal-scroll="editorInternalScroll = $event"
+            />
             <OutputFormatSelect v-model="selectedFormat" />
             <TooltipTarget
               class="copy-tooltip-target"

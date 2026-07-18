@@ -303,11 +303,6 @@ h2 {
   box-shadow: 0 16px 44px rgb(18 28 48 / 24%);
 }
 
-.brand-heading .settings-popover {
-  right: auto;
-  left: 0;
-}
-
 .settings-popover h2 {
   margin-bottom: 14px;
 }
@@ -1382,7 +1377,7 @@ h2 {
     margin-left: auto;
   }
 
-  .brand-heading .settings-popover {
+  .header-output-actions .settings-popover {
     position: fixed;
     top: 64px;
     right: 12px;

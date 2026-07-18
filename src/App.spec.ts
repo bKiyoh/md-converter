@@ -364,6 +364,12 @@ describe('App', () => {
     expect(copyButton.element.closest('.header-output-actions')).toBe(
       wrapper.get('#output-format').element.closest('.header-output-actions'),
     )
+    expect(wrapper.get('.settings-root').element.nextElementSibling).toBe(
+      wrapper.get('.format-field').element,
+    )
+    expect(wrapper.get('.format-field').element.nextElementSibling).toBe(
+      wrapper.get('.copy-tooltip-target').element,
+    )
     expect(wrapper.find('.theme-button').exists()).toBe(false)
     expect(headerActions.element.firstElementChild?.classList.contains('header-output-actions')).toBe(
       true,
@@ -443,8 +449,11 @@ describe('App', () => {
     expect(settingsButton.attributes('data-tooltip')).toBe('設定')
     expect(settingsButton.attributes('aria-expanded')).toBe('false')
     expect(settingsButton.find('[data-icon="settings"]').exists()).toBe(true)
-    expect(titleButton.element.nextElementSibling?.classList).toContain('settings-root')
-    expect(wrapper.get('.app-header-actions').find('.settings-button').exists()).toBe(false)
+    expect(titleButton.element.nextElementSibling).toBeNull()
+    expect(wrapper.get('.app-header-actions').find('.settings-button').exists()).toBe(true)
+    expect(wrapper.get('.format-field').element.previousElementSibling?.classList).toContain(
+      'settings-root',
+    )
 
     await settingsButton.trigger('click')
 
@@ -467,7 +476,10 @@ describe('App', () => {
     const titleButton = wrapper.get<HTMLButtonElement>('.brand-title-button')
     expect(wrapper.get('.brand-heading').element.firstElementChild).toBe(focusButton.element)
     expect(focusButton.element.nextElementSibling).toBe(titleButton.element)
-    expect(settingsRoot.element.previousElementSibling).toBe(titleButton.element)
+    expect(settingsRoot.element.nextElementSibling).toBe(wrapper.get('.format-field').element)
+    expect(wrapper.get('.format-field').element.nextElementSibling).toBe(
+      wrapper.get('.copy-tooltip-target').element,
+    )
     expect(wrapper.get('.brand-title-icon').attributes('alt')).toBe('Markdown Converter')
     expect(wrapper.get('.brand-title-icon').attributes('src')).toContain('title-icon-light.png')
     expect(focusButton.attributes('aria-label')).toBe('フォーカスモードを開始')
