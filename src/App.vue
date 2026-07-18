@@ -5,12 +5,15 @@ import AppNotice from './components/common/AppNotice.vue'
 import IconButton from './components/common/IconButton.vue'
 import SettingsPopover from './components/common/SettingsPopover.vue'
 import EditorTabs from './components/editor/EditorTabs.vue'
+import EditableTabName from './components/editor/EditableTabName.vue'
+import FocusModeGuide from './components/editor/FocusModeGuide.vue'
 import MarkdownEditor from './components/editor/MarkdownEditor.vue'
 import OutputFormatSelect from './components/output/OutputFormatSelect.vue'
 import OutputPanel from './components/output/OutputPanel.vue'
 import { useClipboard } from './composables/useClipboard'
 import { useAppSettings } from './composables/useAppSettings'
 import { useEditorTabs } from './composables/useEditorTabs'
+import { useFocusMode, type MarkdownEditorController } from './composables/useFocusMode'
 import { useOutputFormatPreference } from './composables/useOutputFormatPreference'
 import { useThemePreference } from './composables/useThemePreference'
 import { useWorkspaceSplitter } from './composables/useWorkspaceSplitter'
@@ -23,6 +26,7 @@ const {
   tabs,
   deletedTabs,
   activeTabId,
+  activeTab,
   markdown,
   canAddTab,
   canDeleteTab,
@@ -51,6 +55,16 @@ const {
 } = useWorkspaceSplitter(workspaceSplitRatio)
 const { copy, notice } = useClipboard()
 const activePanel = ref<WorkspacePanel>('input')
+const markdownEditor = ref<MarkdownEditorController | null>(null)
+const {
+  isFocusMode,
+  isFocusModeHelpOpen,
+  enterFocusMode,
+  exitFocusMode,
+  toggleFocusModeHelp,
+} = useFocusMode(markdownEditor, () => {
+  activePanel.value = 'input'
+})
 const inputTab = ref<HTMLButtonElement | null>(null)
 const outputTab = ref<HTMLButtonElement | null>(null)
 const modalCloseButton = ref<HTMLButtonElement | null>(null)
@@ -95,6 +109,9 @@ const formatLabel = computed<string>(
   () => outputFormatOptions.find((option) => option.value === selectedFormat.value)?.label ?? '',
 )
 const copySucceeded = computed<boolean>(() => notice.value?.kind === 'success')
+const effectiveEditorInternalScroll = computed<boolean>(
+  () => isFocusMode.value || editorInternalScroll.value,
+)
 
 async function copyOutput(): Promise<void> {
   await copy(conversionResult.value.output, `${formatLabel.value}形式でコピーしました`)
@@ -195,7 +212,10 @@ onBeforeUnmount(() => {
 <template>
   <div
     class="app"
-    :class="{ 'app--internal-scroll': editorInternalScroll }"
+    :class="{
+      'app--internal-scroll': effectiveEditorInternalScroll,
+      'app--focus-mode': isFocusMode,
+    }"
     :data-theme="theme"
   >
     <div
@@ -203,9 +223,28 @@ onBeforeUnmount(() => {
       :aria-hidden="isInfoModalOpen ? 'true' : undefined"
       :inert="isInfoModalOpen ? true : undefined"
     >
-      <header class="app-header">
+      <FocusModeGuide
+        v-if="isFocusMode"
+        :help-open="isFocusModeHelpOpen"
+        @exit="exitFocusMode"
+        @toggle-help="toggleFocusModeHelp"
+      />
+      <div v-if="isFocusMode" class="focus-mode-spacer" aria-hidden="true" />
+
+      <header v-show="!isFocusMode" class="app-header">
         <div class="brand-heading">
-          <p class="eyebrow">Markdown Converter</p>
+          <IconButton
+            class="focus-mode-button"
+            accessible-label="フォーカスモードを開始"
+            title="フォーカスモードを開始（Esc）"
+            @click="enterFocusMode"
+          >
+            <AppIcon name="focus" />
+          </IconButton>
+          <p class="eyebrow brand-title" aria-label="Markdown Converter">
+            <span>Markdown</span>
+            <span>Converter</span>
+          </p>
           <IconButton
             class="info-button"
             accessible-label="このアプリについて"
@@ -239,14 +278,18 @@ onBeforeUnmount(() => {
 
       <Transition name="toast">
         <AppNotice
-          v-if="tabNotice"
+          v-if="!isFocusMode && tabNotice"
           class="toast-notice"
           :notice="tabNotice"
         />
-        <AppNotice v-else-if="notice" class="toast-notice" :notice="notice" />
+        <AppNotice
+          v-else-if="!isFocusMode && notice"
+          class="toast-notice"
+          :notice="notice"
+        />
       </Transition>
 
-      <nav class="workspace-tabs" aria-label="編集エリア">
+      <nav v-show="!isFocusMode" class="workspace-tabs" aria-label="編集エリア">
         <div
           class="workspace-tablist"
           role="tablist"
@@ -289,17 +332,23 @@ onBeforeUnmount(() => {
       <main
         :ref="setWorkspaceElement"
         class="workspace"
-        :class="{ 'workspace--resizing': isResizing }"
+        :class="{
+          'workspace--resizing': isResizing,
+          'workspace--focus-mode': isFocusMode,
+        }"
         :data-active-panel="activePanel"
-        :style="{ gridTemplateColumns: workspaceGridTemplateColumns }"
+        :style="isFocusMode ? {} : { gridTemplateColumns: workspaceGridTemplateColumns }"
       >
         <MarkdownEditor
+          ref="markdownEditor"
           v-model="markdown"
           :character-count="inputCharacterCount"
-          :editor-internal-scroll="editorInternalScroll"
+          :editor-internal-scroll="effectiveEditorInternalScroll"
+          :focus-mode="isFocusMode"
         >
           <template #document-tabs>
             <EditorTabs
+              v-if="!isFocusMode"
               :tabs="tabs"
               :deleted-tabs="deletedTabs"
               :active-tab-id="activeTabId"
@@ -312,9 +361,17 @@ onBeforeUnmount(() => {
               @restore="handleRestoreTab"
               @permanently-delete="handlePermanentlyDeleteTab"
             />
+            <div v-else class="focus-tab-name">
+              <EditableTabName
+                :tab="activeTab"
+                variant="focus"
+                @rename="renameTab"
+              />
+            </div>
           </template>
         </MarkdownEditor>
         <div
+          v-show="!isFocusMode"
           class="workspace-splitter"
           role="separator"
           aria-label="左右ペインの幅を調整"
@@ -335,6 +392,7 @@ onBeforeUnmount(() => {
           <span class="workspace-splitter-handle" aria-hidden="true" />
         </div>
         <OutputPanel
+          v-show="!isFocusMode"
           :markdown="markdown"
           :output="conversionResult.output"
           :character-count="outputCharacterCount"

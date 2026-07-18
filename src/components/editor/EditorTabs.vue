@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import type { DeletedTab, EditorTab } from '../../types/editorTabs'
-import { MAX_TAB_NAME_LENGTH } from '../../composables/useEditorStorage'
 import AppIcon from '../common/AppIcon.vue'
+import EditableTabName from './EditableTabName.vue'
 
 const props = defineProps<{
   tabs: EditorTab[]
@@ -22,41 +22,9 @@ const emit = defineEmits<{
 }>()
 
 const root = ref<HTMLElement | null>(null)
-const editingTabId = ref<string | null>(null)
-const editingName = ref<string>('')
 const deletedTabsOpen = ref<boolean>(false)
 const deletedTabsToggle = ref<HTMLButtonElement | null>(null)
 const deletedTabsPanel = ref<HTMLElement | null>(null)
-
-function startRenaming(tab: EditorTab): void {
-  editingTabId.value = tab.id
-  editingName.value = tab.name
-
-  void nextTick(() => {
-    const input = root.value?.querySelector<HTMLInputElement>('.document-tab-name-input')
-    input?.focus()
-    input?.select()
-  })
-}
-
-function confirmRename(tab: EditorTab): void {
-  const nextName = editingName.value.trim()
-
-  if (nextName.length > 0 && Array.from(nextName).length <= MAX_TAB_NAME_LENGTH) {
-    emit('rename', tab.id, nextName)
-  }
-
-  editingTabId.value = null
-}
-
-function cancelRename(): void {
-  editingTabId.value = null
-}
-
-function updateEditingName(event: Event): void {
-  const value = (event.target as HTMLInputElement).value
-  editingName.value = Array.from(value).slice(0, MAX_TAB_NAME_LENGTH).join('')
-}
 
 async function selectAndFocus(id: string): Promise<void> {
   emit('select', id)
@@ -115,6 +83,10 @@ function requestDelete(id: string): void {
   emit('delete', id)
 }
 
+function handleRename(id: string, name: string): void {
+  emit('rename', id, name)
+}
+
 async function addTabAndKeepControlsVisible(): Promise<void> {
   emit('add')
   await nextTick()
@@ -158,29 +130,13 @@ onBeforeUnmount(() => {
           class="document-tab-item"
           :class="{ 'document-tab-item--active': activeTabId === tab.id }"
         >
-          <input
-            v-if="editingTabId === tab.id"
-            class="document-tab-name-input"
-            :value="editingName"
-            :aria-label="`${tab.name}の名前を変更`"
-            @input="updateEditingName"
-            @keydown.enter.prevent="confirmRename(tab)"
-            @keydown.esc.prevent="cancelRename"
-            @blur="confirmRename(tab)"
-          />
-          <button
-            v-else
-            class="document-tab-button"
-            :class="{ 'document-tab-button--active': activeTabId === tab.id }"
-            type="button"
-            :data-document-tab-id="tab.id"
-            :aria-pressed="activeTabId === tab.id"
-            @click="emit('select', tab.id)"
-            @dblclick="startRenaming(tab)"
+          <EditableTabName
+            :tab="tab"
+            :active="activeTabId === tab.id"
+            @select="emit('select', $event)"
+            @rename="handleRename"
             @keydown="handleTabKeydown($event, index)"
-          >
-            {{ tab.name }}
-          </button>
+          />
           <button
             class="document-tab-delete-button"
             type="button"

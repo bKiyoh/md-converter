@@ -125,6 +125,7 @@ MVPでは以下に対応する。
 - `docs/conversion-rules.md`
 - `docs/implementation-plan.md`
 - `docs/tab-management-spec.md`
+- `docs/focus-mode-spec.md`
 
 各ファイルの役割は以下のとおり。
 
@@ -135,6 +136,7 @@ MVPでは以下に対応する。
 | `docs/conversion-rules.md`    | Markdownから各形式への変換仕様   |
 | `docs/implementation-plan.md` | 技術設計、実装順、マイルストーン |
 | `docs/tab-management-spec.md` | Markdownタブ管理、削除、保存仕様 |
+| `docs/focus-mode-spec.md`     | フォーカスモードの表示、操作仕様 |
 
 仕様書間に矛盾がある場合は、推測で解決せず報告すること。
 
@@ -316,6 +318,16 @@ MVPでは以下に対応する。
 - ドラッグだけでなくキーボードでも比率を変更できるようにする
 - 比率は既存のアプリ設定へ保存し、旧保存値と不正値を安全に扱う
 - 上下分割、ペインの折りたたみ、タブごとの比率保存は実装しない
+
+### Milestone 17：フォーカスモード
+
+- 通常画面と同じtextarea、入力支援、保存処理を使用する
+- PCでは左25%、中央50%、右25%の固定レイアウトとする
+- 767px以下では中央を全幅表示し、解説欄を左ドロワーで表示する
+- タブ名編集以外のタブ操作と、入力に直接関係しない機能を表示しない
+- カーソル、選択範囲、スクロール位置、選択中タブを維持する
+- 表示状態と解説欄の開閉状態は保存しない
+- 詳細な挙動は `docs/focus-mode-spec.md` に従う
 
 ---
 
