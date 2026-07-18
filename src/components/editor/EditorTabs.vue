@@ -113,7 +113,7 @@ onBeforeUnmount(() => {
 <template>
   <section ref="root" class="document-tabs" aria-label="Markdown文書">
     <div class="document-tabs-main">
-      <div class="document-tablist" role="tablist" aria-label="Markdown文書タブ">
+      <div class="document-tablist" role="group" aria-label="Markdown文書タブ">
         <div
           v-for="(tab, index) in tabs"
           :key="tab.id"
@@ -135,11 +135,8 @@ onBeforeUnmount(() => {
             class="document-tab-button"
             :class="{ 'document-tab-button--active': activeTabId === tab.id }"
             type="button"
-            role="tab"
             :data-document-tab-id="tab.id"
-            aria-controls="input-panel output-panel"
-            :aria-selected="activeTabId === tab.id"
-            :tabindex="activeTabId === tab.id ? 0 : -1"
+            :aria-pressed="activeTabId === tab.id"
             @click="emit('select', tab.id)"
             @dblclick="startRenaming(tab)"
             @keydown="handleTabKeydown($event, index)"

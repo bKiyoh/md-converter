@@ -164,6 +164,12 @@ describe('App', () => {
 
     expect(wrapper.findAll('.document-tab-button')).toHaveLength(1)
     expect(wrapper.get('.document-tab-button').text()).toBe('Untitled')
+    expect(wrapper.get('.document-tablist').attributes('role')).toBe('group')
+    expect(wrapper.get('.document-tab-button').attributes('role')).toBeUndefined()
+    expect(wrapper.get('.document-tab-button').attributes('aria-controls')).toBeUndefined()
+    expect(wrapper.get('.document-tab-button').attributes('aria-selected')).toBeUndefined()
+    expect(wrapper.get('.document-tab-button').attributes('aria-pressed')).toBe('true')
+    expect(wrapper.get('.document-tab-button').attributes('tabindex')).toBeUndefined()
     expect(editorPanel.element.firstElementChild?.classList).toContain('document-tabs')
     expect(editorPanel.find('#markdown-input-heading').exists()).toBe(false)
     expect(editorPanel.find('.panel-kicker').exists()).toBe(false)
@@ -181,6 +187,8 @@ describe('App', () => {
 
     expect(wrapper.findAll('.document-tab-button')).toHaveLength(2)
     expect(wrapper.findAll('.document-tab-button')[1]?.text()).toBe('Untitled 2')
+    expect(wrapper.findAll('.document-tab-button')[0]?.attributes('aria-pressed')).toBe('false')
+    expect(wrapper.findAll('.document-tab-button')[1]?.attributes('aria-pressed')).toBe('true')
     expect(
       wrapper.get('.document-tab-add-button').element.previousElementSibling,
     ).toBe(wrapper.findAll('.document-tab-item')[1]!.element)
@@ -191,6 +199,8 @@ describe('App', () => {
     await wrapper.findAll<HTMLButtonElement>('.document-tab-button')[0]!.trigger('click')
     expect(input.element.value).toBe('# 最初')
     expect(wrapper.get<HTMLTextAreaElement>('#conversion-output').element.value).toBe('*最初*')
+    expect(wrapper.findAll('.document-tab-button')[0]?.attributes('aria-pressed')).toBe('true')
+    expect(wrapper.findAll('.document-tab-button')[1]?.attributes('aria-pressed')).toBe('false')
   })
 
   it('タブ名をダブルクリックで変更し、Escapeでは取り消す', async () => {
