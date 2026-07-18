@@ -5,7 +5,6 @@ defineProps<{
     | 'moon'
     | 'copy'
     | 'check'
-    | 'info'
     | 'settings'
     | 'close'
     | 'trash'
@@ -13,6 +12,7 @@ defineProps<{
     | 'trash-x'
     | 'focus'
     | 'help'
+    | 'file-output'
 }>()
 </script>
 
@@ -38,10 +38,6 @@ defineProps<{
       <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2" />
     </template>
     <path v-else-if="name === 'check'" d="m20 6-11 11-5-5" />
-    <template v-else-if="name === 'info'">
-      <circle cx="12" cy="12" r="10" />
-      <path d="M12 16v-4M12 8h.01" />
-    </template>
     <path v-else-if="name === 'close'" d="M18 6 6 18M6 6l12 12" />
     <template v-else-if="name === 'trash'">
       <path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6M10 10v6M14 10v6" />
@@ -59,6 +55,10 @@ defineProps<{
     <template v-else-if="name === 'help'">
       <circle cx="12" cy="12" r="10" />
       <path d="M9.1 9a3 3 0 1 1 5.8 1c0 2-3 2-3 4M12 18h.01" />
+    </template>
+    <template v-else-if="name === 'file-output'">
+      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h8" />
+      <path d="M14 2v6h6M8 13h4M8 17h2M13 17h8M18 14l3 3-3 3" />
     </template>
     <template v-else>
       <circle cx="12" cy="12" r="3" />

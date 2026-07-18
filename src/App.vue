@@ -2,8 +2,10 @@
 import { computed, nextTick, onBeforeUnmount, ref } from 'vue'
 import AppIcon from './components/common/AppIcon.vue'
 import AppNotice from './components/common/AppNotice.vue'
+import AppTitleButton from './components/common/AppTitleButton.vue'
 import IconButton from './components/common/IconButton.vue'
 import SettingsPopover from './components/common/SettingsPopover.vue'
+import TooltipTarget from './components/common/TooltipTarget.vue'
 import EditorTabs from './components/editor/EditorTabs.vue'
 import EditableTabName from './components/editor/EditableTabName.vue'
 import FocusModeGuide from './components/editor/FocusModeGuide.vue'
@@ -18,6 +20,7 @@ import { useOutputFormatPreference } from './composables/useOutputFormatPreferen
 import { useThemePreference } from './composables/useThemePreference'
 import { useWorkspaceSplitter } from './composables/useWorkspaceSplitter'
 import { converterRegistry, outputFormatOptions } from './converters/converterRegistry'
+import { tooltipDirective as vTooltip } from './directives/tooltip'
 import { parseMarkdown } from './parser/parseMarkdown'
 import type { ConversionResult } from './types/conversion'
 import { countCharacters } from './utils/countCharacters'
@@ -236,42 +239,38 @@ onBeforeUnmount(() => {
           <IconButton
             class="focus-mode-button"
             accessible-label="フォーカスモードを開始"
-            title="フォーカスモードを開始（Esc）"
+            tooltip="フォーカスモードを開始（Esc）"
             @click="enterFocusMode"
           >
             <AppIcon name="focus" />
           </IconButton>
-          <p class="eyebrow brand-title" aria-label="Markdown Converter">
-            <span>Markdown</span>
-            <span>Converter</span>
-          </p>
-          <IconButton
-            class="info-button"
-            accessible-label="このアプリについて"
-            title="このアプリについて"
-            @click="openInfoModal"
-          >
-            <AppIcon name="info" />
-          </IconButton>
-          <SettingsPopover
+          <AppTitleButton
             :dark-mode="theme === 'dark'"
-            :editor-internal-scroll="editorInternalScroll"
-            @update:dark-mode="theme = $event ? 'dark' : 'light'"
-            @update:editor-internal-scroll="editorInternalScroll = $event"
+            @click="openInfoModal"
           />
         </div>
         <div class="app-header-actions">
           <div class="header-output-actions">
+            <SettingsPopover
+              :dark-mode="theme === 'dark'"
+              :editor-internal-scroll="editorInternalScroll"
+              @update:dark-mode="theme = $event ? 'dark' : 'light'"
+              @update:editor-internal-scroll="editorInternalScroll = $event"
+            />
             <OutputFormatSelect v-model="selectedFormat" />
-            <IconButton
-              class="copy-button"
-              accessible-label="変換結果をコピー"
-              :title="copySucceeded ? 'コピーしました' : 'コピー'"
-              :disabled="conversionResult.output.length === 0"
-              @click="copyOutput"
+            <TooltipTarget
+              class="copy-tooltip-target"
+              :text="copySucceeded ? 'コピーしました' : 'コピー'"
             >
-              <AppIcon :name="copySucceeded ? 'check' : 'copy'" />
-            </IconButton>
+              <IconButton
+                class="copy-button"
+                accessible-label="変換結果をコピー"
+                :disabled="conversionResult.output.length === 0"
+                @click="copyOutput"
+              >
+                <AppIcon :name="copySucceeded ? 'check' : 'copy'" />
+              </IconButton>
+            </TooltipTarget>
           </div>
         </div>
       </header>
@@ -371,6 +370,7 @@ onBeforeUnmount(() => {
           </template>
         </MarkdownEditor>
         <div
+          v-tooltip="'ドラッグまたは左右キーで幅を調整（ダブルクリックで均等）'"
           v-show="!isFocusMode"
           class="workspace-splitter"
           role="separator"
@@ -381,7 +381,6 @@ onBeforeUnmount(() => {
           :aria-valuenow="splitRatioPercent"
           :aria-valuetext="`左ペイン${splitRatioPercent}%、右ペイン${100 - splitRatioPercent}%`"
           tabindex="0"
-          title="ドラッグまたは左右キーで幅を調整（ダブルクリックで均等）"
           @pointerdown="handleSplitterPointerDown"
           @pointermove="handleSplitterPointerMove"
           @pointerup="handleSplitterPointerEnd"
@@ -415,7 +414,7 @@ onBeforeUnmount(() => {
         aria-describedby="info-modal-description info-modal-privacy"
         @keydown="handleInfoModalKeydown"
       >
-        <h2 id="info-modal-title">Markdown変換エディタ</h2>
+        <h2 id="info-modal-title">Markdown Converter</h2>
         <p id="info-modal-description">
           貼り付け先に合わせて、ブラウザ内でリアルタイムに変換します。
         </p>

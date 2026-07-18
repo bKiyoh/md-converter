@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import { nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import type { DeletedTab, EditorTab } from '../../types/editorTabs'
+import { tooltipDirective as vTooltip } from '../../directives/tooltip'
 import AppIcon from '../common/AppIcon.vue'
+import TooltipTarget from '../common/TooltipTarget.vue'
 import EditableTabName from './EditableTabName.vue'
 
 const props = defineProps<{
@@ -137,38 +139,43 @@ onBeforeUnmount(() => {
             @rename="handleRename"
             @keydown="handleTabKeydown($event, index)"
           />
-          <button
-            class="document-tab-delete-button"
-            type="button"
-            :aria-label="`${tab.name}を削除`"
-            title="削除"
-            :disabled="!canDeleteTab"
-            @click.stop="requestDelete(tab.id)"
-          >
-            <AppIcon name="close" />
-          </button>
+          <TooltipTarget class="document-tab-delete-tooltip-target" text="削除">
+            <button
+              class="document-tab-delete-button"
+              type="button"
+              :aria-label="`${tab.name}を削除`"
+              :disabled="!canDeleteTab"
+              @click.stop="requestDelete(tab.id)"
+            >
+              <AppIcon name="close" />
+            </button>
+          </TooltipTarget>
         </div>
 
-        <button
-          class="document-tab-add-button"
-          type="button"
-          aria-label="新しいタブを追加"
-          :disabled="!canAddTab"
-          :title="canAddTab ? '新しいタブを追加' : 'タブは最大7つまで作成できます'"
-          @click="addTabAndKeepControlsVisible"
+        <TooltipTarget
+          class="document-tab-add-tooltip-target"
+          :text="canAddTab ? '新しいタブを追加' : 'タブは最大7つまで作成できます'"
         >
-          ＋
-        </button>
+          <button
+            class="document-tab-add-button"
+            type="button"
+            aria-label="新しいタブを追加"
+            :disabled="!canAddTab"
+            @click="addTabAndKeepControlsVisible"
+          >
+            ＋
+          </button>
+        </TooltipTarget>
       </div>
 
       <button
+        v-tooltip="deletedTabsOpen ? '削除済みタブを閉じる' : '削除済みタブ'"
         ref="deletedTabsToggle"
         class="deleted-tabs-toggle"
         type="button"
         :aria-expanded="deletedTabsOpen"
         aria-controls="deleted-tabs-panel"
         :aria-label="deletedTabsOpen ? '削除済みタブを閉じる' : '削除済みタブを表示'"
-        :title="deletedTabsOpen ? '削除済みタブを閉じる' : '削除済みタブ'"
         @click="deletedTabsOpen = !deletedTabsOpen"
       >
         <AppIcon name="trash" />
@@ -196,19 +203,19 @@ onBeforeUnmount(() => {
           <span>{{ tab.name }}</span>
           <div>
             <button
+              v-tooltip="'復元'"
               class="deleted-tab-action deleted-tab-action--restore"
               type="button"
               :aria-label="`${tab.name}を復元`"
-              title="復元"
               @click.stop="emit('restore', tab.id)"
             >
               <AppIcon name="rotate-ccw" />
             </button>
             <button
+              v-tooltip="'完全に削除'"
               class="deleted-tab-action deleted-tab-action--permanent-delete"
               type="button"
               :aria-label="`${tab.name}を完全に削除`"
-              title="完全に削除"
               @click.stop="emit('permanentlyDelete', tab.id)"
             >
               <AppIcon name="trash-x" />
