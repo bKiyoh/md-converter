@@ -51,7 +51,7 @@ export function useFocusMode(
   }
 
   function handleDocumentKeydown(event: KeyboardEvent): void {
-    if (event.key !== 'Escape' || !markdownEditor.value?.isConnected()) {
+    if (event.isComposing || event.key !== 'Escape' || !markdownEditor.value?.isConnected()) {
       return
     }
 

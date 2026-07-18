@@ -557,6 +557,38 @@ describe('App', () => {
     wrapper.unmount()
   })
 
+  it('IME変換中のEscapeキーではフォーカスモードを切り替えない', async () => {
+    const wrapper = mount(App, { attachTo: document.body })
+    const input = wrapper.get<HTMLTextAreaElement>('#markdown-input')
+    input.element.focus()
+
+    const enterEvent = new KeyboardEvent('keydown', {
+      key: 'Escape',
+      isComposing: true,
+      bubbles: true,
+      cancelable: true,
+    })
+    input.element.dispatchEvent(enterEvent)
+    await flushPromises()
+
+    expect(enterEvent.defaultPrevented).toBe(false)
+    expect(wrapper.get('.app').classes()).not.toContain('app--focus-mode')
+
+    await wrapper.get('.focus-mode-button').trigger('click')
+    const exitEvent = new KeyboardEvent('keydown', {
+      key: 'Escape',
+      isComposing: true,
+      bubbles: true,
+      cancelable: true,
+    })
+    input.element.dispatchEvent(exitEvent)
+    await flushPromises()
+
+    expect(exitEvent.defaultPrevented).toBe(false)
+    expect(wrapper.get('.app').classes()).toContain('app--focus-mode')
+    wrapper.unmount()
+  })
+
   it('フォーカスモード中だけ内部スクロールを強制し、設定値と表示状態を保存しない', async () => {
     localStorage.setItem(
       APP_SETTINGS_STORAGE_KEY,
