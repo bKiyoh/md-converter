@@ -4,6 +4,7 @@ import {
   changeMarkdownListIndent,
   continueMarkdownList,
   getMarkdownShortcut,
+  wrapSelection,
 } from './markdownEditor'
 
 describe('Markdownショートカット', () => {
@@ -25,6 +26,14 @@ describe('Markdownショートカット', () => {
 
   it('選択文字列の外側にある太字記法を解除する', () => {
     expect(applyMarkdownShortcut('**hoge**', 2, 6, 'bold')).toEqual({
+      value: 'hoge',
+      selectionStart: 0,
+      selectionEnd: 4,
+    })
+  })
+
+  it('長さが異なる外側ラッパーを解除しても本文全体の選択を維持する', () => {
+    expect(wrapSelection('<hoge/>', 1, 5, { prefix: '<', suffix: '/>' })).toEqual({
       value: 'hoge',
       selectionStart: 0,
       selectionEnd: 4,

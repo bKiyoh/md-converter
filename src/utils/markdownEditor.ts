@@ -136,13 +136,14 @@ export function wrapSelection(
         value.slice(selectionEnd, selectionEnd + suffix.length) === suffix
 
   if (selectionStart !== selectionEnd && hasOuterWrapper) {
+    const unwrappedSelectionStart = selectionStart - prefix.length
     return {
       value:
-        value.slice(0, selectionStart - prefix.length) +
+        value.slice(0, unwrappedSelectionStart) +
         selectedText +
         value.slice(selectionEnd + suffix.length),
-      selectionStart: selectionStart - prefix.length,
-      selectionEnd: selectionEnd - prefix.length,
+      selectionStart: unwrappedSelectionStart,
+      selectionEnd: unwrappedSelectionStart + selectedText.length,
     }
   }
 
