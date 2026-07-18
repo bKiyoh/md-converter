@@ -13,6 +13,7 @@ import { useAppSettings } from './composables/useAppSettings'
 import { useEditorTabs } from './composables/useEditorTabs'
 import { useOutputFormatPreference } from './composables/useOutputFormatPreference'
 import { useThemePreference } from './composables/useThemePreference'
+import { useWorkspaceSplitter } from './composables/useWorkspaceSplitter'
 import { converterRegistry, outputFormatOptions } from './converters/converterRegistry'
 import { parseMarkdown } from './parser/parseMarkdown'
 import type { ConversionResult } from './types/conversion'
@@ -34,7 +35,20 @@ const {
 } = useEditorTabs()
 const { theme } = useThemePreference()
 const { selectedFormat } = useOutputFormatPreference()
-const { editorInternalScroll } = useAppSettings()
+const { editorInternalScroll, workspaceSplitRatio } = useAppSettings()
+const {
+  setWorkspaceElement,
+  isResizing,
+  splitRatioPercent,
+  minimumSplitRatioPercent,
+  maximumSplitRatioPercent,
+  workspaceGridTemplateColumns,
+  handlePointerDown: handleSplitterPointerDown,
+  handlePointerMove: handleSplitterPointerMove,
+  handlePointerEnd: handleSplitterPointerEnd,
+  handleKeydown: handleSplitterKeydown,
+  resetSplitRatio,
+} = useWorkspaceSplitter(workspaceSplitRatio)
 const { copy, notice } = useClipboard()
 const activePanel = ref<WorkspacePanel>('input')
 const inputTab = ref<HTMLButtonElement | null>(null)
@@ -272,7 +286,13 @@ onBeforeUnmount(() => {
         </div>
       </nav>
 
-      <main class="workspace" :data-active-panel="activePanel">
+      <main
+        :ref="setWorkspaceElement"
+        class="workspace"
+        :class="{ 'workspace--resizing': isResizing }"
+        :data-active-panel="activePanel"
+        :style="{ gridTemplateColumns: workspaceGridTemplateColumns }"
+      >
         <MarkdownEditor
           v-model="markdown"
           :character-count="inputCharacterCount"
@@ -294,6 +314,26 @@ onBeforeUnmount(() => {
             />
           </template>
         </MarkdownEditor>
+        <div
+          class="workspace-splitter"
+          role="separator"
+          aria-label="左右ペインの幅を調整"
+          aria-orientation="vertical"
+          :aria-valuemin="minimumSplitRatioPercent"
+          :aria-valuemax="maximumSplitRatioPercent"
+          :aria-valuenow="splitRatioPercent"
+          :aria-valuetext="`左ペイン${splitRatioPercent}%、右ペイン${100 - splitRatioPercent}%`"
+          tabindex="0"
+          title="ドラッグまたは左右キーで幅を調整（ダブルクリックで均等）"
+          @pointerdown="handleSplitterPointerDown"
+          @pointermove="handleSplitterPointerMove"
+          @pointerup="handleSplitterPointerEnd"
+          @pointercancel="handleSplitterPointerEnd"
+          @keydown="handleSplitterKeydown"
+          @dblclick="resetSplitRatio"
+        >
+          <span class="workspace-splitter-handle" aria-hidden="true" />
+        </div>
         <OutputPanel
           :markdown="markdown"
           :output="conversionResult.output"

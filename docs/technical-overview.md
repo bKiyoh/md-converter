@@ -274,7 +274,8 @@ UIにはVue 3のComposition APIを使用しているが、MVPではPiniaを導�
 | `useEditorStorage` | タブ状態の検証、移行、復元、即時・デバウンス保存 |
 | `useThemePreference` | ライト・ダーク設定の復元と保存 |
 | `useOutputFormatPreference` | 選択中の変換形式の検証、復元、保存 |
-| `useAppSettings` | エディター表示設定の復元と保存 |
+| `useAppSettings` | エディター表示設定と左右ペイン比率の復元・保存 |
+| `useWorkspaceSplitter` | PC表示の区切りバー操作、最小幅、比率計算 |
 | `useClipboard` | コピー処理と成功・失敗通知 |
 | `useMarkdownEditor` | textareaのキー操作と選択範囲の復元 |
 | `markdownEditor.ts` | ショートカットやリスト編集の純粋な文字列操作 |
@@ -305,6 +306,8 @@ LocalStorageはブラウザ設定、容量制限、プライベートブラウ�
 | テーマ | `md-converter:theme:v1` |
 | 変換形式 | `md-converter:output-format:v1` |
 | アプリ設定 | `md-converter:settings:v1` |
+
+アプリ設定にはエディター内部スクロールのON/OFFと、PC表示の左右ペイン比率を保存する。旧保存値に比率がない場合や、保存比率が20〜80%の範囲外の場合は50:50へフォールバックする。区切りバーの操作時はworkspaceの実幅から各ペイン280px以上となる可動範囲を求め、ポインター操作とキーボード操作で同じ比率更新経路を利用する。767px以下では既存の入力・右ペイン切り替えを優先し、区切りバーを表示しない。
 
 将来データ構造を変更したとき、旧形式を誤って読むのを避け、移行の境界を明確にするためである。タブ状態は必須項目、件数、一意のID、選択中IDを検証し、破損時は初期状態へ戻す。`md-converter:draft:v1` だけがある場合は内容を「Untitled」へ移行し、削除後30日以上のタブは起動時に除去する。変換形式は共通の形式ID一覧に含まれる値だけを復元し、未保存または不正な値はSlackへフォールバックする。変換結果は選択中タブの入力と変換形式から再計算できるため保存しない。
 
