@@ -1085,18 +1085,22 @@ h2 {
   }
 
   .document-tabs-main {
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
   }
 
   .document-tablist {
-    width: 100%;
-    flex-basis: 100%;
-    flex-wrap: wrap;
+    width: auto;
+    flex-basis: auto;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    overscroll-behavior-inline: contain;
+    scrollbar-width: thin;
   }
 
   .document-tab-item {
-    max-width: calc(50% - 3px);
-    flex-basis: calc(50% - 3px);
+    min-width: 112px;
+    max-width: 112px;
+    flex: 0 0 112px;
   }
 
   .document-tab-button {
@@ -1105,7 +1109,7 @@ h2 {
   }
 
   .deleted-tabs-toggle {
-    margin-left: auto;
+    margin-left: 4px;
   }
 
   .workspace-tabs {
@@ -1181,11 +1185,6 @@ h2 {
 
   .warning-popover {
     width: calc(100vw - 52px);
-  }
-
-  .document-tab-item {
-    max-width: 100%;
-    flex: 1 1 calc(50% - 3px);
   }
 
   .deleted-tabs-panel li {
