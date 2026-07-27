@@ -203,6 +203,73 @@ describe('App', () => {
     expect(wrapper.findAll('.document-tab-button')[1]?.attributes('aria-pressed')).toBe('false')
   })
 
+  it('タブを並べ替えても選択と本文の対応を維持し、再読み込み後も順序を復元する', async () => {
+    let wrapper = mount(App)
+    const input = wrapper.get<HTMLTextAreaElement>('#markdown-input')
+
+    await input.setValue('先頭の本文')
+    await wrapper.get('.document-tab-add-button').trigger('click')
+    await input.setValue('中央の本文')
+    await wrapper.get('.document-tab-add-button').trigger('click')
+    await input.setValue('末尾の本文')
+    await wrapper.findAll<HTMLButtonElement>('.document-tab-button')[1]!.trigger('click')
+
+    const items = wrapper.findAll<HTMLElement>('.document-tab-item')
+    const firstButton = wrapper.findAll<HTMLButtonElement>('.document-tab-button')[0]!
+    const dataTransfer = {
+      effectAllowed: 'none',
+      dropEffect: 'none',
+      setData: vi.fn(),
+    } as unknown as DataTransfer
+
+    vi.spyOn(items[2]!.element, 'getBoundingClientRect').mockReturnValue({
+      left: 100,
+      right: 200,
+      top: 0,
+      bottom: 40,
+      width: 100,
+      height: 40,
+      x: 100,
+      y: 0,
+      toJSON: () => ({}),
+    })
+
+    await firstButton.trigger('dragstart', { dataTransfer })
+    await items[2]!.trigger('dragover', { clientX: 190, dataTransfer })
+    await items[2]!.trigger('drop', { clientX: 190, dataTransfer })
+    await firstButton.trigger('dragend', { dataTransfer })
+
+    expect(wrapper.findAll('.document-tab-button').map((tab) => tab.text())).toEqual([
+      'Untitled 2',
+      'Untitled 3',
+      'Untitled',
+    ])
+    expect(input.element.value).toBe('中央の本文')
+    expect(wrapper.findAll('.document-tab-button')[0]?.attributes('aria-pressed')).toBe('true')
+
+    const saved = JSON.parse(localStorage.getItem(EDITOR_STATE_STORAGE_KEY)!) as {
+      tabs: Array<{ id: string; name: string; content: string }>
+      activeTabId: string
+    }
+    expect(saved.tabs.map((tab) => [tab.name, tab.content])).toEqual([
+      ['Untitled 2', '中央の本文'],
+      ['Untitled 3', '末尾の本文'],
+      ['Untitled', '先頭の本文'],
+    ])
+    expect(saved.activeTabId).toBe(saved.tabs[0]?.id)
+
+    wrapper.unmount()
+    wrapper = mount(App)
+
+    expect(wrapper.findAll('.document-tab-button').map((tab) => tab.text())).toEqual([
+      'Untitled 2',
+      'Untitled 3',
+      'Untitled',
+    ])
+    expect(wrapper.get<HTMLTextAreaElement>('#markdown-input').element.value).toBe('中央の本文')
+    wrapper.unmount()
+  })
+
   it('タブ名をダブルクリックで変更し、Escapeでは取り消す', async () => {
     const wrapper = mount(App)
     const tab = wrapper.get<HTMLButtonElement>('.document-tab-button')

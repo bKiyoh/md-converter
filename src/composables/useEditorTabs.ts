@@ -11,6 +11,7 @@ import {
 } from './useEditorStorage'
 
 export type RestoreTabResult = 'restored' | 'limit' | 'not-found'
+export type TabDropPosition = 'before' | 'after'
 
 export type UseEditorTabsOptions = {
   storage?: EditorStorageAccess | null
@@ -28,6 +29,11 @@ export type UseEditorTabsResult = {
   canDeleteTab: ComputedRef<boolean>
   addTab: () => EditorTab | null
   selectTab: (id: string) => boolean
+  reorderTab: (
+    draggedTabId: string,
+    targetTabId: string,
+    position: TabDropPosition,
+  ) => boolean
   renameTab: (id: string, name: string) => boolean
   deleteTab: (id: string) => DeletedTab | null
   restoreTab: (id: string) => RestoreTabResult
@@ -80,6 +86,30 @@ function getDefaultTabNumber(name: string): number | null {
 function shouldPermanentlyDeleteImmediately(tab: EditorTab): boolean {
   const isLegacyDefaultName = /^文章[1-9]\d*$/.test(tab.name)
   return tab.content === '' && (getDefaultTabNumber(tab.name) !== null || isLegacyDefaultName)
+}
+
+export function reorderTabsById(
+  tabs: readonly EditorTab[],
+  draggedTabId: string,
+  targetTabId: string,
+  position: TabDropPosition,
+): EditorTab[] | null {
+  const draggedIndex = tabs.findIndex((tab) => tab.id === draggedTabId)
+  const targetIndex = tabs.findIndex((tab) => tab.id === targetTabId)
+
+  if (draggedIndex < 0 || targetIndex < 0 || draggedTabId === targetTabId) {
+    return null
+  }
+
+  const reorderedTabs = [...tabs]
+  const [draggedTab] = reorderedTabs.splice(draggedIndex, 1)
+  const remainingTargetIndex = reorderedTabs.findIndex((tab) => tab.id === targetTabId)
+  const insertionIndex = remainingTargetIndex + (position === 'after' ? 1 : 0)
+
+  reorderedTabs.splice(insertionIndex, 0, draggedTab!)
+
+  const orderChanged = reorderedTabs.some((tab, index) => tab.id !== tabs[index]?.id)
+  return orderChanged ? reorderedTabs : null
 }
 
 export function useEditorTabs(options: UseEditorTabsOptions = {}): UseEditorTabsResult {
@@ -168,6 +198,27 @@ export function useEditorTabs(options: UseEditorTabsOptions = {}): UseEditorTabs
     }
 
     activeTabId.value = id
+    saveImmediately()
+    return true
+  }
+
+  function reorderTab(
+    draggedTabId: string,
+    targetTabId: string,
+    position: TabDropPosition,
+  ): boolean {
+    const reorderedTabs = reorderTabsById(
+      tabs.value,
+      draggedTabId,
+      targetTabId,
+      position,
+    )
+
+    if (!reorderedTabs) {
+      return false
+    }
+
+    tabs.value = reorderedTabs
     saveImmediately()
     return true
   }
@@ -270,6 +321,7 @@ export function useEditorTabs(options: UseEditorTabsOptions = {}): UseEditorTabs
     canDeleteTab,
     addTab,
     selectTab,
+    reorderTab,
     renameTab,
     deleteTab,
     restoreTab,

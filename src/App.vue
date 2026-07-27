@@ -35,6 +35,7 @@ const {
   canDeleteTab,
   addTab,
   selectTab,
+  reorderTab,
   renameTab,
   deleteTab,
   restoreTab,
@@ -355,6 +356,7 @@ onBeforeUnmount(() => {
               :can-delete-tab="canDeleteTab"
               @add="addTab"
               @select="selectTab"
+              @reorder="reorderTab"
               @rename="renameTab"
               @delete="handleDeleteTab"
               @restore="handleRestoreTab"

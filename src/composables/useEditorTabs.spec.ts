@@ -135,6 +135,108 @@ describe('useEditorTabs', () => {
     expect(tabs.renameTab(firstId, 'あ'.repeat(31))).toBe(false)
   })
 
+  it('先頭を末尾へ移動しても選択中IDと各タブのデータを維持し、直後に保存する', () => {
+    const storage = createStorage()
+    const { tabs } = mountTabs(storage)
+    const first = tabs.tabs.value[0]!
+    tabs.markdown.value = '先頭の本文'
+    const second = tabs.addTab()!
+    tabs.markdown.value = '選択中の本文'
+    const third = tabs.addTab()!
+    tabs.markdown.value = '末尾の本文'
+    tabs.selectTab(second.id)
+    const originalTabs = new Map(tabs.tabs.value.map((tab) => [tab.id, { ...tab }]))
+    storage.setItem.mockClear()
+
+    expect(tabs.reorderTab(first.id, third.id, 'after')).toBe(true)
+
+    expect(tabs.tabs.value.map((tab) => tab.id)).toEqual([second.id, third.id, first.id])
+    expect(tabs.activeTabId.value).toBe(second.id)
+    expect(tabs.markdown.value).toBe('選択中の本文')
+    expect(tabs.tabs.value.map((tab) => ({ ...tab }))).toEqual(
+      [second.id, third.id, first.id].map((id) => originalTabs.get(id)),
+    )
+    expect(storage.setItem).toHaveBeenCalledOnce()
+
+    const saved = JSON.parse(storage.values.get(EDITOR_STATE_STORAGE_KEY)!) as {
+      tabs: Array<{ id: string }>
+      activeTabId: string
+    }
+    expect(saved.tabs.map((tab) => tab.id)).toEqual([second.id, third.id, first.id])
+    expect(saved.activeTabId).toBe(second.id)
+  })
+
+  it('末尾を先頭へ移動し、隣接するタブを入れ替えられる', () => {
+    const { tabs } = mountTabs(createStorage())
+    const first = tabs.tabs.value[0]!
+    const second = tabs.addTab()!
+    const third = tabs.addTab()!
+
+    expect(tabs.reorderTab(third.id, first.id, 'before')).toBe(true)
+    expect(tabs.tabs.value.map((tab) => tab.id)).toEqual([third.id, first.id, second.id])
+
+    expect(tabs.reorderTab(first.id, second.id, 'after')).toBe(true)
+    expect(tabs.tabs.value.map((tab) => tab.id)).toEqual([third.id, second.id, first.id])
+  })
+
+  it('同じ位置または存在しないIDへの並べ替えでは順序を保存し直さない', () => {
+    const storage = createStorage()
+    const { tabs } = mountTabs(storage)
+    const first = tabs.tabs.value[0]!
+    const second = tabs.addTab()!
+    const third = tabs.addTab()!
+    storage.setItem.mockClear()
+
+    expect(tabs.reorderTab(second.id, third.id, 'before')).toBe(false)
+    expect(tabs.reorderTab('missing', first.id, 'before')).toBe(false)
+    expect(tabs.reorderTab(first.id, 'missing', 'after')).toBe(false)
+    expect(tabs.reorderTab(first.id, first.id, 'after')).toBe(false)
+    expect(tabs.tabs.value.map((tab) => tab.id)).toEqual([first.id, second.id, third.id])
+    expect(storage.setItem).not.toHaveBeenCalled()
+  })
+
+  it('並べ替えた順序を再読み込み後も復元する', () => {
+    const storage = createStorage()
+    const firstMount = mountTabs(storage)
+    const first = firstMount.tabs.tabs.value[0]!
+    const second = firstMount.tabs.addTab()!
+    const third = firstMount.tabs.addTab()!
+
+    firstMount.tabs.reorderTab(third.id, first.id, 'before')
+    firstMount.wrapper.unmount()
+
+    const secondMount = mountTabs(storage)
+
+    expect(secondMount.tabs.tabs.value.map((tab) => tab.id)).toEqual([
+      third.id,
+      first.id,
+      second.id,
+    ])
+  })
+
+  it('追加後に並べ替え、削除と復元をしても既存タブと順序を失わない', () => {
+    const { tabs } = mountTabs(createStorage())
+    const first = tabs.tabs.value[0]!
+    tabs.markdown.value = '最初'
+    const second = tabs.addTab()!
+    tabs.markdown.value = '復元対象'
+    const third = tabs.addTab()!
+    tabs.markdown.value = '追加したタブ'
+
+    expect(tabs.reorderTab(third.id, first.id, 'before')).toBe(true)
+    expect(tabs.tabs.value.map((tab) => tab.id)).toEqual([third.id, first.id, second.id])
+
+    expect(tabs.deleteTab(second.id)?.previousIndex).toBe(2)
+    expect(tabs.tabs.value.map((tab) => tab.id)).toEqual([third.id, first.id])
+    expect(tabs.restoreTab(second.id)).toBe('restored')
+    expect(tabs.tabs.value.map((tab) => tab.id)).toEqual([third.id, first.id, second.id])
+    expect(tabs.tabs.value.map((tab) => tab.content)).toEqual([
+      '追加したタブ',
+      '最初',
+      '復元対象',
+    ])
+  })
+
   it('選択中タブの削除後は右隣を選び、元の位置へ復元する', () => {
     const { tabs } = mountTabs(createStorage())
     const first = tabs.tabs.value[0]!

@@ -450,6 +450,32 @@ h2 {
   background: var(--surface);
 }
 
+.document-tab-item--dragging {
+  opacity: 0.45;
+}
+
+.document-tab-item--drop-before::before,
+.document-tab-item--drop-after::after {
+  position: absolute;
+  z-index: 3;
+  top: 4px;
+  bottom: 3px;
+  width: 3px;
+  border-radius: 999px;
+  background: var(--accent);
+  box-shadow: 0 0 0 2px var(--surface-muted);
+  content: '';
+  pointer-events: none;
+}
+
+.document-tab-item--drop-before::before {
+  left: -2px;
+}
+
+.document-tab-item--drop-after::after {
+  right: -2px;
+}
+
 .document-tab-button {
   min-width: 0;
   max-width: 146px;
@@ -464,6 +490,14 @@ h2 {
   font-weight: 700;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.document-tab-button[draggable='true'] {
+  cursor: grab;
+}
+
+.document-tab-item--dragging .document-tab-button {
+  cursor: grabbing;
 }
 
 .document-tab-button--active {
