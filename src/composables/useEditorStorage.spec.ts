@@ -46,6 +46,43 @@ describe('loadEditorState', () => {
     expect(result.shouldPersist).toBe(false)
   })
 
+  it('未知または不正な並び順メタデータがあっても保存済みの配列順と全タブを維持する', () => {
+    const storedState = {
+      ...createState({
+        tabs: [
+          {
+            id: 'tab-2',
+            name: '先頭',
+            content: '先頭の本文',
+            createdAt: 100,
+            updatedAt: 200,
+          },
+          {
+            id: 'tab-1',
+            name: '末尾',
+            content: '末尾の本文',
+            createdAt: 100,
+            updatedAt: 200,
+          },
+        ],
+        activeTabId: 'tab-1',
+      }),
+      tabOrder: ['missing-tab'],
+    }
+    const result = loadEditorState({
+      storage: createStorage(JSON.stringify(storedState)),
+      now: () => 1_000,
+      createId: () => 'new-id',
+    })
+
+    expect(result.state.tabs.map((tab) => tab.id)).toEqual(['tab-2', 'tab-1'])
+    expect(result.state.tabs.map((tab) => tab.content)).toEqual([
+      '先頭の本文',
+      '末尾の本文',
+    ])
+    expect(result.state.activeTabId).toBe('tab-1')
+  })
+
   it('選択中IDだけが存在しない場合は先頭タブを選択して保存し直す', () => {
     const result = loadEditorState({
       storage: createStorage(JSON.stringify(createState({ activeTabId: 'missing' }))),

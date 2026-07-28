@@ -35,6 +35,7 @@ const {
   canDeleteTab,
   addTab,
   selectTab,
+  reorderTab,
   renameTab,
   deleteTab,
   restoreTab,
@@ -118,6 +119,12 @@ const effectiveEditorInternalScroll = computed<boolean>(
 
 async function copyOutput(): Promise<void> {
   await copy(conversionResult.value.output, `${formatLabel.value}形式でコピーしました`)
+}
+
+async function openEditorSearch(showReplace = false): Promise<void> {
+  activePanel.value = 'input'
+  await nextTick()
+  await markdownEditor.value?.openSearch(showReplace)
 }
 
 function showTabNotice(nextNotice: TabNotice): void {
@@ -230,6 +237,7 @@ onBeforeUnmount(() => {
         v-if="isFocusMode"
         :help-open="isFocusModeHelpOpen"
         @exit="exitFocusMode"
+        @search="openEditorSearch"
         @toggle-help="toggleFocusModeHelp"
       />
       <div v-if="isFocusMode" class="focus-mode-spacer" aria-hidden="true" />
@@ -344,6 +352,9 @@ onBeforeUnmount(() => {
           :character-count="inputCharacterCount"
           :editor-internal-scroll="effectiveEditorInternalScroll"
           :focus-mode="isFocusMode"
+          :active-tab-id="activeTabId"
+          :shortcuts-enabled="!isInfoModalOpen"
+          @request-search="openEditorSearch"
         >
           <template #document-tabs>
             <EditorTabs
@@ -355,6 +366,7 @@ onBeforeUnmount(() => {
               :can-delete-tab="canDeleteTab"
               @add="addTab"
               @select="selectTab"
+              @reorder="reorderTab"
               @rename="renameTab"
               @delete="handleDeleteTab"
               @restore="handleRestoreTab"

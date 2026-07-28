@@ -1,10 +1,16 @@
 <script setup lang="ts">
-import { nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import AppIcon from '../common/AppIcon.vue'
 import { useMarkdownEditor } from '../../composables/useMarkdownEditor'
+import {
+  useTextSearch,
+  type TextSearchEdit,
+} from '../../composables/useTextSearch'
 import { tooltipDirective as vTooltip } from '../../directives/tooltip'
 import type { MarkdownEditorViewState } from '../../types/editorView'
+import type { TextMatch } from '../../utils/textSearch'
 import EditorInputGuideContent from './EditorInputGuideContent.vue'
+import SearchReplacePanel from './SearchReplacePanel.vue'
 
 const props = withDefaults(
   defineProps<{
@@ -12,17 +18,31 @@ const props = withDefaults(
     characterCount: number
     editorInternalScroll: boolean
     focusMode?: boolean
+    activeTabId?: string
+    shortcutsEnabled?: boolean
   }>(),
-  { focusMode: false },
+  { focusMode: false, activeTabId: 'default', shortcutsEnabled: true },
 )
 
 const emit = defineEmits<{
   'update:modelValue': [value: string]
+  'request-search': [showReplace: boolean]
 }>()
 
+type SearchHighlightSegment = {
+  text: string
+  kind: 'plain' | 'match' | 'current'
+}
+
 const textarea = ref<HTMLTextAreaElement | null>(null)
+const searchHighlightLayer = ref<HTMLDivElement | null>(null)
 const inputGuideButton = ref<HTMLButtonElement | null>(null)
+const searchPanel = ref<InstanceType<typeof SearchReplacePanel> | null>(null)
 const isInputGuideOpen = ref<boolean>(false)
+const isSearchOpen = ref<boolean>(false)
+const isReplaceExpanded = ref<boolean>(false)
+const source = computed<string>(() => props.modelValue)
+const documentKey = computed<string>(() => props.activeTabId)
 
 function closeInputGuide(): void {
   isInputGuideOpen.value = false
@@ -32,14 +52,280 @@ function toggleInputGuide(): void {
   isInputGuideOpen.value = !isInputGuideOpen.value
 }
 
-function handleDocumentKeydown(event: KeyboardEvent): void {
-  if (event.defaultPrevented || !isInputGuideOpen.value || event.key !== 'Escape') {
+async function applySearchEdit(edit: TextSearchEdit): Promise<void> {
+  const element = textarea.value
+
+  if (!element) {
+    emit('update:modelValue', edit.value)
+    await nextTick()
     return
   }
 
-  event.preventDefault()
+  const previouslyFocused =
+    document.activeElement instanceof HTMLElement ? document.activeElement : null
+  element.focus({ preventScroll: true })
+  element.setSelectionRange(edit.start, edit.end)
+
+  let inputEventReceived = false
+  const observeInput = (): void => {
+    inputEventReceived = true
+  }
+  element.addEventListener('input', observeInput, { once: true })
+
+  let insertedWithNativeHistory = false
+
+  try {
+    // insertText keeps replacement in the textarea's native undo transaction when supported.
+    insertedWithNativeHistory =
+      typeof document.execCommand === 'function' &&
+      document.execCommand('insertText', false, edit.replacement)
+  } catch {
+    insertedWithNativeHistory = false
+  }
+
+  element.removeEventListener('input', observeInput)
+
+  if (!insertedWithNativeHistory || element.value !== edit.value) {
+    element.value = props.modelValue
+    element.setRangeText(edit.replacement, edit.start, edit.end, 'end')
+    emit('update:modelValue', element.value)
+  } else if (!inputEventReceived) {
+    emit('update:modelValue', element.value)
+  }
+
+  await nextTick()
+  resizeTextarea()
+
+  if (previouslyFocused && previouslyFocused !== element && previouslyFocused.isConnected) {
+    previouslyFocused.focus({ preventScroll: true })
+  }
+}
+
+const {
+  query,
+  replacement,
+  matches,
+  currentMatch,
+  resultStatus,
+  replacementNotice,
+  moveNext,
+  movePrevious,
+  replaceCurrent,
+  replaceAll,
+} = useTextSearch({
+  source,
+  documentKey,
+  applyEdit: applySearchEdit,
+})
+
+const searchHighlightSegments = computed<SearchHighlightSegment[]>(() => {
+  const segments: SearchHighlightSegment[] = []
+  const activeMatch = currentMatch.value
+  let offset = 0
+
+  for (const match of matches.value) {
+    if (match.start > offset) {
+      segments.push({
+        text: props.modelValue.slice(offset, match.start),
+        kind: 'plain',
+      })
+    }
+
+    segments.push({
+      text: props.modelValue.slice(match.start, match.end),
+      kind:
+        activeMatch?.start === match.start && activeMatch.end === match.end
+          ? 'current'
+          : 'match',
+    })
+    offset = match.end
+  }
+
+  if (offset < props.modelValue.length) {
+    segments.push({
+      text: props.modelValue.slice(offset),
+      kind: 'plain',
+    })
+  }
+
+  return segments
+})
+
+function syncSearchHighlightScroll(): void {
+  const element = textarea.value
+  const highlightLayer = searchHighlightLayer.value
+
+  if (!element || !highlightLayer) {
+    return
+  }
+
+  highlightLayer.scrollTop = element.scrollTop
+  highlightLayer.scrollLeft = element.scrollLeft
+}
+
+function scrollCurrentMatchIntoView(): void {
+  const element = textarea.value
+  const highlightLayer = searchHighlightLayer.value
+  const currentHighlight =
+    highlightLayer?.querySelector<HTMLElement>('.search-highlight--current')
+
+  if (!element || !highlightLayer || !currentHighlight) {
+    return
+  }
+
+  const lineHeight = Number.parseFloat(window.getComputedStyle(element).lineHeight)
+  const matchHeight = Math.max(
+    currentHighlight.offsetHeight,
+    Number.isFinite(lineHeight) ? lineHeight : 0,
+    1,
+  )
+  const matchTop = currentHighlight.offsetTop
+  const matchBottom = matchTop + matchHeight
+  const visibleTop = element.scrollTop
+  const visibleBottom = visibleTop + element.clientHeight
+
+  if (
+    element.clientHeight > 0 &&
+    (matchTop < visibleTop || matchBottom > visibleBottom)
+  ) {
+    const centeredOffset = Math.max(
+      0,
+      (element.clientHeight - Math.min(matchHeight, element.clientHeight)) / 2,
+    )
+    element.scrollTop = Math.max(0, matchTop - centeredOffset)
+    syncSearchHighlightScroll()
+  }
+
+  if (props.editorInternalScroll) {
+    return
+  }
+
+  const matchRect = currentHighlight.getBoundingClientRect()
+  const viewportHeight =
+    document.documentElement.clientHeight || window.innerHeight
+
+  if (
+    viewportHeight > 0 &&
+    (matchRect.top < 0 || matchRect.bottom > viewportHeight)
+  ) {
+    window.scrollBy({
+      top: matchRect.top - (viewportHeight - matchRect.height) / 2,
+      behavior: 'auto',
+    })
+  }
+}
+
+async function selectTextMatch(match: TextMatch): Promise<void> {
+  await nextTick()
+  const element = textarea.value
+
+  if (!element || !isSearchOpen.value) {
+    return
+  }
+
+  element.setSelectionRange(match.start, match.end)
+  scrollCurrentMatchIntoView()
+}
+
+async function openSearch(showReplace = false): Promise<void> {
   closeInputGuide()
-  void nextTick(() => inputGuideButton.value?.focus())
+  isSearchOpen.value = true
+  isReplaceExpanded.value = showReplace
+
+  await nextTick()
+
+  if (currentMatch.value) {
+    await selectTextMatch(currentMatch.value)
+  }
+
+  if (showReplace) {
+    await searchPanel.value?.focusReplacement()
+  } else {
+    await searchPanel.value?.focusSearch()
+  }
+}
+
+async function closeSearch(): Promise<void> {
+  if (!isSearchOpen.value) {
+    return
+  }
+
+  isSearchOpen.value = false
+  await nextTick()
+  textarea.value?.focus({ preventScroll: true })
+}
+
+async function toggleReplace(): Promise<void> {
+  isReplaceExpanded.value = !isReplaceExpanded.value
+  await nextTick()
+
+  if (isReplaceExpanded.value) {
+    await searchPanel.value?.focusReplacement()
+  } else {
+    await searchPanel.value?.focusSearch()
+  }
+}
+
+function isSearchShortcut(event: KeyboardEvent): boolean {
+  return (
+    event.key.toLowerCase() === 'f' &&
+    !event.altKey &&
+    !event.shiftKey &&
+    (event.ctrlKey || event.metaKey)
+  )
+}
+
+function isReplaceShortcut(event: KeyboardEvent): boolean {
+  return (
+    (event.key.toLowerCase() === 'h' &&
+      event.ctrlKey &&
+      !event.metaKey &&
+      !event.altKey &&
+      !event.shiftKey) ||
+    (event.key.toLowerCase() === 'f' &&
+      event.metaKey &&
+      event.altKey &&
+      !event.ctrlKey &&
+      !event.shiftKey)
+  )
+}
+
+function handleDocumentKeydown(event: KeyboardEvent): void {
+  if (
+    event.defaultPrevented ||
+    event.isComposing ||
+    !textarea.value?.isConnected
+  ) {
+    return
+  }
+
+  if (props.shortcutsEnabled && isReplaceShortcut(event)) {
+    event.preventDefault()
+    emit('request-search', true)
+    return
+  }
+
+  if (props.shortcutsEnabled && isSearchShortcut(event)) {
+    event.preventDefault()
+    emit('request-search', false)
+    return
+  }
+
+  if (event.key !== 'Escape') {
+    return
+  }
+
+  if (isSearchOpen.value) {
+    event.preventDefault()
+    void closeSearch()
+    return
+  }
+
+  if (isInputGuideOpen.value) {
+    event.preventDefault()
+    closeInputGuide()
+    void nextTick(() => inputGuideButton.value?.focus())
+  }
 }
 
 function captureViewState(): MarkdownEditorViewState | null {
@@ -87,11 +373,13 @@ function resizeTextarea(): void {
 
   if (props.editorInternalScroll) {
     element.style.height = ''
+    syncSearchHighlightScroll()
     return
   }
 
   element.style.height = 'auto'
   element.style.height = `${element.scrollHeight}px`
+  syncSearchHighlightScroll()
 }
 
 async function updateValue(event: Event): Promise<void> {
@@ -117,6 +405,20 @@ watch(
   },
 )
 
+watch(currentMatch, (match) => {
+  if (match) {
+    void selectTextMatch(match)
+  }
+})
+
+watch(
+  [matches, isSearchOpen],
+  () => {
+    void nextTick(syncSearchHighlightScroll)
+  },
+  { flush: 'post' },
+)
+
 onMounted(() => {
   resizeTextarea()
   document.addEventListener('keydown', handleDocumentKeydown)
@@ -126,7 +428,7 @@ onBeforeUnmount(() => {
   document.removeEventListener('keydown', handleDocumentKeydown)
 })
 
-defineExpose({ captureViewState, restoreViewState, isConnected })
+defineExpose({ captureViewState, restoreViewState, isConnected, openSearch })
 </script>
 
 <template>
@@ -141,21 +443,77 @@ defineExpose({ captureViewState, restoreViewState, isConnected })
   >
     <slot name="document-tabs" />
 
-    <label class="visually-hidden" for="markdown-input">変換するMarkdown</label>
-    <textarea
-      id="markdown-input"
-      ref="textarea"
-      class="text-area"
-      :class="
-        editorInternalScroll ? 'text-area--internal-scroll' : 'text-area--expand'
-      "
-      :value="modelValue"
-      :aria-describedby="focusMode ? undefined : 'markdown-input-count'"
-      placeholder="Markdownを入力してください"
-      spellcheck="true"
-      @input="updateValue"
-      @keydown="handleKeydown"
+    <SearchReplacePanel
+      v-if="isSearchOpen"
+      ref="searchPanel"
+      :query="query"
+      :replacement="replacement"
+      :replace-expanded="isReplaceExpanded"
+      :result-status="resultStatus"
+      :replacement-notice="replacementNotice"
+      :has-matches="matches.length > 0"
+      @update:query="query = $event"
+      @update:replacement="replacement = $event"
+      @previous="movePrevious"
+      @next="moveNext"
+      @toggle-replace="toggleReplace"
+      @replace-current="replaceCurrent"
+      @replace-all="replaceAll"
+      @close="closeSearch"
     />
+
+    <label class="visually-hidden" for="markdown-input">変換するMarkdown</label>
+    <div
+      class="text-area-shell"
+      :class="
+        [
+          editorInternalScroll
+            ? 'text-area-shell--internal-scroll'
+            : 'text-area-shell--expand',
+          {
+            'text-area-shell--highlighting':
+              isSearchOpen && matches.length > 0,
+          },
+        ]
+      "
+    >
+      <div
+        v-if="isSearchOpen && matches.length > 0"
+        ref="searchHighlightLayer"
+        class="search-highlight-layer"
+        aria-hidden="true"
+      >
+        <template
+          v-for="(segment, index) in searchHighlightSegments"
+          :key="index"
+        >
+          <mark
+            v-if="segment.kind !== 'plain'"
+            class="search-highlight"
+            :class="`search-highlight--${segment.kind}`"
+            v-text="segment.text"
+          />
+          <span v-else v-text="segment.text" />
+        </template>
+        <span v-if="modelValue.endsWith('\n')">&#8203;</span>
+      </div>
+
+      <textarea
+        id="markdown-input"
+        ref="textarea"
+        class="text-area"
+        :class="
+          editorInternalScroll ? 'text-area--internal-scroll' : 'text-area--expand'
+        "
+        :value="modelValue"
+        :aria-describedby="focusMode ? undefined : 'markdown-input-count'"
+        placeholder="Markdownを入力してください"
+        spellcheck="true"
+        @input="updateValue"
+        @keydown="handleKeydown"
+        @scroll="syncSearchHighlightScroll"
+      />
+    </div>
 
     <section
       v-if="isInputGuideOpen && !focusMode"
@@ -169,6 +527,15 @@ defineExpose({ captureViewState, restoreViewState, isConnected })
 
     <div v-show="!focusMode" class="panel-footer">
       <div class="input-guide-root">
+        <button
+          v-tooltip="'文章検索（Ctrl / Command + F）'"
+          class="editor-search-button"
+          type="button"
+          aria-label="文章検索を開く"
+          @click="openSearch(false)"
+        >
+          <AppIcon name="search" />
+        </button>
         <button
           v-tooltip="isInputGuideOpen ? '入力支援を閉じる' : '入力支援を表示'"
           ref="inputGuideButton"

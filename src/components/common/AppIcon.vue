@@ -13,6 +13,10 @@ defineProps<{
     | 'focus'
     | 'help'
     | 'file-output'
+    | 'search'
+    | 'chevron-up'
+    | 'chevron-down'
+    | 'replace'
 }>()
 </script>
 
@@ -59,6 +63,16 @@ defineProps<{
     <template v-else-if="name === 'file-output'">
       <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h8" />
       <path d="M14 2v6h6M8 13h4M8 17h2M13 17h8M18 14l3 3-3 3" />
+    </template>
+    <template v-else-if="name === 'search'">
+      <circle cx="11" cy="11" r="7" />
+      <path d="m20 20-4-4" />
+    </template>
+    <path v-else-if="name === 'chevron-up'" d="m18 15-6-6-6 6" />
+    <path v-else-if="name === 'chevron-down'" d="m6 9 6 6 6-6" />
+    <template v-else-if="name === 'replace'">
+      <path d="M4 7h11l-3-3M20 17H9l3 3" />
+      <path d="m12 4 3 3-3 3M12 14l-3 3 3 3" />
     </template>
     <template v-else>
       <circle cx="12" cy="12" r="3" />

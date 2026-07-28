@@ -8,10 +8,12 @@ const props = withDefaults(
     tab: EditorTab
     variant?: 'document-tab' | 'focus'
     active?: boolean
+    dragEnabled?: boolean
   }>(),
   {
     variant: 'document-tab',
     active: false,
+    dragEnabled: false,
   },
 )
 
@@ -19,6 +21,8 @@ const emit = defineEmits<{
   rename: [id: string, name: string]
   select: [id: string]
   keydown: [event: KeyboardEvent]
+  dragstart: [event: DragEvent]
+  dragend: [event: DragEvent]
 }>()
 
 const nameInput = ref<HTMLInputElement | null>(null)
@@ -86,9 +90,12 @@ function updateEditingName(event: Event): void {
     :data-document-tab-id="variant === 'document-tab' ? tab.id : undefined"
     :aria-pressed="variant === 'document-tab' ? active : undefined"
     :aria-label="variant === 'focus' ? `${tab.name}の名前を変更` : undefined"
+    :draggable="variant === 'document-tab' && dragEnabled"
     @click="emit('select', tab.id)"
     @dblclick="startRenaming"
     @keydown="emit('keydown', $event)"
+    @dragstart="emit('dragstart', $event)"
+    @dragend="emit('dragend', $event)"
   >
     {{ tab.name }}
   </button>

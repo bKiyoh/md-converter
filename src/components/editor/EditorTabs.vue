@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import type { TabDropPosition } from '../../composables/useEditorTabs'
 import type { DeletedTab, EditorTab } from '../../types/editorTabs'
 import { tooltipDirective as vTooltip } from '../../directives/tooltip'
 import AppIcon from '../common/AppIcon.vue'
@@ -17,6 +18,7 @@ const props = defineProps<{
 const emit = defineEmits<{
   add: []
   select: [id: string]
+  reorder: [draggedTabId: string, targetTabId: string, position: TabDropPosition]
   rename: [id: string, name: string]
   delete: [id: string]
   restore: [id: string]
@@ -27,6 +29,10 @@ const root = ref<HTMLElement | null>(null)
 const deletedTabsOpen = ref<boolean>(false)
 const deletedTabsToggle = ref<HTMLButtonElement | null>(null)
 const deletedTabsPanel = ref<HTMLElement | null>(null)
+const draggedTabId = ref<string | null>(null)
+const dropIndicator = ref<{ tabId: string; position: TabDropPosition } | null>(null)
+let suppressedSelectionId: string | null = null
+let selectionSuppressionTimer: ReturnType<typeof setTimeout> | undefined
 
 async function selectAndFocus(id: string): Promise<void> {
   emit('select', id)
@@ -81,6 +87,82 @@ function handleTabKeydown(event: KeyboardEvent, index: number): void {
   }
 }
 
+function handleTabSelect(id: string): void {
+  if (draggedTabId.value === id || suppressedSelectionId === id) {
+    return
+  }
+
+  emit('select', id)
+}
+
+function handleTabDragStart(event: DragEvent, id: string): void {
+  draggedTabId.value = id
+  suppressedSelectionId = id
+  dropIndicator.value = null
+
+  if (event.dataTransfer) {
+    event.dataTransfer.effectAllowed = 'move'
+    event.dataTransfer.setData('text/plain', id)
+  }
+}
+
+function handleTabDragOver(event: DragEvent, targetTabId: string): void {
+  if (!draggedTabId.value || draggedTabId.value === targetTabId) {
+    dropIndicator.value = null
+    return
+  }
+
+  const target = event.currentTarget
+
+  if (!(target instanceof HTMLElement)) {
+    return
+  }
+
+  event.preventDefault()
+
+  if (event.dataTransfer) {
+    event.dataTransfer.dropEffect = 'move'
+  }
+
+  const rect = target.getBoundingClientRect()
+  const position: TabDropPosition =
+    event.clientX < rect.left + rect.width / 2 ? 'before' : 'after'
+
+  dropIndicator.value = { tabId: targetTabId, position }
+}
+
+function handleTabDrop(event: DragEvent, targetTabId: string): void {
+  const indicator = dropIndicator.value
+
+  if (
+    !draggedTabId.value ||
+    !indicator ||
+    indicator.tabId !== targetTabId ||
+    draggedTabId.value === targetTabId
+  ) {
+    return
+  }
+
+  event.preventDefault()
+  emit('reorder', draggedTabId.value, targetTabId, indicator.position)
+  dropIndicator.value = null
+}
+
+function handleTabDragEnd(id: string): void {
+  draggedTabId.value = null
+  dropIndicator.value = null
+  suppressedSelectionId = id
+
+  if (selectionSuppressionTimer !== undefined) {
+    clearTimeout(selectionSuppressionTimer)
+  }
+
+  selectionSuppressionTimer = setTimeout(() => {
+    suppressedSelectionId = null
+    selectionSuppressionTimer = undefined
+  }, 0)
+}
+
 function requestDelete(id: string): void {
   emit('delete', id)
 }
@@ -119,6 +201,10 @@ watch(() => props.activeTabId, scrollActiveTabIntoView, { flush: 'post' })
 
 onBeforeUnmount(() => {
   document.removeEventListener('click', handleDocumentClick)
+
+  if (selectionSuppressionTimer !== undefined) {
+    clearTimeout(selectionSuppressionTimer)
+  }
 })
 </script>
 
@@ -130,14 +216,26 @@ onBeforeUnmount(() => {
           v-for="(tab, index) in tabs"
           :key="tab.id"
           class="document-tab-item"
-          :class="{ 'document-tab-item--active': activeTabId === tab.id }"
+          :class="{
+            'document-tab-item--active': activeTabId === tab.id,
+            'document-tab-item--dragging': draggedTabId === tab.id,
+            'document-tab-item--drop-before':
+              dropIndicator?.tabId === tab.id && dropIndicator.position === 'before',
+            'document-tab-item--drop-after':
+              dropIndicator?.tabId === tab.id && dropIndicator.position === 'after',
+          }"
+          @dragover="handleTabDragOver($event, tab.id)"
+          @drop="handleTabDrop($event, tab.id)"
         >
           <EditableTabName
             :tab="tab"
             :active="activeTabId === tab.id"
-            @select="emit('select', $event)"
+            drag-enabled
+            @select="handleTabSelect"
             @rename="handleRename"
             @keydown="handleTabKeydown($event, index)"
+            @dragstart="handleTabDragStart($event, tab.id)"
+            @dragend="handleTabDragEnd(tab.id)"
           />
           <TooltipTarget class="document-tab-delete-tooltip-target" text="削除">
             <button
