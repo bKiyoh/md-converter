@@ -229,10 +229,7 @@ async function selectTextMatch(match: TextMatch): Promise<void> {
 async function openSearch(showReplace = false): Promise<void> {
   closeInputGuide()
   isSearchOpen.value = true
-
-  if (showReplace) {
-    isReplaceExpanded.value = true
-  }
+  isReplaceExpanded.value = showReplace
 
   await nextTick()
 

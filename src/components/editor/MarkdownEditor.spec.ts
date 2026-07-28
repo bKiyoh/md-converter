@@ -38,6 +38,38 @@ describe('MarkdownEditor', () => {
     wrapper.unmount()
   })
 
+  it('置換欄を開いて閉じた後は検索ボタンと検索ショートカットで検索欄だけを開く', async () => {
+    const wrapper = mountInteractiveEditor('one two')
+    const textarea = wrapper.get<HTMLTextAreaElement>('#markdown-input')
+
+    await wrapper.get<HTMLButtonElement>('.editor-search-button').trigger('click')
+    await wrapper.get('.search-replace-toggle').trigger('click')
+    expect(wrapper.find('#markdown-replace-row').exists()).toBe(true)
+    await wrapper.get('.search-close-button').trigger('click')
+
+    await wrapper.get<HTMLButtonElement>('.editor-search-button').trigger('click')
+    expect(wrapper.find('#markdown-replace-row').exists()).toBe(false)
+
+    await wrapper.get('.search-replace-toggle').trigger('click')
+    await wrapper.get('.search-close-button').trigger('click')
+
+    const shortcutEvent = new KeyboardEvent('keydown', {
+      key: 'f',
+      ctrlKey: true,
+      bubbles: true,
+      cancelable: true,
+    })
+    textarea.element.dispatchEvent(shortcutEvent)
+    await nextTick()
+
+    expect(shortcutEvent.defaultPrevented).toBe(true)
+    expect(wrapper.find('#markdown-replace-row').exists()).toBe(false)
+    expect(document.activeElement).toBe(
+      wrapper.get<HTMLInputElement>('#markdown-search-input').element,
+    )
+    wrapper.unmount()
+  })
+
   it('検索ショートカットとEnterで一致箇所を前後へ循環移動する', async () => {
     const wrapper = mountInteractiveEditor('one ONE one')
     const textarea = wrapper.get<HTMLTextAreaElement>('#markdown-input')
