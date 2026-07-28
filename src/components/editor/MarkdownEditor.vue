@@ -26,6 +26,7 @@ const props = withDefaults(
 
 const emit = defineEmits<{
   'update:modelValue': [value: string]
+  'request-search': [showReplace: boolean]
 }>()
 
 type SearchHighlightSegment = {
@@ -300,13 +301,13 @@ function handleDocumentKeydown(event: KeyboardEvent): void {
 
   if (props.shortcutsEnabled && isReplaceShortcut(event)) {
     event.preventDefault()
-    void openSearch(true)
+    emit('request-search', true)
     return
   }
 
   if (props.shortcutsEnabled && isSearchShortcut(event)) {
     event.preventDefault()
-    void openSearch(false)
+    emit('request-search', false)
     return
   }
 

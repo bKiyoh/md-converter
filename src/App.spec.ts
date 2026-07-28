@@ -1062,6 +1062,46 @@ describe('App', () => {
     wrapper.unmount()
   })
 
+  it('出力ペイン表示中の検索・置換ショートカットで入力ペインを表示する', async () => {
+    const wrapper = mount(App, { attachTo: document.body })
+    const outputTab = wrapper.get<HTMLButtonElement>('#output-tab')
+
+    await outputTab.trigger('click')
+    const searchEvent = new KeyboardEvent('keydown', {
+      key: 'f',
+      ctrlKey: true,
+      bubbles: true,
+      cancelable: true,
+    })
+    outputTab.element.dispatchEvent(searchEvent)
+    await flushPromises()
+
+    expect(searchEvent.defaultPrevented).toBe(true)
+    expect(wrapper.get('.workspace').attributes('data-active-panel')).toBe('input')
+    expect(document.activeElement).toBe(
+      wrapper.get<HTMLInputElement>('#markdown-search-input').element,
+    )
+    expect(wrapper.find('#markdown-replace-row').exists()).toBe(false)
+
+    await wrapper.get('.search-close-button').trigger('click')
+    await outputTab.trigger('click')
+    const replaceEvent = new KeyboardEvent('keydown', {
+      key: 'h',
+      ctrlKey: true,
+      bubbles: true,
+      cancelable: true,
+    })
+    outputTab.element.dispatchEvent(replaceEvent)
+    await flushPromises()
+
+    expect(replaceEvent.defaultPrevented).toBe(true)
+    expect(wrapper.get('.workspace').attributes('data-active-panel')).toBe('input')
+    expect(document.activeElement).toBe(
+      wrapper.get<HTMLInputElement>('#markdown-replacement-input').element,
+    )
+    wrapper.unmount()
+  })
+
   it('狭い画面向けタブを矢印キーとHome・Endキーで操作できる', async () => {
     const wrapper = mount(App, { attachTo: document.body })
     const inputTab = wrapper.get<HTMLButtonElement>('#input-tab')

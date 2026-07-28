@@ -9,13 +9,21 @@ function mountInteractiveEditor(initialValue: string) {
       components: { MarkdownEditor },
       setup() {
         const value = ref(initialValue)
-        return { value }
+        const editor = ref<InstanceType<typeof MarkdownEditor> | null>(null)
+
+        function handleSearchRequest(showReplace: boolean): void {
+          void editor.value?.openSearch(showReplace)
+        }
+
+        return { editor, handleSearchRequest, value }
       },
       template: `
         <MarkdownEditor
+          ref="editor"
           v-model="value"
           :character-count="value.length"
           :editor-internal-scroll="true"
+          @request-search="handleSearchRequest"
         />
       `,
     }),

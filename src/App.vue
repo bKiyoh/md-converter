@@ -121,8 +121,10 @@ async function copyOutput(): Promise<void> {
   await copy(conversionResult.value.output, `${formatLabel.value}形式でコピーしました`)
 }
 
-function openEditorSearch(): void {
-  void markdownEditor.value?.openSearch()
+async function openEditorSearch(showReplace = false): Promise<void> {
+  activePanel.value = 'input'
+  await nextTick()
+  await markdownEditor.value?.openSearch(showReplace)
 }
 
 function showTabNotice(nextNotice: TabNotice): void {
@@ -352,6 +354,7 @@ onBeforeUnmount(() => {
           :focus-mode="isFocusMode"
           :active-tab-id="activeTabId"
           :shortcuts-enabled="!isInfoModalOpen"
+          @request-search="openEditorSearch"
         >
           <template #document-tabs>
             <EditorTabs
