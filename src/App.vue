@@ -121,6 +121,10 @@ async function copyOutput(): Promise<void> {
   await copy(conversionResult.value.output, `${formatLabel.value}形式でコピーしました`)
 }
 
+function openEditorSearch(): void {
+  void markdownEditor.value?.openSearch()
+}
+
 function showTabNotice(nextNotice: TabNotice): void {
   tabNotice.value = nextNotice
 
@@ -231,6 +235,7 @@ onBeforeUnmount(() => {
         v-if="isFocusMode"
         :help-open="isFocusModeHelpOpen"
         @exit="exitFocusMode"
+        @search="openEditorSearch"
         @toggle-help="toggleFocusModeHelp"
       />
       <div v-if="isFocusMode" class="focus-mode-spacer" aria-hidden="true" />
@@ -345,6 +350,8 @@ onBeforeUnmount(() => {
           :character-count="inputCharacterCount"
           :editor-internal-scroll="effectiveEditorInternalScroll"
           :focus-mode="isFocusMode"
+          :active-tab-id="activeTabId"
+          :shortcuts-enabled="!isInfoModalOpen"
         >
           <template #document-tabs>
             <EditorTabs

@@ -990,9 +990,11 @@ h2 {
 .input-guide-root {
   display: flex;
   min-width: 0;
+  gap: 4px;
 }
 
-.input-guide-button {
+.input-guide-button,
+.editor-search-button {
   display: inline-grid;
   width: 32px;
   height: 32px;
@@ -1004,14 +1006,110 @@ h2 {
   background: transparent;
 }
 
-.input-guide-button:hover {
+.input-guide-button:hover,
+.editor-search-button:hover {
   color: var(--text);
   background: var(--surface-muted);
 }
 
-.input-guide-button .app-icon {
+.input-guide-button .app-icon,
+.editor-search-button .app-icon {
   width: 17px;
   height: 17px;
+}
+
+.search-replace-panel {
+  display: grid;
+  width: 100%;
+  margin-bottom: 12px;
+  padding: 8px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  flex: 0 0 auto;
+  gap: 8px;
+  background: var(--surface-muted);
+}
+
+.search-replace-row {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.search-replace-leading-icon {
+  width: 18px;
+  height: 18px;
+  flex: 0 0 auto;
+  color: var(--muted);
+}
+
+.search-replace-input {
+  min-width: 120px;
+  min-height: 34px;
+  padding: 6px 9px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  flex: 1 1 150px;
+  color: var(--text);
+  background: var(--surface);
+}
+
+.search-replace-input::placeholder {
+  color: var(--muted);
+}
+
+.search-result-status {
+  min-width: 54px;
+  color: var(--muted);
+  font-size: 0.78rem;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.search-navigation-button,
+.search-replace-toggle,
+.search-close-button {
+  width: 32px;
+  height: 32px;
+  border-radius: 7px;
+}
+
+.search-navigation-button .app-icon,
+.search-replace-toggle .app-icon,
+.search-close-button .app-icon {
+  width: 17px;
+  height: 17px;
+}
+
+.search-replace-actions {
+  display: flex;
+  flex: 0 0 auto;
+  gap: 6px;
+}
+
+.search-action-button {
+  min-height: 34px;
+  padding: 6px 10px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  color: var(--text);
+  background: var(--surface);
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.search-action-button:hover:not(:disabled) {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.replacement-notice {
+  min-height: 1.2em;
+  color: var(--muted);
+  font-size: 0.78rem;
+  white-space: nowrap;
 }
 
 .input-guide-panel {
@@ -1540,7 +1638,7 @@ h2 {
 
   .app--focus-mode .focus-tab-name {
     min-height: 52px;
-    padding-left: 112px;
+    padding-left: 152px;
   }
 
   .focus-mode-spacer {
@@ -1607,6 +1705,10 @@ h2 {
   .focus-mode-control-buttons {
     top: 12px;
     left: 12px;
+  }
+
+  .app--focus-mode .focus-tab-name {
+    padding-left: 140px;
   }
 
   .toast-notice {

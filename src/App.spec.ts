@@ -1,6 +1,7 @@
 import { flushPromises, mount } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import {
+  EDITOR_CONTENT_SAVE_DELAY_MS,
   EDITOR_STATE_STORAGE_KEY,
   LEGACY_MARKDOWN_DRAFT_STORAGE_KEY,
 } from './composables/useEditorStorage'
@@ -201,6 +202,42 @@ describe('App', () => {
     expect(wrapper.get<HTMLTextAreaElement>('#conversion-output').element.value).toBe('*最初*')
     expect(wrapper.findAll('.document-tab-button')[0]?.attributes('aria-pressed')).toBe('true')
     expect(wrapper.findAll('.document-tab-button')[1]?.attributes('aria-pressed')).toBe('false')
+  })
+
+  it('タブ切り替えで検索結果を再計算し、選択中タブだけを一括置換する', async () => {
+    const wrapper = mount(App)
+    const input = wrapper.get<HTMLTextAreaElement>('#markdown-input')
+
+    await input.setValue('hit hit')
+    await wrapper.get('.editor-search-button').trigger('click')
+    await wrapper.get<HTMLInputElement>('#markdown-search-input').setValue('hit')
+    expect(wrapper.get('.search-result-status').text()).toBe('1 / 2')
+
+    await wrapper.get('.document-tab-add-button').trigger('click')
+    expect(wrapper.get<HTMLInputElement>('#markdown-search-input').element.value).toBe('hit')
+    expect(wrapper.get('.search-result-status').text()).toBe('一致なし')
+
+    await input.setValue('hit hit hit')
+    expect(wrapper.get('.search-result-status').text()).toBe('1 / 3')
+    await wrapper.get('.search-replace-toggle').trigger('click')
+    await wrapper.get<HTMLInputElement>('#markdown-replacement-input').setValue('done')
+    await wrapper.findAll('.search-action-button')[1]!.trigger('click')
+    await flushPromises()
+
+    expect(input.element.value).toBe('done done done')
+    expect(wrapper.get('.replacement-notice').text()).toBe('3件置換しました')
+
+    await vi.advanceTimersByTimeAsync(EDITOR_CONTENT_SAVE_DELAY_MS)
+    const saved = JSON.parse(localStorage.getItem(EDITOR_STATE_STORAGE_KEY)!) as {
+      tabs: Array<{ content: string }>
+    }
+    expect(saved.tabs.map((tab) => tab.content)).toEqual(['hit hit', 'done done done'])
+
+    await wrapper.findAll<HTMLButtonElement>('.document-tab-button')[0]!.trigger('click')
+
+    expect(input.element.value).toBe('hit hit')
+    expect(wrapper.get('.search-result-status').text()).toBe('1 / 2')
+    expect(wrapper.get<HTMLInputElement>('#markdown-search-input').element.value).toBe('hit')
   })
 
   it('タブを並べ替えても選択と本文の対応を維持し、再読み込み後も順序を復元する', async () => {
@@ -499,6 +536,17 @@ describe('App', () => {
     expect(wrapper.get('.app-content').attributes()).toHaveProperty('inert')
     expect(document.activeElement).toBe(closeButton.element)
 
+    const findEvent = new KeyboardEvent('keydown', {
+      key: 'f',
+      ctrlKey: true,
+      bubbles: true,
+      cancelable: true,
+    })
+    closeButton.element.dispatchEvent(findEvent)
+    await wrapper.vm.$nextTick()
+    expect(findEvent.defaultPrevented).toBe(false)
+    expect(wrapper.find('.search-replace-panel').exists()).toBe(false)
+
     await modal.trigger('keydown', { key: 'Escape' })
 
     expect(wrapper.find('.info-modal').exists()).toBe(false)
@@ -576,6 +624,9 @@ describe('App', () => {
       wrapper.get('.focus-mode-exit-button').element,
     )
     expect(wrapper.get('.focus-mode-exit-button').element.nextElementSibling).toBe(
+      wrapper.get('.focus-mode-search-button').element,
+    )
+    expect(wrapper.get('.focus-mode-search-button').element.nextElementSibling).toBe(
       wrapper.get('.focus-mode-help-button').element,
     )
     expect(wrapper.get('.workspace-tabs').isVisible()).toBe(false)
@@ -600,6 +651,47 @@ describe('App', () => {
     expect(input.element.scrollTop).toBe(53)
     expect(document.activeElement).toBe(textareaElement)
     expect(wrapper.get('.workspace').attributes('data-active-panel')).toBe('input')
+    wrapper.unmount()
+  })
+
+  it('フォーカスモードの検索ボタンから検索でき、Escapeは検索UIだけを閉じる', async () => {
+    const wrapper = mount(App, { attachTo: document.body })
+    const input = wrapper.get<HTMLTextAreaElement>('#markdown-input')
+    await input.setValue('focus focus')
+    await wrapper.get('.focus-mode-button').trigger('click')
+
+    const searchButton = wrapper.get<HTMLButtonElement>('.focus-mode-search-button')
+    expect(searchButton.attributes('aria-label')).toBe('文章検索を開く')
+    expect(searchButton.find('[data-icon="search"]').exists()).toBe(true)
+    await searchButton.trigger('click')
+
+    const searchInput = wrapper.get<HTMLInputElement>('#markdown-search-input')
+    expect(document.activeElement).toBe(searchInput.element)
+    await searchInput.setValue('focus')
+    expect(wrapper.get('.search-result-status').text()).toBe('1 / 2')
+
+    searchInput.element.dispatchEvent(
+      new KeyboardEvent('keydown', {
+        key: 'Escape',
+        bubbles: true,
+        cancelable: true,
+      }),
+    )
+    await flushPromises()
+
+    expect(wrapper.find('.search-replace-panel').exists()).toBe(false)
+    expect(wrapper.get('.app').classes()).toContain('app--focus-mode')
+
+    input.element.dispatchEvent(
+      new KeyboardEvent('keydown', {
+        key: 'Escape',
+        bubbles: true,
+        cancelable: true,
+      }),
+    )
+    await flushPromises()
+
+    expect(wrapper.get('.app').classes()).not.toContain('app--focus-mode')
     wrapper.unmount()
   })
 

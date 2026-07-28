@@ -5,6 +5,7 @@ export type MarkdownEditorController = {
   captureViewState: () => MarkdownEditorViewState | null
   restoreViewState: (state: MarkdownEditorViewState) => void
   isConnected: () => boolean
+  openSearch: (showReplace?: boolean) => Promise<void>
 }
 
 export type UseFocusModeResult = {

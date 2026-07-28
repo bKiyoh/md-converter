@@ -1,10 +1,16 @@
 <script setup lang="ts">
-import { nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import AppIcon from '../common/AppIcon.vue'
 import { useMarkdownEditor } from '../../composables/useMarkdownEditor'
+import {
+  useTextSearch,
+  type TextSearchEdit,
+} from '../../composables/useTextSearch'
 import { tooltipDirective as vTooltip } from '../../directives/tooltip'
 import type { MarkdownEditorViewState } from '../../types/editorView'
+import type { TextMatch } from '../../utils/textSearch'
 import EditorInputGuideContent from './EditorInputGuideContent.vue'
+import SearchReplacePanel from './SearchReplacePanel.vue'
 
 const props = withDefaults(
   defineProps<{
@@ -12,8 +18,10 @@ const props = withDefaults(
     characterCount: number
     editorInternalScroll: boolean
     focusMode?: boolean
+    activeTabId?: string
+    shortcutsEnabled?: boolean
   }>(),
-  { focusMode: false },
+  { focusMode: false, activeTabId: 'default', shortcutsEnabled: true },
 )
 
 const emit = defineEmits<{
@@ -22,7 +30,12 @@ const emit = defineEmits<{
 
 const textarea = ref<HTMLTextAreaElement | null>(null)
 const inputGuideButton = ref<HTMLButtonElement | null>(null)
+const searchPanel = ref<InstanceType<typeof SearchReplacePanel> | null>(null)
 const isInputGuideOpen = ref<boolean>(false)
+const isSearchOpen = ref<boolean>(false)
+const isReplaceExpanded = ref<boolean>(false)
+const source = computed<string>(() => props.modelValue)
+const documentKey = computed<string>(() => props.activeTabId)
 
 function closeInputGuide(): void {
   isInputGuideOpen.value = false
@@ -32,14 +45,185 @@ function toggleInputGuide(): void {
   isInputGuideOpen.value = !isInputGuideOpen.value
 }
 
-function handleDocumentKeydown(event: KeyboardEvent): void {
-  if (event.defaultPrevented || !isInputGuideOpen.value || event.key !== 'Escape') {
+async function applySearchEdit(edit: TextSearchEdit): Promise<void> {
+  const element = textarea.value
+
+  if (!element) {
+    emit('update:modelValue', edit.value)
+    await nextTick()
     return
   }
 
-  event.preventDefault()
+  const previouslyFocused =
+    document.activeElement instanceof HTMLElement ? document.activeElement : null
+  element.focus({ preventScroll: true })
+  element.setSelectionRange(edit.start, edit.end)
+
+  let inputEventReceived = false
+  const observeInput = (): void => {
+    inputEventReceived = true
+  }
+  element.addEventListener('input', observeInput, { once: true })
+
+  let insertedWithNativeHistory = false
+
+  try {
+    // insertText keeps replacement in the textarea's native undo transaction when supported.
+    insertedWithNativeHistory =
+      typeof document.execCommand === 'function' &&
+      document.execCommand('insertText', false, edit.replacement)
+  } catch {
+    insertedWithNativeHistory = false
+  }
+
+  element.removeEventListener('input', observeInput)
+
+  if (!insertedWithNativeHistory || element.value !== edit.value) {
+    element.value = props.modelValue
+    element.setRangeText(edit.replacement, edit.start, edit.end, 'end')
+    emit('update:modelValue', element.value)
+  } else if (!inputEventReceived) {
+    emit('update:modelValue', element.value)
+  }
+
+  await nextTick()
+  resizeTextarea()
+
+  if (previouslyFocused && previouslyFocused !== element && previouslyFocused.isConnected) {
+    previouslyFocused.focus({ preventScroll: true })
+  }
+}
+
+const {
+  query,
+  replacement,
+  matches,
+  currentMatch,
+  resultStatus,
+  replacementNotice,
+  moveNext,
+  movePrevious,
+  replaceCurrent,
+  replaceAll,
+} = useTextSearch({
+  source,
+  documentKey,
+  applyEdit: applySearchEdit,
+})
+
+async function selectTextMatch(match: TextMatch): Promise<void> {
+  await nextTick()
+  const element = textarea.value
+
+  if (!element || !isSearchOpen.value) {
+    return
+  }
+
+  element.setSelectionRange(match.start, match.end)
+}
+
+async function openSearch(showReplace = false): Promise<void> {
   closeInputGuide()
-  void nextTick(() => inputGuideButton.value?.focus())
+  isSearchOpen.value = true
+
+  if (showReplace) {
+    isReplaceExpanded.value = true
+  }
+
+  await nextTick()
+
+  if (currentMatch.value) {
+    await selectTextMatch(currentMatch.value)
+  }
+
+  if (showReplace) {
+    await searchPanel.value?.focusReplacement()
+  } else {
+    await searchPanel.value?.focusSearch()
+  }
+}
+
+async function closeSearch(): Promise<void> {
+  if (!isSearchOpen.value) {
+    return
+  }
+
+  isSearchOpen.value = false
+  await nextTick()
+  textarea.value?.focus({ preventScroll: true })
+}
+
+async function toggleReplace(): Promise<void> {
+  isReplaceExpanded.value = !isReplaceExpanded.value
+  await nextTick()
+
+  if (isReplaceExpanded.value) {
+    await searchPanel.value?.focusReplacement()
+  } else {
+    await searchPanel.value?.focusSearch()
+  }
+}
+
+function isSearchShortcut(event: KeyboardEvent): boolean {
+  return (
+    event.key.toLowerCase() === 'f' &&
+    !event.altKey &&
+    !event.shiftKey &&
+    (event.ctrlKey || event.metaKey)
+  )
+}
+
+function isReplaceShortcut(event: KeyboardEvent): boolean {
+  return (
+    (event.key.toLowerCase() === 'h' &&
+      event.ctrlKey &&
+      !event.metaKey &&
+      !event.altKey &&
+      !event.shiftKey) ||
+    (event.key.toLowerCase() === 'f' &&
+      event.metaKey &&
+      event.altKey &&
+      !event.ctrlKey &&
+      !event.shiftKey)
+  )
+}
+
+function handleDocumentKeydown(event: KeyboardEvent): void {
+  if (
+    event.defaultPrevented ||
+    event.isComposing ||
+    !textarea.value?.isConnected
+  ) {
+    return
+  }
+
+  if (props.shortcutsEnabled && isReplaceShortcut(event)) {
+    event.preventDefault()
+    void openSearch(true)
+    return
+  }
+
+  if (props.shortcutsEnabled && isSearchShortcut(event)) {
+    event.preventDefault()
+    void openSearch(false)
+    return
+  }
+
+  if (event.key !== 'Escape') {
+    return
+  }
+
+  if (isSearchOpen.value) {
+    event.preventDefault()
+    void closeSearch()
+    return
+  }
+
+  if (isInputGuideOpen.value) {
+    event.preventDefault()
+    closeInputGuide()
+    void nextTick(() => inputGuideButton.value?.focus())
+  }
 }
 
 function captureViewState(): MarkdownEditorViewState | null {
@@ -117,6 +301,12 @@ watch(
   },
 )
 
+watch(currentMatch, (match) => {
+  if (match) {
+    void selectTextMatch(match)
+  }
+})
+
 onMounted(() => {
   resizeTextarea()
   document.addEventListener('keydown', handleDocumentKeydown)
@@ -126,7 +316,7 @@ onBeforeUnmount(() => {
   document.removeEventListener('keydown', handleDocumentKeydown)
 })
 
-defineExpose({ captureViewState, restoreViewState, isConnected })
+defineExpose({ captureViewState, restoreViewState, isConnected, openSearch })
 </script>
 
 <template>
@@ -140,6 +330,25 @@ defineExpose({ captureViewState, restoreViewState, isConnected })
     :tabindex="focusMode ? undefined : 0"
   >
     <slot name="document-tabs" />
+
+    <SearchReplacePanel
+      v-if="isSearchOpen"
+      ref="searchPanel"
+      :query="query"
+      :replacement="replacement"
+      :replace-expanded="isReplaceExpanded"
+      :result-status="resultStatus"
+      :replacement-notice="replacementNotice"
+      :has-matches="matches.length > 0"
+      @update:query="query = $event"
+      @update:replacement="replacement = $event"
+      @previous="movePrevious"
+      @next="moveNext"
+      @toggle-replace="toggleReplace"
+      @replace-current="replaceCurrent"
+      @replace-all="replaceAll"
+      @close="closeSearch"
+    />
 
     <label class="visually-hidden" for="markdown-input">変換するMarkdown</label>
     <textarea
@@ -169,6 +378,15 @@ defineExpose({ captureViewState, restoreViewState, isConnected })
 
     <div v-show="!focusMode" class="panel-footer">
       <div class="input-guide-root">
+        <button
+          v-tooltip="'文章検索（Ctrl / Command + F）'"
+          class="editor-search-button"
+          type="button"
+          aria-label="文章検索を開く"
+          @click="openSearch(false)"
+        >
+          <AppIcon name="search" />
+        </button>
         <button
           v-tooltip="isInputGuideOpen ? '入力支援を閉じる' : '入力支援を表示'"
           ref="inputGuideButton"
