@@ -73,6 +73,111 @@ describe('MarkdownEditor', () => {
     wrapper.unmount()
   })
 
+  it('全一致をハイライトし、現在の一致だけを強調する', async () => {
+    const wrapper = mountInteractiveEditor('one ONE one')
+
+    await wrapper.get('.editor-search-button').trigger('click')
+    const searchInput = wrapper.get<HTMLInputElement>('#markdown-search-input')
+
+    expect(wrapper.find('.search-highlight-layer').exists()).toBe(false)
+
+    await searchInput.setValue('one')
+
+    const highlightLayer = wrapper.get('.search-highlight-layer')
+    const highlights = wrapper.findAll('.search-highlight')
+
+    expect(highlightLayer.attributes('aria-hidden')).toBe('true')
+    expect(highlightLayer.text()).toBe('one ONE one')
+    expect(highlights.map((highlight) => highlight.text())).toEqual([
+      'one',
+      'ONE',
+      'one',
+    ])
+    expect(highlights[0]!.classes()).toContain('search-highlight--current')
+    expect(highlights[1]!.classes()).toContain('search-highlight--match')
+
+    await searchInput.trigger('keydown', { key: 'Enter' })
+
+    const movedHighlights = wrapper.findAll('.search-highlight')
+    expect(movedHighlights[0]!.classes()).toContain('search-highlight--match')
+    expect(movedHighlights[1]!.classes()).toContain(
+      'search-highlight--current',
+    )
+
+    await wrapper.get<HTMLTextAreaElement>('#markdown-input').setValue('one only')
+    expect(wrapper.findAll('.search-highlight')).toHaveLength(1)
+    expect(wrapper.get('.search-highlight-layer').text()).toBe('one only')
+
+    await searchInput.setValue('missing')
+    expect(wrapper.find('.search-highlight-layer').exists()).toBe(false)
+    wrapper.unmount()
+  })
+
+  it('Markdown本文をHTMLとして解釈せずハイライト層へ表示する', async () => {
+    const wrapper = mountInteractiveEditor('<img src=x> img')
+
+    await wrapper.get('.editor-search-button').trigger('click')
+    await wrapper.get<HTMLInputElement>('#markdown-search-input').setValue('img')
+
+    const highlightLayer = wrapper.get('.search-highlight-layer')
+    expect(highlightLayer.text()).toBe('<img src=x> img')
+    expect(highlightLayer.find('img').exists()).toBe(false)
+    wrapper.unmount()
+  })
+
+  it('textareaの縦横スクロール位置をハイライト層へ同期する', async () => {
+    const wrapper = mountInteractiveEditor('match '.repeat(100))
+
+    await wrapper.get('.editor-search-button').trigger('click')
+    await wrapper.get<HTMLInputElement>('#markdown-search-input').setValue('match')
+
+    const textarea = wrapper.get<HTMLTextAreaElement>('#markdown-input')
+    const highlightLayer = wrapper.get<HTMLDivElement>('.search-highlight-layer')
+    textarea.element.scrollTop = 84
+    textarea.element.scrollLeft = 19
+    await textarea.trigger('scroll')
+
+    expect(highlightLayer.element.scrollTop).toBe(84)
+    expect(highlightLayer.element.scrollLeft).toBe(19)
+    wrapper.unmount()
+  })
+
+  it('表示範囲外の現在一致までtextareaをスクロールする', async () => {
+    const offsetTopSpy = vi
+      .spyOn(HTMLElement.prototype, 'offsetTop', 'get')
+      .mockImplementation(function (this: HTMLElement) {
+        return this.classList.contains('search-highlight--current') ? 900 : 0
+      })
+    const offsetHeightSpy = vi
+      .spyOn(HTMLElement.prototype, 'offsetHeight', 'get')
+      .mockImplementation(function (this: HTMLElement) {
+        return this.classList.contains('search-highlight--current') ? 24 : 0
+      })
+    const wrapper = mountInteractiveEditor(
+      `${'前の行\n'.repeat(80)}検索対象\n後ろの行`,
+    )
+    const textarea = wrapper.get<HTMLTextAreaElement>('#markdown-input')
+    Object.defineProperty(textarea.element, 'clientHeight', {
+      configurable: true,
+      value: 200,
+    })
+
+    await wrapper.get('.editor-search-button').trigger('click')
+    await wrapper
+      .get<HTMLInputElement>('#markdown-search-input')
+      .setValue('検索対象')
+    await flushPromises()
+
+    expect(textarea.element.scrollTop).toBe(812)
+    expect(
+      wrapper.get<HTMLDivElement>('.search-highlight-layer').element.scrollTop,
+    ).toBe(812)
+
+    wrapper.unmount()
+    offsetTopSpy.mockRestore()
+    offsetHeightSpy.mockRestore()
+  })
+
   it('検索欄でIME入力中に一致してもtextareaへフォーカスを移さない', async () => {
     const wrapper = mountInteractiveEditor('tを含む本文')
     await wrapper.get('.editor-search-button').trigger('click')
@@ -205,9 +310,11 @@ describe('MarkdownEditor', () => {
     expect(guideButton.attributes('aria-expanded')).toBe('true')
     expect(guideButton.attributes('aria-label')).toBe('入力支援を閉じる')
     const guidePanel = wrapper.get('.input-guide-panel')
+    const textAreaShell = wrapper.get('.text-area-shell')
     const textarea = wrapper.get<HTMLTextAreaElement>('#markdown-input')
     expect(guidePanel.attributes('role')).toBe('region')
-    expect(textarea.element.nextElementSibling).toBe(guidePanel.element)
+    expect(textAreaShell.element.nextElementSibling).toBe(guidePanel.element)
+    expect(textAreaShell.element.contains(textarea.element)).toBe(true)
     expect(guidePanel.element.nextElementSibling?.classList).toContain('panel-footer')
     expect(wrapper.get('.input-guide-panel .editor-input-guide').text()).toContain(
       'Ctrl / Command + B',

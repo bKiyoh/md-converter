@@ -28,7 +28,13 @@ const emit = defineEmits<{
   'update:modelValue': [value: string]
 }>()
 
+type SearchHighlightSegment = {
+  text: string
+  kind: 'plain' | 'match' | 'current'
+}
+
 const textarea = ref<HTMLTextAreaElement | null>(null)
+const searchHighlightLayer = ref<HTMLDivElement | null>(null)
 const inputGuideButton = ref<HTMLButtonElement | null>(null)
 const searchPanel = ref<InstanceType<typeof SearchReplacePanel> | null>(null)
 const isInputGuideOpen = ref<boolean>(false)
@@ -111,6 +117,103 @@ const {
   applyEdit: applySearchEdit,
 })
 
+const searchHighlightSegments = computed<SearchHighlightSegment[]>(() => {
+  const segments: SearchHighlightSegment[] = []
+  const activeMatch = currentMatch.value
+  let offset = 0
+
+  for (const match of matches.value) {
+    if (match.start > offset) {
+      segments.push({
+        text: props.modelValue.slice(offset, match.start),
+        kind: 'plain',
+      })
+    }
+
+    segments.push({
+      text: props.modelValue.slice(match.start, match.end),
+      kind:
+        activeMatch?.start === match.start && activeMatch.end === match.end
+          ? 'current'
+          : 'match',
+    })
+    offset = match.end
+  }
+
+  if (offset < props.modelValue.length) {
+    segments.push({
+      text: props.modelValue.slice(offset),
+      kind: 'plain',
+    })
+  }
+
+  return segments
+})
+
+function syncSearchHighlightScroll(): void {
+  const element = textarea.value
+  const highlightLayer = searchHighlightLayer.value
+
+  if (!element || !highlightLayer) {
+    return
+  }
+
+  highlightLayer.scrollTop = element.scrollTop
+  highlightLayer.scrollLeft = element.scrollLeft
+}
+
+function scrollCurrentMatchIntoView(): void {
+  const element = textarea.value
+  const highlightLayer = searchHighlightLayer.value
+  const currentHighlight =
+    highlightLayer?.querySelector<HTMLElement>('.search-highlight--current')
+
+  if (!element || !highlightLayer || !currentHighlight) {
+    return
+  }
+
+  const lineHeight = Number.parseFloat(window.getComputedStyle(element).lineHeight)
+  const matchHeight = Math.max(
+    currentHighlight.offsetHeight,
+    Number.isFinite(lineHeight) ? lineHeight : 0,
+    1,
+  )
+  const matchTop = currentHighlight.offsetTop
+  const matchBottom = matchTop + matchHeight
+  const visibleTop = element.scrollTop
+  const visibleBottom = visibleTop + element.clientHeight
+
+  if (
+    element.clientHeight > 0 &&
+    (matchTop < visibleTop || matchBottom > visibleBottom)
+  ) {
+    const centeredOffset = Math.max(
+      0,
+      (element.clientHeight - Math.min(matchHeight, element.clientHeight)) / 2,
+    )
+    element.scrollTop = Math.max(0, matchTop - centeredOffset)
+    syncSearchHighlightScroll()
+  }
+
+  if (props.editorInternalScroll) {
+    return
+  }
+
+  const matchRect = currentHighlight.getBoundingClientRect()
+  const viewportHeight =
+    document.documentElement.clientHeight || window.innerHeight
+
+  if (
+    viewportHeight > 0 &&
+    (matchRect.top < 0 || matchRect.bottom > viewportHeight)
+  ) {
+    window.scrollBy({
+      top: matchRect.top - (viewportHeight - matchRect.height) / 2,
+      behavior: 'auto',
+    })
+  }
+}
+
 async function selectTextMatch(match: TextMatch): Promise<void> {
   await nextTick()
   const element = textarea.value
@@ -120,6 +223,7 @@ async function selectTextMatch(match: TextMatch): Promise<void> {
   }
 
   element.setSelectionRange(match.start, match.end)
+  scrollCurrentMatchIntoView()
 }
 
 async function openSearch(showReplace = false): Promise<void> {
@@ -271,11 +375,13 @@ function resizeTextarea(): void {
 
   if (props.editorInternalScroll) {
     element.style.height = ''
+    syncSearchHighlightScroll()
     return
   }
 
   element.style.height = 'auto'
   element.style.height = `${element.scrollHeight}px`
+  syncSearchHighlightScroll()
 }
 
 async function updateValue(event: Event): Promise<void> {
@@ -306,6 +412,14 @@ watch(currentMatch, (match) => {
     void selectTextMatch(match)
   }
 })
+
+watch(
+  [matches, isSearchOpen],
+  () => {
+    void nextTick(syncSearchHighlightScroll)
+  },
+  { flush: 'post' },
+)
 
 onMounted(() => {
   resizeTextarea()
@@ -351,20 +465,57 @@ defineExpose({ captureViewState, restoreViewState, isConnected, openSearch })
     />
 
     <label class="visually-hidden" for="markdown-input">変換するMarkdown</label>
-    <textarea
-      id="markdown-input"
-      ref="textarea"
-      class="text-area"
+    <div
+      class="text-area-shell"
       :class="
-        editorInternalScroll ? 'text-area--internal-scroll' : 'text-area--expand'
+        [
+          editorInternalScroll
+            ? 'text-area-shell--internal-scroll'
+            : 'text-area-shell--expand',
+          {
+            'text-area-shell--highlighting':
+              isSearchOpen && matches.length > 0,
+          },
+        ]
       "
-      :value="modelValue"
-      :aria-describedby="focusMode ? undefined : 'markdown-input-count'"
-      placeholder="Markdownを入力してください"
-      spellcheck="true"
-      @input="updateValue"
-      @keydown="handleKeydown"
-    />
+    >
+      <div
+        v-if="isSearchOpen && matches.length > 0"
+        ref="searchHighlightLayer"
+        class="search-highlight-layer"
+        aria-hidden="true"
+      >
+        <template
+          v-for="(segment, index) in searchHighlightSegments"
+          :key="index"
+        >
+          <mark
+            v-if="segment.kind !== 'plain'"
+            class="search-highlight"
+            :class="`search-highlight--${segment.kind}`"
+            v-text="segment.text"
+          />
+          <span v-else v-text="segment.text" />
+        </template>
+        <span v-if="modelValue.endsWith('\n')">&#8203;</span>
+      </div>
+
+      <textarea
+        id="markdown-input"
+        ref="textarea"
+        class="text-area"
+        :class="
+          editorInternalScroll ? 'text-area--internal-scroll' : 'text-area--expand'
+        "
+        :value="modelValue"
+        :aria-describedby="focusMode ? undefined : 'markdown-input-count'"
+        placeholder="Markdownを入力してください"
+        spellcheck="true"
+        @input="updateValue"
+        @keydown="handleKeydown"
+        @scroll="syncSearchHighlightScroll"
+      />
+    </div>
 
     <section
       v-if="isInputGuideOpen && !focusMode"
