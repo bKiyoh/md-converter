@@ -8,6 +8,8 @@ import {
 } from '../../composables/useTextSearch'
 import { tooltipDirective as vTooltip } from '../../directives/tooltip'
 import type { MarkdownEditorViewState } from '../../types/editorView'
+import type { InputReplacementRule } from '../../types/inputReplacement'
+import type { TextEditResult } from '../../utils/markdownEditor'
 import type { TextMatch } from '../../utils/textSearch'
 import EditorInputGuideContent from './EditorInputGuideContent.vue'
 import SearchReplacePanel from './SearchReplacePanel.vue'
@@ -20,8 +22,18 @@ const props = withDefaults(
     focusMode?: boolean
     activeTabId?: string
     shortcutsEnabled?: boolean
+    inputReplacementEnabled?: boolean
+    inputReplacementRules?: readonly InputReplacementRule[]
+    normalizeFullWidthMarkdown?: boolean
   }>(),
-  { focusMode: false, activeTabId: 'default', shortcutsEnabled: true },
+  {
+    focusMode: false,
+    activeTabId: 'default',
+    shortcutsEnabled: true,
+    inputReplacementEnabled: true,
+    inputReplacementRules: () => [],
+    normalizeFullWidthMarkdown: false,
+  },
 )
 
 const emit = defineEmits<{
@@ -44,6 +56,78 @@ const isReplaceExpanded = ref<boolean>(false)
 const source = computed<string>(() => props.modelValue)
 const documentKey = computed<string>(() => props.activeTabId)
 
+function getMinimalTextEdit(
+  currentValue: string,
+  nextValue: string,
+): { start: number; end: number; replacement: string } {
+  let start = 0
+  const maximumPrefix = Math.min(currentValue.length, nextValue.length)
+
+  while (
+    start < maximumPrefix &&
+    currentValue[start] === nextValue[start]
+  ) {
+    start += 1
+  }
+
+  let currentEnd = currentValue.length
+  let nextEnd = nextValue.length
+  while (
+    currentEnd > start &&
+    nextEnd > start &&
+    currentValue[currentEnd - 1] === nextValue[nextEnd - 1]
+  ) {
+    currentEnd -= 1
+    nextEnd -= 1
+  }
+
+  return {
+    start,
+    end: currentEnd,
+    replacement: nextValue.slice(start, nextEnd),
+  }
+}
+
+async function applyEditorTextEdit(
+  element: HTMLTextAreaElement,
+  result: TextEditResult,
+): Promise<void> {
+  const currentValue = element.value
+  const edit = getMinimalTextEdit(currentValue, result.value)
+  element.focus({ preventScroll: true })
+  element.setSelectionRange(edit.start, edit.end)
+
+  let inputEventReceived = false
+  const observeInput = (): void => {
+    inputEventReceived = true
+  }
+  element.addEventListener('input', observeInput, { once: true })
+
+  let insertedWithNativeHistory = false
+  try {
+    insertedWithNativeHistory =
+      typeof document.execCommand === 'function' &&
+      document.execCommand('insertText', false, edit.replacement)
+  } catch {
+    insertedWithNativeHistory = false
+  }
+
+  element.removeEventListener('input', observeInput)
+
+  if (!insertedWithNativeHistory || element.value !== result.value) {
+    element.value = currentValue
+    element.setRangeText(edit.replacement, edit.start, edit.end, 'end')
+    emit('update:modelValue', element.value)
+  } else if (!inputEventReceived) {
+    emit('update:modelValue', element.value)
+  }
+
+  await nextTick()
+  element.focus({ preventScroll: true })
+  element.setSelectionRange(result.selectionStart, result.selectionEnd)
+  resizeTextarea()
+}
+
 function closeInputGuide(): void {
   isInputGuideOpen.value = false
 }
@@ -63,38 +147,11 @@ async function applySearchEdit(edit: TextSearchEdit): Promise<void> {
 
   const previouslyFocused =
     document.activeElement instanceof HTMLElement ? document.activeElement : null
-  element.focus({ preventScroll: true })
-  element.setSelectionRange(edit.start, edit.end)
-
-  let inputEventReceived = false
-  const observeInput = (): void => {
-    inputEventReceived = true
-  }
-  element.addEventListener('input', observeInput, { once: true })
-
-  let insertedWithNativeHistory = false
-
-  try {
-    // insertText keeps replacement in the textarea's native undo transaction when supported.
-    insertedWithNativeHistory =
-      typeof document.execCommand === 'function' &&
-      document.execCommand('insertText', false, edit.replacement)
-  } catch {
-    insertedWithNativeHistory = false
-  }
-
-  element.removeEventListener('input', observeInput)
-
-  if (!insertedWithNativeHistory || element.value !== edit.value) {
-    element.value = props.modelValue
-    element.setRangeText(edit.replacement, edit.start, edit.end, 'end')
-    emit('update:modelValue', element.value)
-  } else if (!inputEventReceived) {
-    emit('update:modelValue', element.value)
-  }
-
-  await nextTick()
-  resizeTextarea()
+  await applyEditorTextEdit(element, {
+    value: edit.value,
+    selectionStart: edit.start + edit.replacement.length,
+    selectionEnd: edit.start + edit.replacement.length,
+  })
 
   if (previouslyFocused && previouslyFocused !== element && previouslyFocused.isConnected) {
     previouslyFocused.focus({ preventScroll: true })
@@ -388,7 +445,20 @@ async function updateValue(event: Event): Promise<void> {
   resizeTextarea()
 }
 
-const { handleKeydown } = useMarkdownEditor((value) => emit('update:modelValue', value))
+const {
+  handleKeydown,
+  handleBeforeInput,
+  handleCompositionStart,
+  handleCompositionEnd,
+} = useMarkdownEditor({
+  getInputReplacement: () => ({
+    enabled: props.inputReplacementEnabled,
+    rules: props.inputReplacementRules,
+  }),
+  getFullWidthMarkdownNormalizationEnabled: () =>
+    props.normalizeFullWidthMarkdown,
+  applyTextEdit: applyEditorTextEdit,
+})
 
 watch(
   () => [props.modelValue, props.editorInternalScroll],
@@ -510,6 +580,9 @@ defineExpose({ captureViewState, restoreViewState, isConnected, openSearch })
         placeholder="Markdownを入力してください"
         spellcheck="true"
         @input="updateValue"
+        @beforeinput="handleBeforeInput"
+        @compositionstart="handleCompositionStart"
+        @compositionend="handleCompositionEnd"
         @keydown="handleKeydown"
         @scroll="syncSearchHighlightScroll"
       />

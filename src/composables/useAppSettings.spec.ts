@@ -28,6 +28,11 @@ function mountSettings(storage: LocalStorageAccess | null): VueWrapper {
           max="0.8"
           step="0.05"
         />
+        <input
+          data-testid="full-width-markdown"
+          v-model="normalizeFullWidthMarkdown"
+          type="checkbox"
+        />
       `,
     }),
   )
@@ -48,6 +53,9 @@ describe('useAppSettings', () => {
     expect(
       wrapper.get<HTMLInputElement>('[data-testid="workspace-split-ratio"]').element.value,
     ).toBe('0.5')
+    expect(
+      wrapper.get<HTMLInputElement>('[data-testid="full-width-markdown"]').element.checked,
+    ).toBe(false)
   })
 
   it('変更をJSONで即時保存し、次回起動時に復元する', async () => {
@@ -68,6 +76,7 @@ describe('useAppSettings', () => {
       JSON.stringify({
         editorInternalScroll: false,
         workspaceSplitRatio: 0.5,
+        normalizeFullWidthMarkdown: false,
       } satisfies AppSettings),
     )
 
@@ -97,6 +106,7 @@ describe('useAppSettings', () => {
       JSON.stringify({
         editorInternalScroll: true,
         workspaceSplitRatio: 0.65,
+        normalizeFullWidthMarkdown: false,
       } satisfies AppSettings),
     )
 
@@ -120,6 +130,55 @@ describe('useAppSettings', () => {
     expect(
       wrapper.get<HTMLInputElement>('[data-testid="workspace-split-ratio"]').element.value,
     ).toBe('0.5')
+    expect(
+      wrapper.get<HTMLInputElement>('[data-testid="full-width-markdown"]').element.checked,
+    ).toBe(false)
+  })
+
+  it('全角Markdown補正を即時保存して復元する', async () => {
+    let storedValue: string | null = null
+    const storage = {
+      getItem: vi.fn(() => storedValue),
+      setItem: vi.fn((_key: string, value: string) => {
+        storedValue = value
+      }),
+    }
+    const wrapper = mountSettings(storage)
+
+    await wrapper.get<HTMLInputElement>('[data-testid="full-width-markdown"]').setValue(true)
+
+    expect(storage.setItem).toHaveBeenLastCalledWith(
+      APP_SETTINGS_STORAGE_KEY,
+      JSON.stringify({
+        editorInternalScroll: true,
+        workspaceSplitRatio: 0.5,
+        normalizeFullWidthMarkdown: true,
+      } satisfies AppSettings),
+    )
+
+    const reloadedWrapper = mountSettings(storage)
+    expect(
+      reloadedWrapper.get<HTMLInputElement>('[data-testid="full-width-markdown"]').element.checked,
+    ).toBe(true)
+  })
+
+  it('全角Markdown補正の保存値が不正な場合はOFFへ補完する', () => {
+    const storage = {
+      getItem: vi.fn(() =>
+        JSON.stringify({
+          editorInternalScroll: true,
+          workspaceSplitRatio: 0.5,
+          normalizeFullWidthMarkdown: 'yes',
+        }),
+      ),
+      setItem: vi.fn(),
+    }
+
+    const wrapper = mountSettings(storage)
+
+    expect(
+      wrapper.get<HTMLInputElement>('[data-testid="full-width-markdown"]').element.checked,
+    ).toBe(false)
   })
 
   it.each([

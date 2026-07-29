@@ -6,11 +6,16 @@ import IconButton from './IconButton.vue'
 defineProps<{
   darkMode: boolean
   editorInternalScroll: boolean
+  inputReplacementEnabled: boolean
+  normalizeFullWidthMarkdown: boolean
 }>()
 
 const emit = defineEmits<{
   'update:darkMode': [value: boolean]
   'update:editorInternalScroll': [value: boolean]
+  'update:inputReplacementEnabled': [value: boolean]
+  'update:normalizeFullWidthMarkdown': [value: boolean]
+  'manage-input-replacements': []
 }>()
 
 const isOpen = ref<boolean>(false)
@@ -47,6 +52,11 @@ function handleDocumentKeydown(event: KeyboardEvent): void {
 
 function readChecked(event: Event): boolean {
   return (event.target as HTMLInputElement).checked
+}
+
+function openInputReplacementManager(): void {
+  closePopover()
+  emit('manage-input-replacements')
 }
 
 onMounted(() => {
@@ -122,6 +132,69 @@ onBeforeUnmount(() => {
         <p id="editor-scroll-description" class="setting-description">
           OFFにすると、入力内容に合わせてエディターとプレビューが縦に広がります。
         </p>
+      </div>
+
+      <div class="setting-item">
+        <label class="setting-row" for="full-width-markdown-setting">
+          <span class="setting-name">全角Markdown補正</span>
+          <span class="switch-group">
+            <input
+              id="full-width-markdown-setting"
+              class="switch-input"
+              type="checkbox"
+              role="switch"
+              :checked="normalizeFullWidthMarkdown"
+              aria-describedby="full-width-markdown-description"
+              @change="
+                emit('update:normalizeFullWidthMarkdown', readChecked($event))
+              "
+            />
+            <span class="switch-track" aria-hidden="true">
+              <span class="switch-thumb" />
+            </span>
+            <span class="switch-state">
+              {{ normalizeFullWidthMarkdown ? 'ON' : 'OFF' }}
+            </span>
+          </span>
+        </label>
+        <p id="full-width-markdown-description" class="setting-description">
+          全角で入力したMarkdown記号を、入力直後に半角へ補正します。
+        </p>
+      </div>
+
+      <div class="setting-item">
+        <label class="setting-row" for="input-replacement-setting">
+          <span class="setting-name">入力置換を有効にする</span>
+          <span class="switch-group">
+            <input
+              id="input-replacement-setting"
+              class="switch-input"
+              type="checkbox"
+              role="switch"
+              :checked="inputReplacementEnabled"
+              aria-describedby="input-replacement-description"
+              @change="
+                emit('update:inputReplacementEnabled', readChecked($event))
+              "
+            />
+            <span class="switch-track" aria-hidden="true">
+              <span class="switch-thumb" />
+            </span>
+            <span class="switch-state">
+              {{ inputReplacementEnabled ? 'ON' : 'OFF' }}
+            </span>
+          </span>
+        </label>
+        <p id="input-replacement-description" class="setting-description">
+          登録した文字を、入力時に別の文字へ置き換えます。
+        </p>
+        <button
+          class="setting-manage-button"
+          type="button"
+          @click="openInputReplacementManager"
+        >
+          置換ルールを管理
+        </button>
       </div>
     </section>
   </div>

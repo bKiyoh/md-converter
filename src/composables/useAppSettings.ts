@@ -12,17 +12,20 @@ export const MAX_WORKSPACE_SPLIT_RATIO = 0.8
 export type AppSettings = {
   editorInternalScroll: boolean
   workspaceSplitRatio: number
+  normalizeFullWidthMarkdown: boolean
 }
 
 export type UseAppSettingsResult = {
   settings: Ref<AppSettings>
   editorInternalScroll: WritableComputedRef<boolean>
   workspaceSplitRatio: WritableComputedRef<number>
+  normalizeFullWidthMarkdown: WritableComputedRef<boolean>
 }
 
 const DEFAULT_APP_SETTINGS: AppSettings = {
   editorInternalScroll: true,
   workspaceSplitRatio: DEFAULT_WORKSPACE_SPLIT_RATIO,
+  normalizeFullWidthMarkdown: false,
 }
 
 function createDefaultSettings(): AppSettings {
@@ -54,7 +57,17 @@ function deserializeSettings(storedValue: string | null): AppSettings {
       ? parsed.workspaceSplitRatio
       : DEFAULT_WORKSPACE_SPLIT_RATIO
 
-  return { editorInternalScroll: parsed.editorInternalScroll, workspaceSplitRatio }
+  const normalizeFullWidthMarkdown =
+    'normalizeFullWidthMarkdown' in parsed &&
+    typeof parsed.normalizeFullWidthMarkdown === 'boolean'
+      ? parsed.normalizeFullWidthMarkdown
+      : false
+
+  return {
+    editorInternalScroll: parsed.editorInternalScroll,
+    workspaceSplitRatio,
+    normalizeFullWidthMarkdown,
+  }
 }
 
 export function useAppSettings(
@@ -86,6 +99,20 @@ export function useAppSettings(
       }
     },
   })
+  const normalizeFullWidthMarkdown = computed<boolean>({
+    get: () => settings.value.normalizeFullWidthMarkdown,
+    set: (value) => {
+      settings.value = {
+        ...settings.value,
+        normalizeFullWidthMarkdown: value,
+      }
+    },
+  })
 
-  return { settings, editorInternalScroll, workspaceSplitRatio }
+  return {
+    settings,
+    editorInternalScroll,
+    workspaceSplitRatio,
+    normalizeFullWidthMarkdown,
+  }
 }
