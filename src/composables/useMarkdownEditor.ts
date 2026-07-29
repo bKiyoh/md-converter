@@ -44,6 +44,19 @@ export function useMarkdownEditor(
   let isCompositionActive = false
   let compositionStartValue = ''
   let justEndedComposition = false
+  let isApplyingTextEdit = false
+
+  async function applyTextEdit(
+    textarea: HTMLTextAreaElement,
+    result: TextEditResult,
+  ): Promise<void> {
+    isApplyingTextEdit = true
+    try {
+      await options.applyTextEdit(textarea, result)
+    } finally {
+      isApplyingTextEdit = false
+    }
+  }
 
   function getActiveReplacementMatch(
     value: string,
@@ -159,6 +172,7 @@ export function useMarkdownEditor(
 
   function handleBeforeInput(event: InputEvent): void {
     if (
+      isApplyingTextEdit ||
       !(event.currentTarget instanceof HTMLTextAreaElement) ||
       event.isComposing ||
       isCompositionActive ||
@@ -197,7 +211,7 @@ export function useMarkdownEditor(
     }
 
     event.preventDefault()
-    void options.applyTextEdit(textarea, result)
+    void applyTextEdit(textarea, result)
   }
 
   function handleCompositionStart(event: CompositionEvent): void {
@@ -248,7 +262,7 @@ export function useMarkdownEditor(
         end,
       )
       if (normalized) {
-        await options.applyTextEdit(textarea, normalized)
+        await applyTextEdit(textarea, normalized)
         return
       }
 
@@ -273,7 +287,7 @@ export function useMarkdownEditor(
 
         const result = applyInputReplacement(value, directMatch)
         const delimiterEnd = result.selectionEnd + committedText.length
-        await options.applyTextEdit(textarea, {
+        await applyTextEdit(textarea, {
           ...result,
           selectionStart: delimiterEnd,
           selectionEnd: delimiterEnd,
@@ -289,7 +303,7 @@ export function useMarkdownEditor(
         return
       }
 
-      await options.applyTextEdit(textarea, applyInputReplacement(value, match))
+      await applyTextEdit(textarea, applyInputReplacement(value, match))
     })
   }
 
@@ -381,7 +395,7 @@ export function useMarkdownEditor(
     }
 
     event.preventDefault()
-    await options.applyTextEdit(textarea, result)
+    await applyTextEdit(textarea, result)
   }
 
   return {

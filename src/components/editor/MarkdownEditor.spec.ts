@@ -74,6 +74,84 @@ describe('MarkdownEditor', () => {
     wrapper.unmount()
   })
 
+  it('内部のinsertTextがbeforeinputを発火しても編集処理へ再入しない', async () => {
+    const rules: InputReplacementRule[] = [
+      {
+        id: 'recursive',
+        source: 'ai',
+        replacement: 'ai＊',
+        enabled: true,
+      },
+    ]
+    const wrapper = mountInteractiveEditor('ai', rules, true, true)
+    const textarea = wrapper.get<HTMLTextAreaElement>('#markdown-input')
+    const originalDescriptor = Object.getOwnPropertyDescriptor(
+      document,
+      'execCommand',
+    )
+    const programmaticBeforeInputs: InputEvent[] = []
+    const execCommand = vi.fn(
+      (_command: string, _showUi: boolean, value?: string): boolean => {
+        const insertedText = value ?? ''
+        const programmaticBeforeInput = new InputEvent('beforeinput', {
+          data: insertedText,
+          inputType: 'insertText',
+          bubbles: true,
+          cancelable: true,
+        })
+        programmaticBeforeInputs.push(programmaticBeforeInput)
+        textarea.element.dispatchEvent(programmaticBeforeInput)
+
+        if (programmaticBeforeInput.defaultPrevented) {
+          return false
+        }
+
+        textarea.element.setRangeText(
+          insertedText,
+          textarea.element.selectionStart,
+          textarea.element.selectionEnd,
+          'end',
+        )
+        textarea.element.dispatchEvent(
+          new InputEvent('input', {
+            data: insertedText,
+            inputType: 'insertText',
+            bubbles: true,
+          }),
+        )
+        return true
+      },
+    )
+    Object.defineProperty(document, 'execCommand', {
+      configurable: true,
+      value: execCommand,
+    })
+
+    try {
+      textarea.element.setSelectionRange(2, 2)
+      const event = new InputEvent('beforeinput', {
+        data: ' ',
+        inputType: 'insertText',
+        bubbles: true,
+        cancelable: true,
+      })
+      textarea.element.dispatchEvent(event)
+      await flushPromises()
+
+      expect(event.defaultPrevented).toBe(true)
+      expect(programmaticBeforeInputs[0]?.defaultPrevented).toBe(false)
+      expect(execCommand).toHaveBeenCalledTimes(1)
+      expect(textarea.element.value).toBe('ai＊ ')
+    } finally {
+      wrapper.unmount()
+      if (originalDescriptor) {
+        Object.defineProperty(document, 'execCommand', originalDescriptor)
+      } else {
+        Reflect.deleteProperty(document, 'execCommand')
+      }
+    }
+  })
+
   it('内部空白を含む長いルールが未完成の間は短いルールを置換しない', async () => {
     const overlappingRules: InputReplacementRule[] = [
       { id: 'short', source: 'foo', replacement: '短縮', enabled: true },
