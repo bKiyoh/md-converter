@@ -36,6 +36,31 @@ describe('inputReplacement', () => {
     ).toBe('phrase')
   })
 
+  it('より長い有効ルールが続く途中の空白では短いルールを確定しない', () => {
+    const overlappingRules: InputReplacementRule[] = [
+      { id: 'short', source: 'foo', replacement: '短縮', enabled: true },
+      { id: 'long', source: 'foo bar', replacement: '長文', enabled: true },
+    ]
+
+    expect(
+      findDirectInputReplacement('foo', 3, overlappingRules, ' '),
+    ).toBeNull()
+    expect(
+      findDirectInputReplacement('foo bar', 7, overlappingRules, ' '),
+    )?.toMatchObject({ rule: { id: 'long' } })
+  })
+
+  it('より長いルールが無効なら短いルールを確定する', () => {
+    const overlappingRules: InputReplacementRule[] = [
+      { id: 'short', source: 'foo', replacement: '短縮', enabled: true },
+      { id: 'long', source: 'foo bar', replacement: '長文', enabled: false },
+    ]
+
+    expect(
+      findDirectInputReplacement('foo', 3, overlappingRules, ' '),
+    )?.toMatchObject({ rule: { id: 'short' } })
+  })
+
   it('IMEでは確定範囲全体だけを照合する', () => {
     expect(findCompositionInputReplacement('あい右', 2, 3, rules)?.rule.id).toBe(
       'right',

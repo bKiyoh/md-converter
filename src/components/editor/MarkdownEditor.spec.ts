@@ -74,6 +74,41 @@ describe('MarkdownEditor', () => {
     wrapper.unmount()
   })
 
+  it('内部空白を含む長いルールが未完成の間は短いルールを置換しない', async () => {
+    const overlappingRules: InputReplacementRule[] = [
+      { id: 'short', source: 'foo', replacement: '短縮', enabled: true },
+      { id: 'long', source: 'foo bar', replacement: '長文', enabled: true },
+    ]
+    const wrapper = mountInteractiveEditor('foo', overlappingRules)
+    const textarea = wrapper.get<HTMLTextAreaElement>('#markdown-input')
+    textarea.element.setSelectionRange(3, 3)
+
+    const firstSpace = new InputEvent('beforeinput', {
+      data: ' ',
+      inputType: 'insertText',
+      bubbles: true,
+      cancelable: true,
+    })
+    textarea.element.dispatchEvent(firstSpace)
+
+    expect(firstSpace.defaultPrevented).toBe(false)
+
+    await textarea.setValue('foo bar')
+    textarea.element.setSelectionRange(7, 7)
+    const finalSpace = new InputEvent('beforeinput', {
+      data: ' ',
+      inputType: 'insertText',
+      bubbles: true,
+      cancelable: true,
+    })
+    textarea.element.dispatchEvent(finalSpace)
+    await flushPromises()
+
+    expect(finalSpace.defaultPrevented).toBe(true)
+    expect(textarea.element.value).toBe('長文 ')
+    wrapper.unmount()
+  })
+
   it('部分一致、無効ルール、貼り付けでは置換しない', async () => {
     const wrapper = mountInteractiveEditor('right ai', replacementRules)
     const textarea = wrapper.get<HTMLTextAreaElement>('#markdown-input')

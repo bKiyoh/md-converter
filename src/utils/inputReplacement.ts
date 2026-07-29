@@ -102,6 +102,7 @@ export function findDirectInputReplacement(
   value: string,
   caret: number,
   rules: readonly InputReplacementRule[],
+  delimiter?: string,
 ): InputReplacementMatch | null {
   const matches = rules
     .filter((rule) => rule.enabled && rule.source.length <= caret)
@@ -120,7 +121,20 @@ export function findDirectInputReplacement(
     .filter((match): match is InputReplacementMatch => match !== null)
     .sort((left, right) => right.rule.source.length - left.rule.source.length)
 
-  return matches[0] ?? null
+  const match = matches[0] ?? null
+  if (
+    match &&
+    delimiter &&
+    rules.some(
+      (rule) =>
+        rule.enabled &&
+        rule.source.startsWith(match.rule.source + delimiter),
+    )
+  ) {
+    return null
+  }
+
+  return match
 }
 
 export function findCompositionInputReplacement(

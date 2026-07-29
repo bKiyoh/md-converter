@@ -65,6 +65,7 @@ export function useMarkdownEditor(
   function findDirectMatch(
     value: string,
     caret: number,
+    delimiter?: string,
   ): InputReplacementMatch | null {
     const settings = options.getInputReplacement()
     if (!settings.enabled) {
@@ -73,7 +74,7 @@ export function useMarkdownEditor(
 
     return getActiveReplacementMatch(
       value,
-      findDirectInputReplacement(value, caret, settings.rules),
+      findDirectInputReplacement(value, caret, settings.rules, delimiter),
     )
   }
 
@@ -138,10 +139,10 @@ export function useMarkdownEditor(
 
   function applyDirectInputReplacement(
     result: TextEditResult,
-    delimiterLength: number,
+    delimiter: string,
   ): TextEditResult | null {
-    const delimiterStart = result.selectionEnd - delimiterLength
-    const match = findDirectMatch(result.value, delimiterStart)
+    const delimiterStart = result.selectionEnd - delimiter.length
+    const match = findDirectMatch(result.value, delimiterStart, delimiter)
     if (!match) {
       return null
     }
@@ -187,7 +188,7 @@ export function useMarkdownEditor(
       event.data === ' ' || event.data === '　'
         ? applyDirectInputReplacement(
             normalized ?? inserted,
-            event.data.length,
+            event.data,
           ) ?? normalized
         : normalized
 
@@ -259,7 +260,12 @@ export function useMarkdownEditor(
       if (committedText === ' ' || committedText === '　') {
         const directMatch = getActiveReplacementMatch(
           value,
-          findDirectInputReplacement(value, start, settings.rules),
+          findDirectInputReplacement(
+            value,
+            start,
+            settings.rules,
+            committedText,
+          ),
         )
         if (!directMatch) {
           return
@@ -339,6 +345,7 @@ export function useMarkdownEditor(
           ? findDirectMatch(
               workingResult.value,
               workingResult.selectionEnd,
+              '\n',
             )
           : null
 
