@@ -371,6 +371,20 @@ describe('MarkdownEditor', () => {
     wrapper.unmount()
   })
 
+  it('IMEで全角コード区切りと同時に確定したコード本文を補正しない', async () => {
+    const wrapper = mountInteractiveEditor('', [], true, true)
+    const textarea = wrapper.get<HTMLTextAreaElement>('#markdown-input')
+
+    await textarea.trigger('compositionstart')
+    await textarea.setValue('｀＊code＊｀')
+    textarea.element.setSelectionRange(8, 8)
+    await textarea.trigger('compositionend', { data: '｀＊code＊｀' })
+    await flushPromises()
+
+    expect(textarea.element.value).toBe('`＊code＊`')
+    wrapper.unmount()
+  })
+
   it('IMEで確定した全角見出し記号1文字を即座に半角化する', async () => {
     const wrapper = mountInteractiveEditor('', [], true, true)
     const textarea = wrapper.get<HTMLTextAreaElement>('#markdown-input')

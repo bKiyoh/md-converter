@@ -342,6 +342,71 @@ function rangeOverlapsCode(
   return ranges.some((range) => start < range.end && end > range.start)
 }
 
+function isInsideInsertedRange(
+  start: number,
+  end: number,
+  inputStart: number,
+  inputEnd: number,
+): boolean {
+  return start >= inputStart && end <= inputEnd
+}
+
+function normalizeInsertedCodeDelimiters(
+  value: string,
+  inputStart: number,
+  inputEnd: number,
+): string {
+  const normalizedFences = value.replace(
+    /^( {0,3})(｀{3,}|～{3,})(.*)$/gm,
+    (
+      match: string,
+      indent: string,
+      fence: string,
+      suffix: string,
+      offset: number,
+    ) => {
+      const fenceStart = offset + indent.length
+      const fenceEnd = fenceStart + fence.length
+      if (!isInsideInsertedRange(fenceStart, fenceEnd, inputStart, inputEnd)) {
+        return match
+      }
+
+      return indent + Array.from(fence, toHalfWidthMarker).join('') + suffix
+    },
+  )
+
+  return normalizedFences.replace(
+    /(｀+)([^｀\n]+)\1/g,
+    (
+      match: string,
+      delimiter: string,
+      content: string,
+      offset: number,
+    ) => {
+      const closingStart = offset + delimiter.length + content.length
+      if (
+        !isInsideInsertedRange(
+          offset,
+          offset + delimiter.length,
+          inputStart,
+          inputEnd,
+        ) ||
+        !isInsideInsertedRange(
+          closingStart,
+          closingStart + delimiter.length,
+          inputStart,
+          inputEnd,
+        )
+      ) {
+        return match
+      }
+
+      const halfWidthDelimiter = '`'.repeat(delimiter.length)
+      return halfWidthDelimiter + content + halfWidthDelimiter
+    },
+  )
+}
+
 export function normalizeInsertedFullWidthMarkdown(
   value: string,
   inputStart: number,
@@ -357,9 +422,13 @@ export function normalizeInsertedFullWidthMarkdown(
     return null
   }
 
-  const codeRanges = getMarkdownCodeRanges(value)
-  let normalizedValue = value
-  let changed = false
+  let normalizedValue = normalizeInsertedCodeDelimiters(
+    value,
+    inputStart,
+    inputEnd,
+  )
+  const codeRanges = getMarkdownCodeRanges(normalizedValue)
+  let changed = normalizedValue !== value
 
   for (let index = inputStart; index < inputEnd; index += 1) {
     if (rangeOverlapsCode(codeRanges, index, index + 1)) {

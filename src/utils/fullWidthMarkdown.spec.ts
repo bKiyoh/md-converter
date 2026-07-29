@@ -150,6 +150,13 @@ describe('normalizeFullWidthMarkdownInput', () => {
     ).toBeNull()
   })
 
+  it('全角コード区切りと同時に確定したコード本文を補正しない', () => {
+    expect(normalizeInserted('｀＊code＊｀')).toBe('`＊code＊`')
+    expect(normalizeInserted('｀｀｀\n＊code＊\n｀｀｀')).toBe(
+      '```\n＊code＊\n```',
+    )
+  })
+
   it('全角の閉じフェンスはコードブロック内でも補正する', () => {
     const input = '```\ncode\n｀｀｀'
 
