@@ -217,8 +217,8 @@ src/
 
 ## 完了済みマイルストーン
 
-Milestone 1〜24は完了済みとし、当時の実装範囲、完了条件、判断経緯は
-`docs/archive/implementation-plan-m1-m24.md` に保存する。完了済み計画の記述は
+完了したマイルストーンの実装範囲、完了条件、判断経緯は
+`docs/archive/implementation-plan-completed.md` に保存する。完了済み計画の記述は
 現行仕様を上書きしない。
 
 ---

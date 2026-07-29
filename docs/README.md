@@ -51,7 +51,7 @@ docs/
 
 | 文書 | 役割 |
 | --- | --- |
-| [`archive/implementation-plan-m1-m24.md`](archive/implementation-plan-m1-m24.md) | 完了済みMilestone 1〜24の計画と判断経緯 |
+| [`archive/implementation-plan-completed.md`](archive/implementation-plan-completed.md) | 完了したマイルストーンの計画と判断経緯 |
 | [`incident/raw-html-conversion.md`](incident/raw-html-conversion.md) | 生HTML変換障害の事象、原因、対応、検証結果 |
 
 履歴・記録は当時の状況を保存する資料であり、現行仕様の正本として使用しない。

@@ -1,6 +1,6 @@
-# Markdown Converter Milestone 1〜24 実装計画（履歴）
+# Markdown Converter 完了済み実装計画（履歴）
 
-> この文書はMilestone 1〜24の計画と判断経緯を保存する履歴資料です。
+> この文書は完了したマイルストーンの計画と判断経緯を保存する履歴資料です。
 > 現行の実装計画は [`implementation-plan.md`](../plans/implementation-plan.md)、現行仕様への
 > 入口は [`README.md`](../README.md) を参照してください。この文書は現行仕様の正本ではありません。
 
