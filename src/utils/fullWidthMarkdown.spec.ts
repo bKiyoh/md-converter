@@ -59,6 +59,21 @@ describe('normalizeFullWidthMarkdownInput', () => {
     },
   )
 
+  it('今回の入力範囲外にある全角Markdown記号を変更しない', () => {
+    const input = '貼り付けた＃見出しに追記'
+    const insertedStart = input.length - 2
+
+    expect(
+      normalizeInsertedFullWidthMarkdown(
+        input,
+        insertedStart,
+        input.length,
+        input.length,
+        input.length,
+      ),
+    ).toBeNull()
+  })
+
   it('行頭記号の後ろに入力した全角空白を即座に半角化する', () => {
     expect(normalizeInserted('＃　')).toBe('# ')
     expect(normalizeInserted('ー　')).toBe('- ')

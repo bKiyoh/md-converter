@@ -422,6 +422,15 @@ export function normalizeInsertedFullWidthMarkdown(
     return null
   }
 
+  const insertedText = value.slice(inputStart, inputEnd)
+  if (
+    !FULL_WIDTH_SYNTAX_MARKER_PATTERN.test(insertedText) &&
+    !insertedText.includes('　') &&
+    !/[ｘＸ]/.test(insertedText)
+  ) {
+    return null
+  }
+
   let normalizedValue = normalizeInsertedCodeDelimiters(
     value,
     inputStart,

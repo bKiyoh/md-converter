@@ -444,6 +444,30 @@ describe('MarkdownEditor', () => {
     wrapper.unmount()
   })
 
+  it.each(['a', ' '])(
+    '通常入力 %j を契機に既存の全角Markdown記号を補正しない',
+    (input) => {
+      const wrapper = mountInteractiveEditor('＃貼り付け', [], true, true)
+      const textarea = wrapper.get<HTMLTextAreaElement>('#markdown-input')
+      textarea.element.setSelectionRange(
+        textarea.element.value.length,
+        textarea.element.value.length,
+      )
+
+      const event = new InputEvent('beforeinput', {
+        data: input,
+        inputType: 'insertText',
+        bubbles: true,
+        cancelable: true,
+      })
+      textarea.element.dispatchEvent(event)
+
+      expect(event.defaultPrevented).toBe(false)
+      expect(textarea.element.value).toBe('＃貼り付け')
+      wrapper.unmount()
+    },
+  )
+
   it('検索ボタンでは検索欄だけを開き、検索欄へフォーカスする', async () => {
     const wrapper = mountInteractiveEditor('one two')
 
