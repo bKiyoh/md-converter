@@ -39,11 +39,25 @@ describe('normalizeFullWidthMarkdownInput', () => {
     ['（', '('],
     ['）', ')'],
     ['｜', '|'],
-    ['：', ':'],
     ['１．', '1.'],
   ])('入力したMarkdown記号 %s を即座に %s へ補正する', (input, expected) => {
     expect(normalizeInserted(input)).toBe(expected)
   })
+
+  it.each(['注：重要', '通常文．句点'])(
+    '通常文章の全角ピリオドとコロンを変更しない: %s',
+    (input) => {
+      expect(
+        normalizeInsertedFullWidthMarkdown(
+          input,
+          0,
+          input.length,
+          input.length,
+          input.length,
+        ),
+      ).toBeNull()
+    },
+  )
 
   it('行頭記号の後ろに入力した全角空白を即座に半角化する', () => {
     expect(normalizeInserted('＃　')).toBe('# ')

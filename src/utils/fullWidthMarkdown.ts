@@ -35,8 +35,6 @@ const IMMEDIATE_INPUT_MARKERS: Readonly<Record<string, string>> = {
   '（': '(',
   '）': ')',
   '｜': '|',
-  '．': '.',
-  '：': ':',
 }
 
 type LineRange = {

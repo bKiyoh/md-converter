@@ -313,7 +313,6 @@ describe('MarkdownEditor', () => {
     ['（', '('],
     ['）', ')'],
     ['｜', '|'],
-    ['：', ':'],
     ['１．', '1.'],
   ])('全角Markdown記号 %s の直接入力を即座に %s へ補正する', async (
     input,
@@ -335,6 +334,27 @@ describe('MarkdownEditor', () => {
     expect(textarea.element.value).toBe(expected)
     wrapper.unmount()
   })
+
+  it.each(['．', '：'])(
+    '通常文章用の全角記号 %s は直接入力時に補正しない',
+    (input) => {
+      const wrapper = mountInteractiveEditor('注', [], true, true)
+      const textarea = wrapper.get<HTMLTextAreaElement>('#markdown-input')
+      textarea.element.setSelectionRange(1, 1)
+
+      const event = new InputEvent('beforeinput', {
+        data: input,
+        inputType: 'insertText',
+        bubbles: true,
+        cancelable: true,
+      })
+      textarea.element.dispatchEvent(event)
+
+      expect(event.defaultPrevented).toBe(false)
+      expect(textarea.element.value).toBe('注')
+      wrapper.unmount()
+    },
+  )
 
   it('IME確定後に全角のインライン構文を半角化する', async () => {
     const wrapper = mountInteractiveEditor('', [], true, true)
