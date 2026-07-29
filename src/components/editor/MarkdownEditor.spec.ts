@@ -1,9 +1,14 @@
 import { flushPromises, mount } from '@vue/test-utils'
 import { defineComponent, nextTick, ref } from 'vue'
 import { describe, expect, it, vi } from 'vitest'
+import type { InputReplacementRule } from '../../types/inputReplacement'
 import MarkdownEditor from './MarkdownEditor.vue'
 
-function mountInteractiveEditor(initialValue: string) {
+function mountInteractiveEditor(
+  initialValue: string,
+  inputReplacementRules: InputReplacementRule[] = [],
+  inputReplacementEnabled = true,
+) {
   return mount(
     defineComponent({
       components: { MarkdownEditor },
@@ -15,7 +20,13 @@ function mountInteractiveEditor(initialValue: string) {
           void editor.value?.openSearch(showReplace)
         }
 
-        return { editor, handleSearchRequest, value }
+        return {
+          editor,
+          handleSearchRequest,
+          inputReplacementEnabled,
+          inputReplacementRules,
+          value,
+        }
       },
       template: `
         <MarkdownEditor
@@ -23,6 +34,8 @@ function mountInteractiveEditor(initialValue: string) {
           v-model="value"
           :character-count="value.length"
           :editor-internal-scroll="true"
+          :input-replacement-enabled="inputReplacementEnabled"
+          :input-replacement-rules="inputReplacementRules"
           @request-search="handleSearchRequest"
         />
       `,
@@ -32,6 +45,183 @@ function mountInteractiveEditor(initialValue: string) {
 }
 
 describe('MarkdownEditor', () => {
+  const replacementRules: InputReplacementRule[] = [
+    { id: 'ai', source: 'ai', replacement: 'AI', enabled: true },
+    { id: 'right', source: '右', replacement: '⇨', enabled: true },
+    { id: 'disabled', source: 'off', replacement: 'ON', enabled: false },
+  ]
+
+  it('直接入力のSpaceで完全一致を置換し、Spaceを保持する', async () => {
+    const wrapper = mountInteractiveEditor('ai', replacementRules)
+    const textarea = wrapper.get<HTMLTextAreaElement>('#markdown-input')
+    textarea.element.setSelectionRange(2, 2)
+
+    const event = new InputEvent('beforeinput', {
+      data: ' ',
+      inputType: 'insertText',
+      bubbles: true,
+      cancelable: true,
+    })
+    textarea.element.dispatchEvent(event)
+    await flushPromises()
+
+    expect(event.defaultPrevented).toBe(true)
+    expect(textarea.element.value).toBe('AI ')
+    expect(textarea.element.selectionStart).toBe(3)
+    wrapper.unmount()
+  })
+
+  it('部分一致、無効ルール、貼り付けでは置換しない', async () => {
+    const wrapper = mountInteractiveEditor('right ai', replacementRules)
+    const textarea = wrapper.get<HTMLTextAreaElement>('#markdown-input')
+    textarea.element.setSelectionRange(5, 5)
+
+    const spaceEvent = new InputEvent('beforeinput', {
+      data: ' ',
+      inputType: 'insertText',
+      bubbles: true,
+      cancelable: true,
+    })
+    textarea.element.dispatchEvent(spaceEvent)
+    expect(spaceEvent.defaultPrevented).toBe(false)
+
+    await textarea.setValue('off')
+    textarea.element.setSelectionRange(3, 3)
+    const disabledEvent = new InputEvent('beforeinput', {
+      data: ' ',
+      inputType: 'insertText',
+      bubbles: true,
+      cancelable: true,
+    })
+    textarea.element.dispatchEvent(disabledEvent)
+    expect(disabledEvent.defaultPrevented).toBe(false)
+
+    await textarea.setValue('右')
+    expect(textarea.element.value).toBe('右')
+    wrapper.unmount()
+  })
+
+  it('Enterでは入力置換後にMarkdownリストを継続する', async () => {
+    const wrapper = mountInteractiveEditor('- 右', replacementRules)
+    const textarea = wrapper.get<HTMLTextAreaElement>('#markdown-input')
+    textarea.element.setSelectionRange(3, 3)
+
+    await textarea.trigger('keydown', { key: 'Enter' })
+
+    expect(textarea.element.value).toBe('- ⇨\n- ')
+    expect(textarea.element.selectionStart).toBe(6)
+    wrapper.unmount()
+  })
+
+  it('IME確定後に一度だけ置換する', async () => {
+    const wrapper = mountInteractiveEditor('', replacementRules)
+    const textarea = wrapper.get<HTMLTextAreaElement>('#markdown-input')
+
+    await textarea.trigger('compositionstart')
+    await textarea.setValue('右')
+    textarea.element.setSelectionRange(1, 1)
+    await textarea.trigger('compositionend', { data: '右' })
+    await flushPromises()
+
+    expect(textarea.element.value).toBe('⇨')
+    wrapper.unmount()
+  })
+
+  it('IME確定に使用したEnterでは改行とリスト継続を実行しない', async () => {
+    const wrapper = mountInteractiveEditor('- ', replacementRules)
+    const textarea = wrapper.get<HTMLTextAreaElement>('#markdown-input')
+    textarea.element.setSelectionRange(2, 2)
+
+    await textarea.trigger('compositionstart')
+    await textarea.setValue('- 右')
+    textarea.element.setSelectionRange(3, 3)
+    await textarea.trigger('keydown', { key: 'Enter', isComposing: true })
+    await textarea.trigger('compositionend', { data: '右' })
+    await flushPromises()
+
+    expect(textarea.element.value).toBe('- ⇨')
+    expect(textarea.element.value).not.toContain('\n')
+    wrapper.unmount()
+  })
+
+  it('IME入力をキャンセルした場合は置換しない', async () => {
+    const wrapper = mountInteractiveEditor('右', replacementRules)
+    const textarea = wrapper.get<HTMLTextAreaElement>('#markdown-input')
+
+    await textarea.trigger('compositionstart')
+    await textarea.trigger('compositionend', { data: '' })
+    await flushPromises()
+
+    expect(textarea.element.value).toBe('右')
+    wrapper.unmount()
+  })
+
+  it('IMEから全角Spaceを入力した場合も区切りを保持する', async () => {
+    const wrapper = mountInteractiveEditor('ai', replacementRules)
+    const textarea = wrapper.get<HTMLTextAreaElement>('#markdown-input')
+    textarea.element.setSelectionRange(2, 2)
+
+    await textarea.trigger('compositionstart')
+    await textarea.setValue('ai　')
+    textarea.element.setSelectionRange(3, 3)
+    await textarea.trigger('compositionend', { data: '　' })
+    await flushPromises()
+
+    expect(textarea.element.value).toBe('AI　')
+    expect(textarea.element.selectionStart).toBe(3)
+    wrapper.unmount()
+  })
+
+  it('インラインコードとコードブロック内では置換しない', () => {
+    const wrapper = mountInteractiveEditor('`右`\n```\n右\n```', replacementRules)
+    const textarea = wrapper.get<HTMLTextAreaElement>('#markdown-input')
+
+    textarea.element.setSelectionRange(2, 2)
+    const inlineEvent = new InputEvent('beforeinput', {
+      data: ' ',
+      inputType: 'insertText',
+      bubbles: true,
+      cancelable: true,
+    })
+    textarea.element.dispatchEvent(inlineEvent)
+
+    textarea.element.setSelectionRange(9, 9)
+    const blockEvent = new InputEvent('beforeinput', {
+      data: ' ',
+      inputType: 'insertText',
+      bubbles: true,
+      cancelable: true,
+    })
+    textarea.element.dispatchEvent(blockEvent)
+
+    expect(inlineEvent.defaultPrevented).toBe(false)
+    expect(blockEvent.defaultPrevented).toBe(false)
+    expect(textarea.element.value).toBe('`右`\n```\n右\n```')
+    wrapper.unmount()
+  })
+
+  it('置換後の文字列へ別ルールを連続適用しない', async () => {
+    const chainedRules: InputReplacementRule[] = [
+      { id: 'a', source: 'A', replacement: 'B', enabled: true },
+      { id: 'b', source: 'B', replacement: 'C', enabled: true },
+    ]
+    const wrapper = mountInteractiveEditor('A', chainedRules)
+    const textarea = wrapper.get<HTMLTextAreaElement>('#markdown-input')
+    textarea.element.setSelectionRange(1, 1)
+    textarea.element.dispatchEvent(
+      new InputEvent('beforeinput', {
+        data: ' ',
+        inputType: 'insertText',
+        bubbles: true,
+        cancelable: true,
+      }),
+    )
+    await flushPromises()
+
+    expect(textarea.element.value).toBe('B ')
+    wrapper.unmount()
+  })
+
   it('検索ボタンでは検索欄だけを開き、検索欄へフォーカスする', async () => {
     const wrapper = mountInteractiveEditor('one two')
 

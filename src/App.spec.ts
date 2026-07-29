@@ -7,6 +7,7 @@ import {
 } from './composables/useEditorStorage'
 import { OUTPUT_FORMAT_STORAGE_KEY } from './composables/useOutputFormatPreference'
 import { APP_SETTINGS_STORAGE_KEY } from './composables/useAppSettings'
+import { INPUT_REPLACEMENT_STORAGE_KEY } from './composables/useInputReplacementSettings'
 import {
   THEME_PREFERENCE_SAVE_DELAY_MS,
   THEME_PREFERENCE_STORAGE_KEY,
@@ -954,6 +955,82 @@ describe('App', () => {
 
     expect(wrapper.get('.app').attributes('data-theme')).toBe('light')
     expect(themeButton.attributes('aria-pressed')).toBe('false')
+  })
+
+  it('入力置換の有効設定とルールを管理・保存・復元する', async () => {
+    const wrapper = mount(App, { attachTo: document.body })
+
+    await wrapper.get('.settings-button').trigger('click')
+    const enabledSwitch = wrapper.get<HTMLInputElement>('#input-replacement-setting')
+    expect(enabledSwitch.element.checked).toBe(true)
+
+    await enabledSwitch.setValue(false)
+    expect(JSON.parse(localStorage.getItem(INPUT_REPLACEMENT_STORAGE_KEY)!)).toMatchObject({
+      version: 1,
+      enabled: false,
+      rules: [],
+    })
+
+    await wrapper.get('.setting-manage-button').trigger('click')
+    expect(wrapper.find('#settings-popover').exists()).toBe(false)
+    expect(wrapper.get('.input-replacement-modal').attributes('aria-modal')).toBe('true')
+
+    await wrapper.get('#new-replacement-source').setValue('あい')
+    await wrapper.get('#new-replacement-value').setValue('AI')
+    await wrapper.get('.input-replacement-add-form').trigger('submit')
+
+    expect(JSON.parse(localStorage.getItem(INPUT_REPLACEMENT_STORAGE_KEY)!).rules).toMatchObject([
+      { source: 'あい', replacement: 'AI', enabled: true },
+    ])
+
+    await wrapper.get('.input-replacement-modal-header .icon-button').trigger('click')
+    expect(wrapper.find('.input-replacement-modal').exists()).toBe(false)
+    expect(document.activeElement).toBe(
+      wrapper.get<HTMLButtonElement>('.settings-button').element,
+    )
+
+    wrapper.unmount()
+    const reloaded = mount(App)
+    await reloaded.get('.settings-button').trigger('click')
+    expect(
+      reloaded.get<HTMLInputElement>('#input-replacement-setting').element.checked,
+    ).toBe(false)
+  })
+
+  it('フォーカスモードでも通常画面と同じ入力置換ルールを使用する', async () => {
+    localStorage.setItem(
+      INPUT_REPLACEMENT_STORAGE_KEY,
+      JSON.stringify({
+        version: 1,
+        enabled: true,
+        rules: [
+          {
+            id: 'ai',
+            source: 'ai',
+            replacement: 'AI',
+            enabled: true,
+          },
+        ],
+      }),
+    )
+    const wrapper = mount(App, { attachTo: document.body })
+
+    await wrapper.get('.focus-mode-button').trigger('click')
+    const textarea = wrapper.get<HTMLTextAreaElement>('#markdown-input')
+    await textarea.setValue('ai')
+    textarea.element.setSelectionRange(2, 2)
+    const event = new InputEvent('beforeinput', {
+      data: ' ',
+      inputType: 'insertText',
+      bubbles: true,
+      cancelable: true,
+    })
+    textarea.element.dispatchEvent(event)
+    await flushPromises()
+
+    expect(wrapper.get('.app').classes()).toContain('app--focus-mode')
+    expect(textarea.element.value).toBe('AI ')
+    wrapper.unmount()
   })
 
   it('エディター内部スクロール設定を即時反映・保存・復元する', async () => {

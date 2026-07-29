@@ -5,6 +5,7 @@ import AppNotice from './components/common/AppNotice.vue'
 import AppTitleButton from './components/common/AppTitleButton.vue'
 import IconButton from './components/common/IconButton.vue'
 import SettingsPopover from './components/common/SettingsPopover.vue'
+import InputReplacementManager from './components/common/InputReplacementManager.vue'
 import TooltipTarget from './components/common/TooltipTarget.vue'
 import EditorTabs from './components/editor/EditorTabs.vue'
 import EditableTabName from './components/editor/EditableTabName.vue'
@@ -16,6 +17,7 @@ import { useClipboard } from './composables/useClipboard'
 import { useAppSettings } from './composables/useAppSettings'
 import { useEditorTabs } from './composables/useEditorTabs'
 import { useFocusMode, type MarkdownEditorController } from './composables/useFocusMode'
+import { useInputReplacementSettings } from './composables/useInputReplacementSettings'
 import { useOutputFormatPreference } from './composables/useOutputFormatPreference'
 import { useThemePreference } from './composables/useThemePreference'
 import { useWorkspaceSplitter } from './composables/useWorkspaceSplitter'
@@ -45,6 +47,14 @@ const { theme } = useThemePreference()
 const { selectedFormat } = useOutputFormatPreference()
 const { editorInternalScroll, workspaceSplitRatio } = useAppSettings()
 const {
+  settings: inputReplacementSettings,
+  addRule: addInputReplacementRule,
+  updateRule: updateInputReplacementRule,
+  setRuleEnabled: setInputReplacementRuleEnabled,
+  deleteRule: deleteInputReplacementRule,
+  setEnabled: setInputReplacementEnabled,
+} = useInputReplacementSettings()
+const {
   setWorkspaceElement,
   isResizing,
   splitRatioPercent,
@@ -73,6 +83,7 @@ const inputTab = ref<HTMLButtonElement | null>(null)
 const outputTab = ref<HTMLButtonElement | null>(null)
 const modalCloseButton = ref<HTMLButtonElement | null>(null)
 const isInfoModalOpen = ref<boolean>(false)
+const isInputReplacementManagerOpen = ref<boolean>(false)
 let infoTrigger: HTMLElement | null = null
 let tabNoticeTimer: ReturnType<typeof setTimeout> | undefined
 
@@ -174,6 +185,16 @@ async function closeInfoModal(): Promise<void> {
   infoTrigger?.focus()
 }
 
+function openInputReplacementManager(): void {
+  isInputReplacementManagerOpen.value = true
+}
+
+async function closeInputReplacementManager(): Promise<void> {
+  isInputReplacementManagerOpen.value = false
+  await nextTick()
+  document.querySelector<HTMLButtonElement>('.settings-button')?.focus()
+}
+
 function handleInfoModalKeydown(event: KeyboardEvent): void {
   if (event.key === 'Escape') {
     event.preventDefault()
@@ -230,8 +251,10 @@ onBeforeUnmount(() => {
   >
     <div
       class="app-content"
-      :aria-hidden="isInfoModalOpen ? 'true' : undefined"
-      :inert="isInfoModalOpen ? true : undefined"
+      :aria-hidden="
+        isInfoModalOpen || isInputReplacementManagerOpen ? 'true' : undefined
+      "
+      :inert="isInfoModalOpen || isInputReplacementManagerOpen ? true : undefined"
     >
       <FocusModeGuide
         v-if="isFocusMode"
@@ -262,8 +285,11 @@ onBeforeUnmount(() => {
             <SettingsPopover
               :dark-mode="theme === 'dark'"
               :editor-internal-scroll="editorInternalScroll"
+              :input-replacement-enabled="inputReplacementSettings.enabled"
               @update:dark-mode="theme = $event ? 'dark' : 'light'"
               @update:editor-internal-scroll="editorInternalScroll = $event"
+              @update:input-replacement-enabled="setInputReplacementEnabled"
+              @manage-input-replacements="openInputReplacementManager"
             />
             <OutputFormatSelect v-model="selectedFormat" />
             <TooltipTarget
@@ -353,7 +379,11 @@ onBeforeUnmount(() => {
           :editor-internal-scroll="effectiveEditorInternalScroll"
           :focus-mode="isFocusMode"
           :active-tab-id="activeTabId"
-          :shortcuts-enabled="!isInfoModalOpen"
+          :shortcuts-enabled="
+            !isInfoModalOpen && !isInputReplacementManagerOpen
+          "
+          :input-replacement-enabled="inputReplacementSettings.enabled"
+          :input-replacement-rules="inputReplacementSettings.rules"
           @request-search="openEditorSearch"
         >
           <template #document-tabs>
@@ -443,5 +473,15 @@ onBeforeUnmount(() => {
         </button>
       </section>
     </div>
+
+    <InputReplacementManager
+      v-if="isInputReplacementManagerOpen"
+      :rules="inputReplacementSettings.rules"
+      @add="addInputReplacementRule"
+      @update="updateInputReplacementRule"
+      @update-enabled="setInputReplacementRuleEnabled"
+      @delete="deleteInputReplacementRule"
+      @close="closeInputReplacementManager"
+    />
   </div>
 </template>
