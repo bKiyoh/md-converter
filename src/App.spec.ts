@@ -884,7 +884,11 @@ describe('App', () => {
   it('フォーカスモード中だけ内部スクロールを強制し、設定値と表示状態を保存しない', async () => {
     localStorage.setItem(
       APP_SETTINGS_STORAGE_KEY,
-      JSON.stringify({ editorInternalScroll: false, workspaceSplitRatio: 0.5 }),
+      JSON.stringify({
+        editorInternalScroll: false,
+        workspaceSplitRatio: 0.5,
+        normalizeFullWidthMarkdown: false,
+      }),
     )
     const wrapper = mount(App)
 
@@ -894,7 +898,11 @@ describe('App', () => {
     expect(wrapper.get('.app').classes()).toContain('app--internal-scroll')
     expect(wrapper.get('#markdown-input').classes()).toContain('text-area--internal-scroll')
     expect(localStorage.getItem(APP_SETTINGS_STORAGE_KEY)).toBe(
-      JSON.stringify({ editorInternalScroll: false, workspaceSplitRatio: 0.5 }),
+      JSON.stringify({
+        editorInternalScroll: false,
+        workspaceSplitRatio: 0.5,
+        normalizeFullWidthMarkdown: false,
+      }),
     )
 
     wrapper.unmount()
@@ -1033,6 +1041,36 @@ describe('App', () => {
     wrapper.unmount()
   })
 
+  it('フォーカスモードでも全角Markdown補正設定を使用する', async () => {
+    localStorage.setItem(
+      APP_SETTINGS_STORAGE_KEY,
+      JSON.stringify({
+        editorInternalScroll: true,
+        workspaceSplitRatio: 0.5,
+        normalizeFullWidthMarkdown: true,
+      }),
+    )
+    const wrapper = mount(App, { attachTo: document.body })
+
+    await wrapper.get('.focus-mode-button').trigger('click')
+    const textarea = wrapper.get<HTMLTextAreaElement>('#markdown-input')
+    await textarea.setValue('＃')
+    textarea.element.setSelectionRange(1, 1)
+    textarea.element.dispatchEvent(
+      new InputEvent('beforeinput', {
+        data: '　',
+        inputType: 'insertText',
+        bubbles: true,
+        cancelable: true,
+      }),
+    )
+    await flushPromises()
+
+    expect(wrapper.get('.app').classes()).toContain('app--focus-mode')
+    expect(textarea.element.value).toBe('# ')
+    wrapper.unmount()
+  })
+
   it('エディター内部スクロール設定を即時反映・保存・復元する', async () => {
     const wrapper = mount(App)
 
@@ -1045,7 +1083,11 @@ describe('App', () => {
     expect(wrapper.get('.app').classes()).not.toContain('app--internal-scroll')
     expect(wrapper.get('#markdown-input').classes()).toContain('text-area--expand')
     expect(localStorage.getItem(APP_SETTINGS_STORAGE_KEY)).toBe(
-      JSON.stringify({ editorInternalScroll: false, workspaceSplitRatio: 0.5 }),
+      JSON.stringify({
+        editorInternalScroll: false,
+        workspaceSplitRatio: 0.5,
+        normalizeFullWidthMarkdown: false,
+      }),
     )
 
     await wrapper.get('#preview-view-tab').trigger('click')
@@ -1060,6 +1102,52 @@ describe('App', () => {
     expect(
       reloadedWrapper.get<HTMLInputElement>('#editor-scroll-setting').element.checked,
     ).toBe(false)
+  })
+
+  it('全角Markdown補正を初期OFFとし、ONへの変更を保存・復元する', async () => {
+    const wrapper = mount(App)
+    const input = wrapper.get<HTMLTextAreaElement>('#markdown-input')
+
+    await wrapper.get('.settings-button').trigger('click')
+    const setting = wrapper.get<HTMLInputElement>('#full-width-markdown-setting')
+    expect(setting.element.checked).toBe(false)
+
+    await setting.setValue(true)
+    expect(
+      JSON.parse(localStorage.getItem(APP_SETTINGS_STORAGE_KEY) ?? '{}'),
+    ).toMatchObject({
+      normalizeFullWidthMarkdown: true,
+    })
+
+    await input.setValue('＃')
+    input.element.setSelectionRange(1, 1)
+    input.element.dispatchEvent(
+      new InputEvent('beforeinput', {
+        data: '　',
+        inputType: 'insertText',
+        bubbles: true,
+        cancelable: true,
+      }),
+    )
+    await flushPromises()
+
+    expect(input.element.value).toBe('# ')
+
+    await input.setValue('＃　見出し')
+    input.element.setSelectionRange(input.element.value.length, input.element.value.length)
+    await input.trigger('keydown', { key: 'Enter' })
+
+    expect(input.element.value).toBe('# 見出し\n')
+    expect(wrapper.get<HTMLTextAreaElement>('#conversion-output').element.value).toBe(
+      '*見出し*',
+    )
+
+    wrapper.unmount()
+    const reloadedWrapper = mount(App)
+    await reloadedWrapper.get('.settings-button').trigger('click')
+    expect(
+      reloadedWrapper.get<HTMLInputElement>('#full-width-markdown-setting').element.checked,
+    ).toBe(true)
   })
 
   it('入力欄のMarkdownショートカットを適用して選択範囲を復元する', async () => {

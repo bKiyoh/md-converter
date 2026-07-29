@@ -154,36 +154,33 @@ type NodeWithChildren = Nodes & {
   children?: Nodes[]
 }
 
-function rangeOverlapsNode(
-  node: Nodes,
-  rangeStart: number,
-  rangeEnd: number,
-): boolean {
-  const nodeStart = node.position?.start.offset
-  const nodeEnd = node.position?.end.offset
-
-  return (
-    nodeStart !== undefined &&
-    nodeEnd !== undefined &&
-    rangeStart < nodeEnd &&
-    rangeEnd > nodeStart
-  )
+export type MarkdownCodeRange = {
+  start: number
+  end: number
 }
 
-function hasProtectedCodeRange(
+function collectMarkdownCodeRanges(
   node: Root | Nodes,
-  rangeStart: number,
-  rangeEnd: number,
-): boolean {
-  if (
-    (node.type === 'inlineCode' || node.type === 'code') &&
-    rangeOverlapsNode(node, rangeStart, rangeEnd)
-  ) {
-    return true
+  ranges: MarkdownCodeRange[],
+): void {
+  if (node.type === 'inlineCode' || node.type === 'code') {
+    const start = node.position?.start.offset
+    const end = node.position?.end.offset
+
+    if (start !== undefined && end !== undefined) {
+      ranges.push({ start, end })
+    }
+    return
   }
 
   const children = (node as NodeWithChildren).children
-  return children?.some((child) => hasProtectedCodeRange(child, rangeStart, rangeEnd)) ?? false
+  children?.forEach((child) => collectMarkdownCodeRanges(child, ranges))
+}
+
+export function getMarkdownCodeRanges(markdown: string): MarkdownCodeRange[] {
+  const ranges: MarkdownCodeRange[] = []
+  collectMarkdownCodeRanges(parseMarkdownAst(markdown), ranges)
+  return ranges
 }
 
 export function isInsideMarkdownCode(
@@ -191,5 +188,7 @@ export function isInsideMarkdownCode(
   rangeStart: number,
   rangeEnd: number,
 ): boolean {
-  return hasProtectedCodeRange(parseMarkdownAst(markdown), rangeStart, rangeEnd)
+  return getMarkdownCodeRanges(markdown).some(
+    (range) => rangeStart < range.end && rangeEnd > range.start,
+  )
 }

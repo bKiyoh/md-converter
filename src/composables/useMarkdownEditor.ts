@@ -14,6 +14,10 @@ import {
   isInsideMarkdownCode,
   type InputReplacementMatch,
 } from '../utils/inputReplacement'
+import {
+  normalizeFullWidthMarkdownInput,
+  normalizeInsertedFullWidthMarkdown,
+} from '../utils/fullWidthMarkdown'
 
 export type UseMarkdownEditorResult = {
   handleKeydown: (event: KeyboardEvent) => Promise<void>
@@ -27,6 +31,7 @@ export type UseMarkdownEditorOptions = {
     enabled: boolean
     rules: readonly InputReplacementRule[]
   }
+  getFullWidthMarkdownNormalizationEnabled: () => boolean
   applyTextEdit: (
     textarea: HTMLTextAreaElement,
     result: TextEditResult,
@@ -85,13 +90,79 @@ export function useMarkdownEditor(
     }
   }
 
+  function normalizeFullWidthMarkdown(
+    result: TextEditResult,
+  ): TextEditResult | null {
+    if (!options.getFullWidthMarkdownNormalizationEnabled()) {
+      return null
+    }
+
+    return normalizeFullWidthMarkdownInput(
+      result.value,
+      result.selectionStart,
+      result.selectionEnd,
+    )
+  }
+
+  function createInsertedTextResult(
+    value: string,
+    selectionStart: number,
+    selectionEnd: number,
+    text: string,
+  ): TextEditResult {
+    const nextCaret = selectionStart + text.length
+    return {
+      value: value.slice(0, selectionStart) + text + value.slice(selectionEnd),
+      selectionStart: nextCaret,
+      selectionEnd: nextCaret,
+    }
+  }
+
+  function normalizeInsertedFullWidthMarkdownResult(
+    result: TextEditResult,
+    inputStart: number,
+    inputEnd: number,
+  ): TextEditResult | null {
+    if (!options.getFullWidthMarkdownNormalizationEnabled()) {
+      return null
+    }
+
+    return normalizeInsertedFullWidthMarkdown(
+      result.value,
+      inputStart,
+      inputEnd,
+      result.selectionStart,
+      result.selectionEnd,
+    )
+  }
+
+  function applyDirectInputReplacement(
+    result: TextEditResult,
+    delimiterLength: number,
+  ): TextEditResult | null {
+    const delimiterStart = result.selectionEnd - delimiterLength
+    const match = findDirectMatch(result.value, delimiterStart)
+    if (!match) {
+      return null
+    }
+
+    const replaced = applyInputReplacement(result.value, match)
+    const lengthDifference = replaced.value.length - result.value.length
+    const nextCaret = result.selectionEnd + lengthDifference
+    return {
+      ...replaced,
+      selectionStart: nextCaret,
+      selectionEnd: nextCaret,
+    }
+  }
+
   function handleBeforeInput(event: InputEvent): void {
     if (
       !(event.currentTarget instanceof HTMLTextAreaElement) ||
       event.isComposing ||
       isCompositionActive ||
       event.inputType !== 'insertText' ||
-      (event.data !== ' ' && event.data !== '　')
+      event.data === null
     ) {
       return
     }
@@ -101,16 +172,30 @@ export function useMarkdownEditor(
       return
     }
 
-    const match = findDirectMatch(textarea.value, textarea.selectionEnd)
-    if (!match) {
+    const inserted = createInsertedTextResult(
+      textarea.value,
+      textarea.selectionStart,
+      textarea.selectionEnd,
+      event.data,
+    )
+    const normalized = normalizeInsertedFullWidthMarkdownResult(
+      inserted,
+      textarea.selectionStart,
+      textarea.selectionStart + event.data.length,
+    )
+    const result =
+      event.data === ' ' || event.data === '　'
+        ? applyDirectInputReplacement(
+            normalized ?? inserted,
+            event.data.length,
+          ) ?? normalized
+        : normalized
+
+    if (!result) {
       return
     }
 
     event.preventDefault()
-    const result = insertTextAtSelection(
-      applyInputReplacement(textarea.value, match),
-      event.data,
-    )
     void options.applyTextEdit(textarea, result)
   }
 
@@ -149,6 +234,20 @@ export function useMarkdownEditor(
       const end = textarea.selectionEnd
       const start = end - committedText.length
       if (start < 0 || value.slice(start, end) !== committedText) {
+        return
+      }
+
+      const normalized = normalizeInsertedFullWidthMarkdownResult(
+        {
+          value,
+          selectionStart: end,
+          selectionEnd: end,
+        },
+        start,
+        end,
+      )
+      if (normalized) {
+        await options.applyTextEdit(textarea, normalized)
         return
       }
 
@@ -228,21 +327,33 @@ export function useMarkdownEditor(
       !event.metaKey &&
       !event.shiftKey
     ) {
+      const initialResult: TextEditResult = {
+        value,
+        selectionStart,
+        selectionEnd,
+      }
+      const normalized = normalizeFullWidthMarkdown(initialResult)
+      let workingResult = normalized ?? initialResult
       const match =
-        selectionStart === selectionEnd
-          ? findDirectMatch(value, selectionEnd)
+        workingResult.selectionStart === workingResult.selectionEnd
+          ? findDirectMatch(
+              workingResult.value,
+              workingResult.selectionEnd,
+            )
           : null
 
       if (match) {
-        const replacementResult = applyInputReplacement(value, match)
-        result =
-          continueMarkdownList(
-            replacementResult.value,
-            replacementResult.selectionStart,
-            replacementResult.selectionEnd,
-          ) ?? insertTextAtSelection(replacementResult, '\n')
-      } else {
-        result = continueMarkdownList(value, selectionStart, selectionEnd)
+        workingResult = applyInputReplacement(workingResult.value, match)
+      }
+
+      result = continueMarkdownList(
+        workingResult.value,
+        workingResult.selectionStart,
+        workingResult.selectionEnd,
+      )
+
+      if (!result && (normalized || match)) {
+        result = insertTextAtSelection(workingResult, '\n')
       }
     } else if (
       event.key === 'Tab' &&

@@ -24,6 +24,7 @@ const props = withDefaults(
     shortcutsEnabled?: boolean
     inputReplacementEnabled?: boolean
     inputReplacementRules?: readonly InputReplacementRule[]
+    normalizeFullWidthMarkdown?: boolean
   }>(),
   {
     focusMode: false,
@@ -31,6 +32,7 @@ const props = withDefaults(
     shortcutsEnabled: true,
     inputReplacementEnabled: true,
     inputReplacementRules: () => [],
+    normalizeFullWidthMarkdown: false,
   },
 )
 
@@ -453,6 +455,8 @@ const {
     enabled: props.inputReplacementEnabled,
     rules: props.inputReplacementRules,
   }),
+  getFullWidthMarkdownNormalizationEnabled: () =>
+    props.normalizeFullWidthMarkdown,
   applyTextEdit: applyEditorTextEdit,
 })
 

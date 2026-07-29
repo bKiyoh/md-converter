@@ -45,7 +45,11 @@ const {
 } = useEditorTabs()
 const { theme } = useThemePreference()
 const { selectedFormat } = useOutputFormatPreference()
-const { editorInternalScroll, workspaceSplitRatio } = useAppSettings()
+const {
+  editorInternalScroll,
+  workspaceSplitRatio,
+  normalizeFullWidthMarkdown,
+} = useAppSettings()
 const {
   settings: inputReplacementSettings,
   addRule: addInputReplacementRule,
@@ -286,9 +290,13 @@ onBeforeUnmount(() => {
               :dark-mode="theme === 'dark'"
               :editor-internal-scroll="editorInternalScroll"
               :input-replacement-enabled="inputReplacementSettings.enabled"
+              :normalize-full-width-markdown="normalizeFullWidthMarkdown"
               @update:dark-mode="theme = $event ? 'dark' : 'light'"
               @update:editor-internal-scroll="editorInternalScroll = $event"
               @update:input-replacement-enabled="setInputReplacementEnabled"
+              @update:normalize-full-width-markdown="
+                normalizeFullWidthMarkdown = $event
+              "
               @manage-input-replacements="openInputReplacementManager"
             />
             <OutputFormatSelect v-model="selectedFormat" />
@@ -384,6 +392,7 @@ onBeforeUnmount(() => {
           "
           :input-replacement-enabled="inputReplacementSettings.enabled"
           :input-replacement-rules="inputReplacementSettings.rules"
+          :normalize-full-width-markdown="normalizeFullWidthMarkdown"
           @request-search="openEditorSearch"
         >
           <template #document-tabs>

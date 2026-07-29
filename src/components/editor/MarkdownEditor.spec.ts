@@ -8,6 +8,7 @@ function mountInteractiveEditor(
   initialValue: string,
   inputReplacementRules: InputReplacementRule[] = [],
   inputReplacementEnabled = true,
+  normalizeFullWidthMarkdown = false,
 ) {
   return mount(
     defineComponent({
@@ -25,6 +26,7 @@ function mountInteractiveEditor(
           handleSearchRequest,
           inputReplacementEnabled,
           inputReplacementRules,
+          normalizeFullWidthMarkdown,
           value,
         }
       },
@@ -36,6 +38,7 @@ function mountInteractiveEditor(
           :editor-internal-scroll="true"
           :input-replacement-enabled="inputReplacementEnabled"
           :input-replacement-rules="inputReplacementRules"
+          :normalize-full-width-markdown="normalizeFullWidthMarkdown"
           @request-search="handleSearchRequest"
         />
       `,
@@ -219,6 +222,156 @@ describe('MarkdownEditor', () => {
     await flushPromises()
 
     expect(textarea.element.value).toBe('B ')
+    wrapper.unmount()
+  })
+
+  it('全角Markdown補正がOFFの場合は全角記号を変更しない', () => {
+    const wrapper = mountInteractiveEditor('＃')
+    const textarea = wrapper.get<HTMLTextAreaElement>('#markdown-input')
+    textarea.element.setSelectionRange(1, 1)
+
+    const event = new InputEvent('beforeinput', {
+      data: '　',
+      inputType: 'insertText',
+      bubbles: true,
+      cancelable: true,
+    })
+    textarea.element.dispatchEvent(event)
+
+    expect(event.defaultPrevented).toBe(false)
+    expect(textarea.element.value).toBe('＃')
+    wrapper.unmount()
+  })
+
+  it('全角Markdown補正がONの場合は直接入力の構文を半角化する', async () => {
+    const wrapper = mountInteractiveEditor('＃', [], true, true)
+    const textarea = wrapper.get<HTMLTextAreaElement>('#markdown-input')
+    textarea.element.setSelectionRange(1, 1)
+
+    const event = new InputEvent('beforeinput', {
+      data: '　',
+      inputType: 'insertText',
+      bubbles: true,
+      cancelable: true,
+    })
+    textarea.element.dispatchEvent(event)
+    await flushPromises()
+
+    expect(event.defaultPrevented).toBe(true)
+    expect(textarea.element.value).toBe('# ')
+    expect(textarea.element.selectionStart).toBe(2)
+    wrapper.unmount()
+  })
+
+  it.each([
+    ['＃', '#'],
+    ['＊', '*'],
+    ['＿', '_'],
+    ['～', '~'],
+    ['－', '-'],
+    ['ー', '-'],
+    ['＋', '+'],
+    ['＞', '>'],
+    ['｀', '`'],
+    ['［', '['],
+    ['］', ']'],
+    ['（', '('],
+    ['）', ')'],
+    ['｜', '|'],
+    ['：', ':'],
+    ['１．', '1.'],
+  ])('全角Markdown記号 %s の直接入力を即座に %s へ補正する', async (
+    input,
+    expected,
+  ) => {
+    const wrapper = mountInteractiveEditor('', [], true, true)
+    const textarea = wrapper.get<HTMLTextAreaElement>('#markdown-input')
+
+    const event = new InputEvent('beforeinput', {
+      data: input,
+      inputType: 'insertText',
+      bubbles: true,
+      cancelable: true,
+    })
+    textarea.element.dispatchEvent(event)
+    await flushPromises()
+
+    expect(event.defaultPrevented).toBe(true)
+    expect(textarea.element.value).toBe(expected)
+    wrapper.unmount()
+  })
+
+  it('IME確定後に全角のインライン構文を半角化する', async () => {
+    const wrapper = mountInteractiveEditor('', [], true, true)
+    const textarea = wrapper.get<HTMLTextAreaElement>('#markdown-input')
+
+    await textarea.trigger('compositionstart')
+    await textarea.setValue('＊補足＊')
+    textarea.element.setSelectionRange(4, 4)
+    await textarea.trigger('compositionend', { data: '＊補足＊' })
+    await flushPromises()
+
+    expect(textarea.element.value).toBe('*補足*')
+    expect(textarea.element.selectionStart).toBe(4)
+    wrapper.unmount()
+  })
+
+  it('IMEで確定した全角見出し記号1文字を即座に半角化する', async () => {
+    const wrapper = mountInteractiveEditor('', [], true, true)
+    const textarea = wrapper.get<HTMLTextAreaElement>('#markdown-input')
+
+    await textarea.trigger('compositionstart')
+    await textarea.setValue('＃')
+    textarea.element.setSelectionRange(1, 1)
+    await textarea.trigger('compositionend', { data: '＃' })
+    await flushPromises()
+
+    expect(textarea.element.value).toBe('#')
+    wrapper.unmount()
+  })
+
+  it('IMEで行頭へ入力した長音記号を半角ハイフンへ補正する', async () => {
+    const wrapper = mountInteractiveEditor('', [], true, true)
+    const textarea = wrapper.get<HTMLTextAreaElement>('#markdown-input')
+
+    await textarea.trigger('compositionstart')
+    await textarea.setValue('ー')
+    textarea.element.setSelectionRange(1, 1)
+    await textarea.trigger('compositionend', { data: 'ー' })
+    await flushPromises()
+
+    expect(textarea.element.value).toBe('-')
+    expect(textarea.element.selectionStart).toBe(1)
+    wrapper.unmount()
+  })
+
+  it('Enterでは全角リスト補正、入力置換、リスト継続を1回で反映する', async () => {
+    const wrapper = mountInteractiveEditor(
+      '－　右',
+      replacementRules,
+      true,
+      true,
+    )
+    const textarea = wrapper.get<HTMLTextAreaElement>('#markdown-input')
+    textarea.element.setSelectionRange(3, 3)
+
+    await textarea.trigger('keydown', { key: 'Enter' })
+
+    expect(textarea.element.value).toBe('- ⇨\n- ')
+    expect(textarea.element.selectionStart).toBe(6)
+    wrapper.unmount()
+  })
+
+  it('コード本文と貼り付け相当の外部更新は全角Markdown補正の対象外にする', async () => {
+    const wrapper = mountInteractiveEditor('', [], true, true)
+    const textarea = wrapper.get<HTMLTextAreaElement>('#markdown-input')
+
+    await textarea.setValue('```\n＃　見出し\n```')
+    expect(textarea.element.value).toBe('```\n＃　見出し\n```')
+
+    textarea.element.setSelectionRange(10, 10)
+    await textarea.trigger('keydown', { key: 'Enter' })
+    expect(textarea.element.value).toContain('＃　見出し')
     wrapper.unmount()
   })
 

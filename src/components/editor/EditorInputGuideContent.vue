@@ -63,6 +63,14 @@ defineProps<{
     </section>
 
     <section>
+      <h3>全角Markdown補正</h3>
+      <p>
+        設定をONにすると、全角で入力したMarkdown記号を、入力直後に半角へ補正します。
+      </p>
+      <p>コード内の文字と貼り付けた文章には適用しません。</p>
+    </section>
+
+    <section>
       <h3>入力置換</h3>
       <p>
         設定で登録した入力文字は、IME確定時またはSpace・全角Space・Enterの入力時に完全一致すると置き換わります。
