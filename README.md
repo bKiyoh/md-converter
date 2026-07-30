@@ -20,6 +20,7 @@ Markdownで作成した文章を、Slack、Backlog、プレーンテキスト向
 
 - アプリ全体の仕様：[`docs/specs/product-spec.md`](docs/specs/product-spec.md)
 - 形式ごとの変換仕様：[`docs/specs/conversion-rules.md`](docs/specs/conversion-rules.md)
+- 開発者向けコードベースガイド：[`docs/architecture/code-reading-guide.md`](docs/architecture/code-reading-guide.md)
 - 現在の実装計画：[`docs/plans/implementation-plan.md`](docs/plans/implementation-plan.md)
 - Markdownパーサー設計：[`docs/architecture/parser-design.md`](docs/architecture/parser-design.md)
 

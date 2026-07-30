@@ -41,6 +41,7 @@ docs/
 
 | 文書 | 役割 |
 | --- | --- |
+| [`architecture/code-reading-guide.md`](architecture/code-reading-guide.md) | 開発者向けのコード構成、責務、データフロー、状態管理、テスト境界 |
 | [`plans/implementation-plan.md`](plans/implementation-plan.md) | 現在のマイルストーン、対象範囲、完了条件 |
 | [`architecture/parser-design.md`](architecture/parser-design.md) | Parserの採用理由、中間表現へ保持する情報、制約 |
 
@@ -60,6 +61,7 @@ docs/
 
 | 作業 | 必ず確認する文書 |
 | --- | --- |
+| コード構成や変更影響を確認する | `architecture/code-reading-guide.md`、関心のある機能の現行仕様 |
 | 画面や共通動作の変更 | `specs/product-spec.md`、`plans/implementation-plan.md` |
 | 変換処理の変更 | `specs/conversion-rules.md`、`plans/implementation-plan.md` |
 | 文書タブ・保存の変更 | `specs/tab-management-spec.md`、`specs/product-spec.md`、`plans/implementation-plan.md` |
