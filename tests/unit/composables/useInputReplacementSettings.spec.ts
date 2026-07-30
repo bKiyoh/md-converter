@@ -4,8 +4,8 @@ import { describe, expect, it, vi } from 'vitest'
 import {
   INPUT_REPLACEMENT_STORAGE_KEY,
   useInputReplacementSettings,
-} from './useInputReplacementSettings'
-import type { LocalStorageAccess } from './useDebouncedLocalStorage'
+} from '../../../src/composables/useInputReplacementSettings'
+import type { LocalStorageAccess } from '../../../src/composables/useDebouncedLocalStorage'
 
 function mountSettings(
   storage: LocalStorageAccess | null,

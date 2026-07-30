@@ -1,7 +1,7 @@
 import { mount, type VueWrapper } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import type { DeletedTab, EditorTab } from '../../types/editorTabs'
-import EditorTabs from './EditorTabs.vue'
+import type { DeletedTab, EditorTab } from '../../../../src/types/editorTabs'
+import EditorTabs from '../../../../src/components/editor/EditorTabs.vue'
 
 function createTab(id: string, name: string): EditorTab {
   return {

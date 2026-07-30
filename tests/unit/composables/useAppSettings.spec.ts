@@ -5,8 +5,8 @@ import {
   APP_SETTINGS_STORAGE_KEY,
   useAppSettings,
   type AppSettings,
-} from './useAppSettings'
-import type { LocalStorageAccess } from './useDebouncedLocalStorage'
+} from '../../../src/composables/useAppSettings'
+import type { LocalStorageAccess } from '../../../src/composables/useDebouncedLocalStorage'
 
 function mountSettings(storage: LocalStorageAccess | null): VueWrapper {
   return mount(

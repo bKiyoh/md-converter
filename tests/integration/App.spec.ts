@@ -4,16 +4,16 @@ import {
   EDITOR_CONTENT_SAVE_DELAY_MS,
   EDITOR_STATE_STORAGE_KEY,
   LEGACY_MARKDOWN_DRAFT_STORAGE_KEY,
-} from './composables/useEditorStorage'
-import { OUTPUT_FORMAT_STORAGE_KEY } from './composables/useOutputFormatPreference'
-import { APP_SETTINGS_STORAGE_KEY } from './composables/useAppSettings'
-import { INPUT_REPLACEMENT_STORAGE_KEY } from './composables/useInputReplacementSettings'
+} from '../../src/composables/useEditorStorage'
+import { OUTPUT_FORMAT_STORAGE_KEY } from '../../src/composables/useOutputFormatPreference'
+import { APP_SETTINGS_STORAGE_KEY } from '../../src/composables/useAppSettings'
+import { INPUT_REPLACEMENT_STORAGE_KEY } from '../../src/composables/useInputReplacementSettings'
 import {
   THEME_PREFERENCE_SAVE_DELAY_MS,
   THEME_PREFERENCE_STORAGE_KEY,
-} from './composables/useThemePreference'
-import { COPY_NOTICE_DURATION_MS } from './composables/useClipboard'
-import App from './App.vue'
+} from '../../src/composables/useThemePreference'
+import { COPY_NOTICE_DURATION_MS } from '../../src/composables/useClipboard'
+import App from '../../src/App.vue'
 
 describe('App', () => {
   beforeEach(() => {
@@ -31,6 +31,9 @@ describe('App', () => {
     const wrapper = mount(App)
     const input = wrapper.get<HTMLTextAreaElement>('#markdown-input')
     const output = wrapper.get<HTMLTextAreaElement>('#conversion-output')
+
+    expect(input.element.tagName).toBe('TEXTAREA')
+    expect(output.attributes('readonly')).toBeDefined()
 
     await input.setValue('# 見出し😀')
 

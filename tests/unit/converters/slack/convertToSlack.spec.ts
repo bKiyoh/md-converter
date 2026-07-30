@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { parseMarkdown } from '../../parser/parseMarkdown'
-import { convertToSlack, slackConverter } from './convertToSlack'
+import { parseMarkdown } from '../../../../src/parser/parseMarkdown'
+import { convertToSlack, slackConverter } from '../../../../src/converters/slack/convertToSlack'
 
 function convert(markdown: string) {
   return convertToSlack(parseMarkdown(markdown))

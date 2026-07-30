@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest'
-import { parseMarkdown } from '../../parser/parseMarkdown'
-import { convertToPlainText, plainTextConverter } from './convertToPlainText'
+import { parseMarkdown } from '../../../../src/parser/parseMarkdown'
+import {
+  convertToPlainText,
+  plainTextConverter,
+} from '../../../../src/converters/plain-text/convertToPlainText'
 
 function convert(markdown: string) {
   return convertToPlainText(parseMarkdown(markdown))

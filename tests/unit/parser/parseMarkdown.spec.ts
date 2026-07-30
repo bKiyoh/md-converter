@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { parseMarkdown } from './parseMarkdown'
+import { parseMarkdown } from '../../../src/parser/parseMarkdown'
 
 describe('parseMarkdown', () => {
   it('空文字を空の文書として解析する', () => {

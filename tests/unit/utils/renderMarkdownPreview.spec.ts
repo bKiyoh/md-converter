@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { parseMarkdownForPreview } from '../parser/parseMarkdown'
-import { renderMarkdownPreview } from './renderMarkdownPreview'
+import { parseMarkdownForPreview } from '../../../src/parser/parseMarkdown'
+import { renderMarkdownPreview } from '../../../src/utils/renderMarkdownPreview'
 
 describe('renderMarkdownPreview', () => {
   it('中間表現から主要Markdown要素をHTMLへ描画する', () => {

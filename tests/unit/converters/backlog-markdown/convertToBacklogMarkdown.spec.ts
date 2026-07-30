@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest'
-import { parseMarkdown } from '../../parser/parseMarkdown'
+import { parseMarkdown } from '../../../../src/parser/parseMarkdown'
 import {
   backlogMarkdownConverter,
   convertToBacklogMarkdown,
-} from './convertToBacklogMarkdown'
+} from '../../../../src/converters/backlog-markdown/convertToBacklogMarkdown'
 
 function convert(markdown: string) {
   return convertToBacklogMarkdown(parseMarkdown(markdown))

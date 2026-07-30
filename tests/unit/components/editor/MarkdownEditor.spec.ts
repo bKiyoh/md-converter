@@ -1,8 +1,8 @@
 import { flushPromises, mount } from '@vue/test-utils'
 import { defineComponent, nextTick, ref } from 'vue'
 import { describe, expect, it, vi } from 'vitest'
-import type { InputReplacementRule } from '../../types/inputReplacement'
-import MarkdownEditor from './MarkdownEditor.vue'
+import type { InputReplacementRule } from '../../../../src/types/inputReplacement'
+import MarkdownEditor from '../../../../src/components/editor/MarkdownEditor.vue'
 
 function mountInteractiveEditor(
   initialValue: string,

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import type { InputReplacementRule } from '../types/inputReplacement'
+import type { InputReplacementRule } from '../../../src/types/inputReplacement'
 import {
   applyInputReplacement,
   containsMarkdownSyntax,
@@ -7,7 +7,7 @@ import {
   findDirectInputReplacement,
   isInsideMarkdownCode,
   validateInputReplacementDraft,
-} from './inputReplacement'
+} from '../../../src/utils/inputReplacement'
 
 const rules: InputReplacementRule[] = [
   { id: 'right', source: '右', replacement: '⇨', enabled: true },

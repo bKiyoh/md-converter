@@ -4,7 +4,7 @@ import {
   useTextSearch,
   type TextSearchEdit,
   type UseTextSearchResult,
-} from './useTextSearch'
+} from '../../../src/composables/useTextSearch'
 
 let scope: EffectScope | null = null
 

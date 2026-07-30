@@ -4,7 +4,7 @@ import {
   findTextMatches,
   replaceAllTextMatches,
   replaceTextMatch,
-} from './textSearch'
+} from '../../../src/utils/textSearch'
 
 describe('findTextMatches', () => {
   it('一致する文字列を先頭から重複なしで検索する', () => {

@@ -1,8 +1,8 @@
 import { defineComponent } from 'vue'
 import { mount } from '@vue/test-utils'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import TooltipTarget from '../components/common/TooltipTarget.vue'
-import { tooltipDirective } from './tooltip'
+import TooltipTarget from '../../../src/components/common/TooltipTarget.vue'
+import { tooltipDirective } from '../../../src/directives/tooltip'
 
 function createRect(
   left: number,

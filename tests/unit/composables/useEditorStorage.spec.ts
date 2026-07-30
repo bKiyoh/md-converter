@@ -1,11 +1,11 @@
 import { describe, expect, it, vi } from 'vitest'
-import type { EditorState } from '../types/editorTabs'
+import type { EditorState } from '../../../src/types/editorTabs'
 import {
   DELETED_TAB_RETENTION_MS,
   EDITOR_STATE_STORAGE_KEY,
   loadEditorState,
   type EditorStorageAccess,
-} from './useEditorStorage'
+} from '../../../src/composables/useEditorStorage'
 
 function createStorage(value: string | null): EditorStorageAccess {
   return {

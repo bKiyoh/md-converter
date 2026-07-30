@@ -1,13 +1,13 @@
 import { mount, type VueWrapper } from '@vue/test-utils'
 import { defineComponent } from 'vue'
 import { describe, expect, it, vi } from 'vitest'
-import { OUTPUT_FORMATS } from '../types/conversion'
+import { OUTPUT_FORMATS } from '../../../src/types/conversion'
 import {
   DEFAULT_OUTPUT_FORMAT,
   OUTPUT_FORMAT_STORAGE_KEY,
   useOutputFormatPreference,
   type OutputFormatStorage,
-} from './useOutputFormatPreference'
+} from '../../../src/composables/useOutputFormatPreference'
 
 function mountOutputFormatPreference(storage: OutputFormatStorage): VueWrapper {
   return mount(

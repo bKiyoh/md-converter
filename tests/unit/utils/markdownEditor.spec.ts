@@ -5,7 +5,7 @@ import {
   continueMarkdownList,
   getMarkdownShortcut,
   wrapSelection,
-} from './markdownEditor'
+} from '../../../src/utils/markdownEditor'
 
 describe('Markdownショートカット', () => {
   it('選択文字列へ太字を付与し、本文の選択を維持する', () => {

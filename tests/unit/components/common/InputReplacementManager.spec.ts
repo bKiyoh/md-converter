@@ -1,7 +1,7 @@
 import { mount } from '@vue/test-utils'
 import { describe, expect, it } from 'vitest'
-import type { InputReplacementRule } from '../../types/inputReplacement'
-import InputReplacementManager from './InputReplacementManager.vue'
+import type { InputReplacementRule } from '../../../../src/types/inputReplacement'
+import InputReplacementManager from '../../../../src/components/common/InputReplacementManager.vue'
 
 const rules: InputReplacementRule[] = [
   { id: 'right', source: '右', replacement: '⇨', enabled: true },

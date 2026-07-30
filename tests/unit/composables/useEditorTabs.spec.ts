@@ -6,11 +6,11 @@ import {
   EDITOR_STATE_STORAGE_KEY,
   LEGACY_MARKDOWN_DRAFT_STORAGE_KEY,
   type EditorStorageAccess,
-} from './useEditorStorage'
+} from '../../../src/composables/useEditorStorage'
 import {
   useEditorTabs,
   type UseEditorTabsResult,
-} from './useEditorTabs'
+} from '../../../src/composables/useEditorTabs'
 
 type MemoryStorage = EditorStorageAccess & {
   values: Map<string, string>

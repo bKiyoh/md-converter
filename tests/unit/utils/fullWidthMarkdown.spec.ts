@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest'
-import { parseMarkdown } from '../parser/parseMarkdown'
+import { parseMarkdown } from '../../../src/parser/parseMarkdown'
 import {
   normalizeFullWidthMarkdownInput,
   normalizeInsertedFullWidthMarkdown,
-} from './fullWidthMarkdown'
+} from '../../../src/utils/fullWidthMarkdown'
 
 function normalize(value: string, caret = value.length): string {
   return (

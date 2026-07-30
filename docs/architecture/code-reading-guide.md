@@ -344,32 +344,47 @@ Storageへのアクセスや保存に失敗しても、アプリ内の状態更�
 
 ## 5. テストで保証している範囲
 
-テストはVitestを使用し、すべてjsdom環境で実行する。テストファイルは対象実装の近くに
-`*.spec.ts` として配置する。
+テストはVitestを使用し、すべてjsdom環境で実行する。実装ファイルだけを探しやすくする
+ため、テストファイルは `tests/` へ集約する。純粋処理、Composable、Componentなどの
+単体テストは `tests/unit/` で `src/` のディレクトリ構造を踏襲し、画面横断フローは
+`tests/integration/` へ配置する。
+
+```text
+tests/
+├─ unit/
+│  ├─ components/
+│  ├─ composables/
+│  ├─ converters/
+│  ├─ directives/
+│  ├─ parser/
+│  └─ utils/
+└─ integration/
+   └─ App.spec.ts
+```
 
 ### 5.1 テストの層
 
 | 対象 | 主なテスト | 保証する内容 |
 | --- | --- | --- |
-| Parser | `parser/parseMarkdown.spec.ts` | Markdown要素から中間表現への正規化、位置情報、生HTMLの扱い |
-| Converter | 各`convertTo*.spec.ts` | Markdown入力に対応する出力文字列と警告 |
-| 純粋処理 | `utils/*.spec.ts` | 編集、検索・置換、入力置換、全角補正、プレビューHTML、文字数 |
-| 状態と永続化 | `composables/*.spec.ts` | 状態遷移、保存と復元、不正値、移行、操作上限 |
-| Component | `components/**/*.spec.ts` | Props・Emit、DOMイベント、キーボード操作、アクセシビリティ属性 |
-| アプリ結合 | `App.spec.ts` | 入力から変換・表示・保存・コピーまでの主要な画面横断フロー |
-| Directive | `directives/tooltip.spec.ts` | ツールチップの表示、位置、終了条件、後始末 |
+| Parser | `tests/unit/parser/parseMarkdown.spec.ts` | Markdown要素から中間表現への正規化、位置情報、生HTMLの扱い |
+| Converter | `tests/unit/converters/**/convertTo*.spec.ts` | Markdown入力に対応する出力文字列と警告 |
+| 純粋処理 | `tests/unit/utils/*.spec.ts` | 編集、検索・置換、入力置換、全角補正、プレビューHTML、文字数 |
+| 状態と永続化 | `tests/unit/composables/*.spec.ts` | 状態遷移、保存と復元、不正値、移行、操作上限 |
+| Component | `tests/unit/components/**/*.spec.ts` | Props・Emit、DOMイベント、キーボード操作、アクセシビリティ属性 |
+| アプリ結合 | `tests/integration/App.spec.ts` | 入力から変換・表示・保存・コピーまでの主要な画面横断フロー |
+| Directive | `tests/unit/directives/tooltip.spec.ts` | ツールチップの表示、位置、終了条件、後始末 |
 
 Converterテストでは実装内部の補助関数ではなく、入力Markdownに対する出力と警告を
 検証する。Parserテストは外部mdastではなく、アプリが利用する `MarkdownDocument` を
 検証する。
 
 ComposableテストではStorage、時刻、ID生成などを差し替え、状態遷移と境界条件を
-決定的に確認する。Componentと `App.spec.ts` はVue Test UtilsでDOMイベントを発生させ、
-ユーザー操作から結果までを確認する。
+決定的に確認する。Componentテストと `tests/integration/App.spec.ts` はVue Test Utilsで
+DOMイベントを発生させ、ユーザー操作から結果までを確認する。
 
 すべてのComponentとComposableに個別のテストファイルがあるわけではない。テーマ、
-フォーカスモード、左右ペイン、コピーなどの画面横断動作は、主に `App.spec.ts` で
-結合した状態を検証する。
+フォーカスモード、左右ペイン、コピーなどの画面横断動作は、主に
+`tests/integration/App.spec.ts` で結合した状態を検証する。
 
 ### 5.2 自動テストの境界
 
