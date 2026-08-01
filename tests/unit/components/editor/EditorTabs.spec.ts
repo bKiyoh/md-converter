@@ -131,4 +131,50 @@ describe('EditorTabs', () => {
     await input.trigger('dragstart', { dataTransfer: createDataTransfer() })
     expect(currentWrapper.emitted('reorder')).toBeUndefined()
   })
+
+  it('F2キーでタブ名の編集を開始する', async () => {
+    const currentWrapper = mountEditorTabs()
+    const button = currentWrapper.findAll<HTMLButtonElement>('.document-tab-button')[1]!
+
+    expect(button.attributes('aria-keyshortcuts')).toContain('F2')
+    await button.trigger('keydown', { key: 'F2' })
+
+    const input = currentWrapper.get<HTMLInputElement>('.document-tab-name-input')
+    await input.setValue('更新名')
+    await input.trigger('keydown', { key: 'Enter' })
+
+    expect(currentWrapper.emitted('rename')).toEqual([['tab-2', '更新名']])
+  })
+
+  it('Alt+左右キーで隣へ並べ替え、移動位置を通知する', async () => {
+    const currentWrapper = mountEditorTabs()
+    const buttons = currentWrapper.findAll<HTMLButtonElement>('.document-tab-button')
+
+    await buttons[1]!.trigger('keydown', { key: 'ArrowRight', altKey: true })
+
+    expect(currentWrapper.emitted('reorder')).toEqual([
+      ['tab-2', 'tab-3', 'after'],
+    ])
+    expect(currentWrapper.get('[aria-live="polite"]').text()).toBe(
+      '中央を3番目へ移動しました',
+    )
+
+    await buttons[0]!.trigger('keydown', { key: 'ArrowLeft', altKey: true })
+    expect(currentWrapper.emitted('reorder')).toHaveLength(1)
+  })
+
+  it('IME変換中はF2とキーボード並べ替えを処理しない', async () => {
+    const currentWrapper = mountEditorTabs()
+    const button = currentWrapper.findAll<HTMLButtonElement>('.document-tab-button')[1]!
+
+    await button.trigger('keydown', { key: 'F2', isComposing: true })
+    await button.trigger('keydown', {
+      key: 'ArrowRight',
+      altKey: true,
+      isComposing: true,
+    })
+
+    expect(currentWrapper.find('.document-tab-name-input').exists()).toBe(false)
+    expect(currentWrapper.emitted('reorder')).toBeUndefined()
+  })
 })

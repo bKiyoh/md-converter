@@ -1,4 +1,6 @@
 import { describe, expect, it } from 'vitest'
+import type { Root } from 'mdast'
+import { normalizeMarkdownAst } from '../../../src/parser/normalizeMarkdownAst'
 import { parseMarkdown } from '../../../src/parser/parseMarkdown'
 
 describe('parseMarkdown', () => {
@@ -76,6 +78,48 @@ describe('parseMarkdown', () => {
           children: [{ type: 'text', value: '公式サイト' }],
         },
       ],
+    })
+  })
+
+  it('画像と参照形式画像の代替テキストとURLを保持する', () => {
+    const document = parseMarkdown(`![直接画像](direct.png)
+
+![参照画像][asset]
+
+[asset]: reference.png`)
+
+    expect(document.blocks).toMatchObject([
+      {
+        type: 'paragraph',
+        children: [{ type: 'image', alt: '直接画像', url: 'direct.png' }],
+      },
+      {
+        type: 'paragraph',
+        children: [{ type: 'image', alt: '参照画像', url: 'reference.png' }],
+      },
+    ])
+  })
+
+  it('脚注参照をフォールバック用の中間表現へ正規化する', () => {
+    const tree: Root = {
+      type: 'root',
+      children: [
+        {
+          type: 'paragraph',
+          children: [
+            {
+              type: 'footnoteReference',
+              identifier: 'note-1',
+              label: '注1',
+            },
+          ],
+        },
+      ],
+    }
+
+    expect(normalizeMarkdownAst(tree).blocks[0]).toMatchObject({
+      type: 'paragraph',
+      children: [{ type: 'footnoteReference', label: '注1' }],
     })
   })
 

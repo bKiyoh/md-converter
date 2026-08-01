@@ -1,5 +1,6 @@
-import { onBeforeUnmount } from 'vue'
+import { onBeforeUnmount, ref, type Ref } from 'vue'
 import type { DeletedTab, EditorState, EditorTab } from '../types/editorTabs'
+import { STORAGE_SAVE_ERROR_MESSAGE } from './useDebouncedLocalStorage'
 
 export const EDITOR_STATE_STORAGE_KEY = 'markdown-editor-state-v1'
 export const LEGACY_MARKDOWN_DRAFT_STORAGE_KEY = 'md-converter:draft:v1'
@@ -16,6 +17,7 @@ export type LoadedEditorState = {
   state: EditorState
   shouldPersist: boolean
   shouldRemoveLegacyDraft: boolean
+  recoveryData: string | null
 }
 
 type LoadEditorStateOptions = {
@@ -28,6 +30,7 @@ type UseEditorStorageOptions = {
   storage: EditorStorageAccess | null
   getState: () => EditorState
   removeLegacyDraftAfterSave: boolean
+  persistenceBlocked: boolean
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -125,6 +128,7 @@ export function loadEditorState(options: LoadEditorStateOptions): LoadedEditorSt
     state: createInitialEditorState(options.createId, options.now),
     shouldPersist: true,
     shouldRemoveLegacyDraft: false,
+    recoveryData: null,
   })
 
   if (!options.storage) {
@@ -152,6 +156,7 @@ export function loadEditorState(options: LoadEditorStateOptions): LoadedEditorSt
       state: createInitialEditorState(options.createId, options.now, legacyDraft ?? ''),
       shouldPersist: true,
       shouldRemoveLegacyDraft: legacyDraft !== null,
+      recoveryData: null,
     }
   }
 
@@ -179,6 +184,7 @@ export function loadEditorState(options: LoadEditorStateOptions): LoadedEditorSt
           state: { ...normalized, deletedTabs },
           shouldPersist: true,
           shouldRemoveLegacyDraft: false,
+          recoveryData: null,
         }
       }
     }
@@ -194,10 +200,16 @@ export function loadEditorState(options: LoadEditorStateOptions): LoadedEditorSt
       state: { ...parsed, deletedTabs },
       shouldPersist: deletedTabs.length !== parsed.deletedTabs.length,
       shouldRemoveLegacyDraft: false,
+      recoveryData: null,
     }
   } catch {
     console.warn('保存されたタブデータが不正なため、初期状態へ戻しました。')
-    return fallback()
+    return {
+      state: createInitialEditorState(options.createId, options.now),
+      shouldPersist: false,
+      shouldRemoveLegacyDraft: false,
+      recoveryData: storedValue,
+    }
   }
 }
 
@@ -210,16 +222,27 @@ export function getBrowserEditorStorage(): EditorStorageAccess | null {
 }
 
 export function useEditorStorage(options: UseEditorStorageOptions): {
+  saveError: Ref<string | null>
   saveImmediately: () => boolean
+  resumePersistence: () => boolean
+  retrySave: () => boolean
   scheduleSave: () => void
 } {
+  const saveError = ref<string | null>(null)
   let saveTimer: ReturnType<typeof setTimeout> | undefined
   let hasPendingSave = false
   let shouldRemoveLegacyDraft = options.removeLegacyDraftAfterSave
+  let persistenceBlocked = options.persistenceBlocked
 
   function saveState(): boolean {
+    if (persistenceBlocked) {
+      hasPendingSave = false
+      return false
+    }
+
     if (!options.storage) {
       hasPendingSave = false
+      saveError.value = STORAGE_SAVE_ERROR_MESSAGE
       return false
     }
 
@@ -232,9 +255,11 @@ export function useEditorStorage(options: UseEditorStorageOptions): {
       }
 
       hasPendingSave = false
+      saveError.value = null
       return true
     } catch {
       hasPendingSave = false
+      saveError.value = STORAGE_SAVE_ERROR_MESSAGE
       return false
     }
   }
@@ -260,6 +285,11 @@ export function useEditorStorage(options: UseEditorStorageOptions): {
     }, EDITOR_CONTENT_SAVE_DELAY_MS)
   }
 
+  function resumePersistence(): boolean {
+    persistenceBlocked = false
+    return saveImmediately()
+  }
+
   onBeforeUnmount(() => {
     if (saveTimer !== undefined) {
       clearTimeout(saveTimer)
@@ -270,5 +300,11 @@ export function useEditorStorage(options: UseEditorStorageOptions): {
     }
   })
 
-  return { saveImmediately, scheduleSave }
+  return {
+    saveError,
+    saveImmediately,
+    resumePersistence,
+    retrySave: saveImmediately,
+    scheduleSave,
+  }
 }

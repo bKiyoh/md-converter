@@ -28,6 +28,8 @@ export type InlineNode =
   | DeleteNode
   | InlineCodeNode
   | LinkNode
+  | ImageNode
+  | FootnoteReferenceNode
   | LineBreakNode
   | RawHtmlInlineNode
 
@@ -127,6 +129,17 @@ export type LinkNode = MarkdownNode & {
   url: string
   title: string | null
   children: InlineNode[]
+}
+
+export type ImageNode = MarkdownNode & {
+  type: 'image'
+  alt: string
+  url: string | null
+}
+
+export type FootnoteReferenceNode = MarkdownNode & {
+  type: 'footnoteReference'
+  label: string
 }
 
 export type LineBreakNode = MarkdownNode & {

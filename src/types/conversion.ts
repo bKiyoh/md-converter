@@ -13,7 +13,12 @@ export function isOutputFormat(value: unknown): value is OutputFormat {
   return typeof value === 'string' && OUTPUT_FORMATS.some((format) => format === value)
 }
 
-export type WarningCode = 'unsupported-node' | 'lossy-conversion' | 'invalid-structure'
+export type WarningCode =
+  | 'unsupported-node'
+  | 'unsupported-image'
+  | 'unsupported-footnote'
+  | 'lossy-conversion'
+  | 'invalid-structure'
 
 export type ConversionWarning = {
   code: WarningCode

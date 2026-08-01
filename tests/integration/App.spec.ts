@@ -13,6 +13,7 @@ import {
   THEME_PREFERENCE_STORAGE_KEY,
 } from '../../src/composables/useThemePreference'
 import { COPY_NOTICE_DURATION_MS } from '../../src/composables/useClipboard'
+import { CONVERSION_DEBOUNCE_DELAY_MS } from '../../src/utils/conversionTiming'
 import App from '../../src/App.vue'
 
 describe('App', () => {
@@ -27,6 +28,10 @@ describe('App', () => {
     vi.restoreAllMocks()
   })
 
+  async function completeConversion(): Promise<void> {
+    await vi.advanceTimersByTimeAsync(CONVERSION_DEBOUNCE_DELAY_MS)
+  }
+
   it('入力を選択中の形式へリアルタイム変換し、文字数を表示する', async () => {
     const wrapper = mount(App)
     const input = wrapper.get<HTMLTextAreaElement>('#markdown-input')
@@ -36,6 +41,7 @@ describe('App', () => {
     expect(output.attributes('readonly')).toBeDefined()
 
     await input.setValue('# 見出し😀')
+    await completeConversion()
 
     expect(output.element.value).toBe('*見出し😀*')
     expect(wrapper.get('#markdown-input-count').text()).toBe('6文字')
@@ -54,11 +60,26 @@ describe('App', () => {
     expect(wrapper.get('.warnings').text()).toContain('見出しレベルを表現できない')
   })
 
+  it('連続入力の最後から150ミリ秒後にだけ変換結果を更新する', async () => {
+    const wrapper = mount(App)
+    const input = wrapper.get<HTMLTextAreaElement>('#markdown-input')
+    const output = wrapper.get<HTMLTextAreaElement>('#conversion-output')
+
+    await input.setValue('最初')
+    await vi.advanceTimersByTimeAsync(CONVERSION_DEBOUNCE_DELAY_MS - 1)
+    expect(output.element.value).toBe('')
+
+    await input.setValue('最後')
+    await completeConversion()
+    expect(output.element.value).toBe('最後')
+  })
+
   it('同じ警告をまとめて件数と位置を重ね表示し、Escapeキーで閉じる', async () => {
     const wrapper = mount(App, { attachTo: document.body })
     const input = wrapper.get<HTMLTextAreaElement>('#markdown-input')
 
     await input.setValue('# 見出し1\n\n## 見出し2')
+    await completeConversion()
 
     const warningButton = wrapper.get<HTMLButtonElement>('.warning-summary-button')
     expect(warningButton.text()).toBe('⚠ 警告 2件')
@@ -92,6 +113,7 @@ describe('App', () => {
     const input = wrapper.get<HTMLTextAreaElement>('#markdown-input')
 
     await input.setValue('前の文章\n\n<div>テスト</div>\n\n後の文章')
+    await completeConversion()
 
     expect(wrapper.get<HTMLTextAreaElement>('#conversion-output').element.value).toBe(
       '前の文章\n\n<div>テスト</div>\n\n後の文章',
@@ -142,6 +164,7 @@ describe('App', () => {
     expect(wrapper.find('#markdown-preview').exists()).toBe(false)
 
     await input.setValue('# プレビュー')
+    await completeConversion()
     await previewTab.trigger('click')
 
     expect(previewTab.attributes('aria-selected')).toBe('true')
@@ -158,13 +181,14 @@ describe('App', () => {
     expect(wrapper.findAll('.panel-kicker').some((item) => item.text() === 'Output')).toBe(false)
   })
 
-  it('プレビュー表示中の入力変更を即時反映し、形式選択を維持する', async () => {
+  it('プレビュー表示中の入力変更をデバウンス後に反映し、形式選択を維持する', async () => {
     const wrapper = mount(App)
     const input = wrapper.get<HTMLTextAreaElement>('#markdown-input')
 
     await wrapper.get<HTMLSelectElement>('#output-format').setValue('plain-text')
     await wrapper.get('#preview-view-tab').trigger('click')
     await input.setValue('**更新**')
+    await completeConversion()
 
     expect(wrapper.get('#markdown-preview').html()).toContain('<strong>更新</strong>')
 
@@ -210,9 +234,11 @@ describe('App', () => {
     ).toBe(wrapper.findAll('.document-tab-item')[1]!.element)
     expect(input.element.value).toBe('')
     await input.setValue('2つ目')
+    await completeConversion()
     expect(wrapper.get<HTMLTextAreaElement>('#conversion-output').element.value).toBe('2つ目')
 
     await wrapper.findAll<HTMLButtonElement>('.document-tab-button')[0]!.trigger('click')
+    await completeConversion()
     expect(input.element.value).toBe('# 最初')
     expect(wrapper.get<HTMLTextAreaElement>('#conversion-output').element.value).toBe('*最初*')
     expect(wrapper.findAll('.document-tab-button')[0]?.attributes('aria-pressed')).toBe('true')
@@ -322,11 +348,44 @@ describe('App', () => {
     wrapper.unmount()
   })
 
-  it('タブ名をダブルクリックで変更し、Escapeでは取り消す', async () => {
+  it('Alt+左右キーでタブを並べ替えて保存し、対象タブへフォーカスを維持する', async () => {
+    const wrapper = mount(App, { attachTo: document.body })
+
+    await wrapper.get('.document-tab-add-button').trigger('click')
+    await wrapper.get('.document-tab-add-button').trigger('click')
+    const thirdButton = wrapper.findAll<HTMLButtonElement>('.document-tab-button')[2]!
+    thirdButton.element.focus()
+
+    await thirdButton.trigger('keydown', { key: 'ArrowLeft', altKey: true })
+
+    const reorderedButtons = wrapper.findAll<HTMLButtonElement>('.document-tab-button')
+    expect(reorderedButtons.map((tab) => tab.text())).toEqual([
+      'Untitled',
+      'Untitled 3',
+      'Untitled 2',
+    ])
+    expect(reorderedButtons[1]?.attributes('aria-pressed')).toBe('true')
+    expect(document.activeElement).toBe(reorderedButtons[1]!.element)
+    expect(wrapper.get('.document-tabs [aria-live="polite"]').text()).toBe(
+      'Untitled 3を2番目へ移動しました',
+    )
+
+    const saved = JSON.parse(localStorage.getItem(EDITOR_STATE_STORAGE_KEY)!) as {
+      tabs: Array<{ name: string }>
+    }
+    expect(saved.tabs.map((tab) => tab.name)).toEqual([
+      'Untitled',
+      'Untitled 3',
+      'Untitled 2',
+    ])
+    wrapper.unmount()
+  })
+
+  it('タブ名をF2またはダブルクリックで変更し、Escapeでは取り消す', async () => {
     const wrapper = mount(App)
     const tab = wrapper.get<HTMLButtonElement>('.document-tab-button')
 
-    await tab.trigger('dblclick')
+    await tab.trigger('keydown', { key: 'F2' })
     const nameInput = wrapper.get<HTMLInputElement>('.document-tab-name-input')
     await nameInput.setValue('  議事録  ')
     await nameInput.trigger('keydown', { key: 'Enter' })
@@ -437,7 +496,7 @@ describe('App', () => {
     wrapper.unmount()
   })
 
-  it('削除済みタブを復元または完全削除しても一覧を閉じない', async () => {
+  it('完全削除を確認・キャンセルでき、確定後も削除済み一覧を維持する', async () => {
     const wrapper = mount(App, { attachTo: document.body })
 
     await wrapper.get('.document-tab-add-button').trigger('click')
@@ -461,10 +520,47 @@ describe('App', () => {
       .get<HTMLButtonElement>('.deleted-tab-action--permanent-delete')
       .trigger('click')
 
+    const dialog = wrapper.get('.permanent-delete-dialog')
+    const cancelButton = dialog.get<HTMLButtonElement>('.permanent-delete-cancel-button')
+    const confirmButton = dialog.get<HTMLButtonElement>('.permanent-delete-confirm-button')
+    expect(dialog.attributes('role')).toBe('dialog')
+    expect(dialog.attributes('aria-modal')).toBe('true')
+    expect(dialog.text()).toContain('「Untitled 3」を完全に削除します。元に戻せません。')
+    expect(document.activeElement).toBe(cancelButton.element)
+
+    await cancelButton.trigger('keydown', { key: 'Tab', shiftKey: true })
+    expect(document.activeElement).toBe(confirmButton.element)
+    await confirmButton.trigger('keydown', { key: 'Tab' })
+    expect(document.activeElement).toBe(cancelButton.element)
+
+    await dialog.trigger('keydown', { key: 'Escape' })
+    expect(wrapper.find('.permanent-delete-dialog').exists()).toBe(false)
+    expect(wrapper.find('.deleted-tab-action--permanent-delete').exists()).toBe(true)
+    expect(document.activeElement).toBe(
+      wrapper.get<HTMLButtonElement>('.deleted-tab-action--permanent-delete').element,
+    )
+
+    await wrapper
+      .get<HTMLButtonElement>('.deleted-tab-action--permanent-delete')
+      .trigger('click')
+    await wrapper.get('.permanent-delete-backdrop').trigger('click')
+    expect(wrapper.find('.permanent-delete-dialog').exists()).toBe(false)
+    expect(wrapper.find('.deleted-tab-action--permanent-delete').exists()).toBe(true)
+
+    await wrapper
+      .get<HTMLButtonElement>('.deleted-tab-action--permanent-delete')
+      .trigger('click')
+    await wrapper
+      .get<HTMLButtonElement>('.permanent-delete-confirm-button')
+      .trigger('click')
+
     expect(wrapper.find('.deleted-tabs-panel').exists()).toBe(true)
     expect(wrapper.get('.deleted-tabs-empty').text()).toBe('削除済みタブはありません。')
     expect(wrapper.get<HTMLButtonElement>('.deleted-tabs-toggle').attributes('aria-expanded')).toBe(
       'true',
+    )
+    expect(document.activeElement).toBe(
+      wrapper.get<HTMLButtonElement>('.deleted-tabs-toggle').element,
     )
     wrapper.unmount()
   })
@@ -841,7 +937,7 @@ describe('App', () => {
     const wrapper = mount(App, { attachTo: document.body })
 
     await wrapper.get('.focus-mode-button').trigger('click')
-    await wrapper.get('.focus-tab-name-button').trigger('dblclick')
+    await wrapper.get('.focus-tab-name-button').trigger('keydown', { key: 'F2' })
     const nameInput = wrapper.get<HTMLInputElement>('.focus-tab-name-input')
     await nameInput.setValue('変更しない')
     await nameInput.trigger('keydown', { key: 'Escape' })
@@ -1178,6 +1274,7 @@ describe('App', () => {
     await input.trigger('keydown', { key: 'Enter' })
 
     expect(input.element.value).toBe('# 見出し\n')
+    await completeConversion()
     expect(wrapper.get<HTMLTextAreaElement>('#conversion-output').element.value).toBe(
       '*見出し*',
     )
@@ -1465,6 +1562,97 @@ describe('App', () => {
     expect(wrapper.get<HTMLTextAreaElement>('#conversion-output').element.value).toBe('*保存済み*')
     expect(localStorage.getItem(EDITOR_STATE_STORAGE_KEY)).not.toBeNull()
     expect(localStorage.getItem(LEGACY_MARKDOWN_DRAFT_STORAGE_KEY)).toBeNull()
+  })
+
+  it('画像を含む文書でも対応部分を変換し、画像だけを警告する', async () => {
+    const wrapper = mount(App)
+
+    await wrapper
+      .get<HTMLTextAreaElement>('#markdown-input')
+      .setValue('本文\n\n![説明](image.png)\n\n続き')
+    await completeConversion()
+
+    expect(wrapper.get<HTMLTextAreaElement>('#conversion-output').element.value).toBe(
+      '本文\n\n画像: 説明 (image.png)\n\n続き',
+    )
+    expect(wrapper.get('.warning-summary-button').text()).toBe('⚠ 警告 1件')
+  })
+
+  it('LocalStorage保存失敗を永続表示し、再試行成功後に解除する', async () => {
+    const setItem = vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
+      throw new DOMException('quota exceeded', 'QuotaExceededError')
+    })
+    const wrapper = mount(App)
+
+    const notice = wrapper.get('.storage-save-notice')
+    expect(notice.attributes('role')).toBe('alert')
+    expect(notice.text()).toContain('編集中の内容をコピーして')
+    expect(notice.text()).toContain('保存を再試行')
+
+    setItem.mockRestore()
+    await notice.get<HTMLButtonElement>('.app-notice-action').trigger('click')
+    await flushPromises()
+
+    expect(wrapper.find('.storage-save-notice').exists()).toBe(false)
+    expect(localStorage.getItem(EDITOR_STATE_STORAGE_KEY)).not.toBeNull()
+  })
+
+  it('破損したタブ保存値を上書きせず、復旧用コピー後に保存を再開する', async () => {
+    vi.spyOn(console, 'warn').mockImplementation(() => undefined)
+    const brokenValue = '{"version":1,"tabs":['
+    localStorage.setItem(EDITOR_STATE_STORAGE_KEY, brokenValue)
+    const writeText = vi.fn(() => Promise.resolve())
+    Object.defineProperty(navigator, 'clipboard', {
+      configurable: true,
+      value: { writeText },
+    })
+    const wrapper = mount(App)
+    const input = wrapper.get<HTMLTextAreaElement>('#markdown-input')
+
+    expect(wrapper.get('.storage-recovery-notice').text()).toContain(
+      '元データを上書きしないよう自動保存を停止しました',
+    )
+    expect(localStorage.getItem(EDITOR_STATE_STORAGE_KEY)).toBe(brokenValue)
+
+    await input.setValue('破損後に入力した内容')
+    await vi.advanceTimersByTimeAsync(EDITOR_CONTENT_SAVE_DELAY_MS)
+    expect(localStorage.getItem(EDITOR_STATE_STORAGE_KEY)).toBe(brokenValue)
+
+    await wrapper
+      .get('.storage-recovery-notice')
+      .get<HTMLButtonElement>('.app-notice-action')
+      .trigger('click')
+    await flushPromises()
+
+    expect(writeText).toHaveBeenCalledWith(brokenValue)
+    expect(wrapper.find('.storage-recovery-notice').exists()).toBe(false)
+    expect(wrapper.get('.toast-notice').text()).toBe(
+      '破損した保存データを復旧用にコピーしました',
+    )
+    expect(localStorage.getItem(EDITOR_STATE_STORAGE_KEY)).toContain(
+      '破損後に入力した内容',
+    )
+  })
+
+  it('タブ保存値が空文字でも復旧通知を表示して保存を再開できる', async () => {
+    vi.spyOn(console, 'warn').mockImplementation(() => undefined)
+    localStorage.setItem(EDITOR_STATE_STORAGE_KEY, '')
+    const writeText = vi.fn(() => Promise.resolve())
+    Object.defineProperty(navigator, 'clipboard', {
+      configurable: true,
+      value: { writeText },
+    })
+    const wrapper = mount(App)
+
+    const notice = wrapper.get('.storage-recovery-notice')
+    expect(localStorage.getItem(EDITOR_STATE_STORAGE_KEY)).toBe('')
+
+    await notice.get<HTMLButtonElement>('.app-notice-action').trigger('click')
+    await flushPromises()
+
+    expect(writeText).toHaveBeenCalledWith('')
+    expect(wrapper.find('.storage-recovery-notice').exists()).toBe(false)
+    expect(localStorage.getItem(EDITOR_STATE_STORAGE_KEY)).not.toBe('')
   })
 
   it('選択した変換形式を保存し、再読み込み後も同じ形式で変換する', async () => {

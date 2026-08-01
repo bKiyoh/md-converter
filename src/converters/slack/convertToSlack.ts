@@ -12,7 +12,9 @@ import type {
   SourceLocation,
   TableNode,
 } from '../../types/markdown'
+import { formatUnsupportedInlineFallback } from '../../utils/unsupportedMarkdown'
 import { addRawHtmlWarning } from '../rawHtmlWarning'
+import { addUnsupportedInlineWarning } from '../unsupportedInline'
 
 type RenderContext = {
   warnings: ConversionWarning[]
@@ -58,6 +60,10 @@ function renderInlineNode(
       const label = renderInlineNodes(node.children, context, mode)
       return `[${label}](${node.url})`
     }
+    case 'image':
+    case 'footnoteReference':
+      addUnsupportedInlineWarning(context.warnings, node)
+      return formatUnsupportedInlineFallback(node)
     case 'lineBreak':
       return '\n'
     case 'rawHtmlInline':

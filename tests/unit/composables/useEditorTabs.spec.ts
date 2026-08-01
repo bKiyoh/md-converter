@@ -311,6 +311,27 @@ describe('useEditorTabs', () => {
     expect(saved.tabs[0]?.content).toBe('破棄直前の内容')
   })
 
+  it('破損した保存値をコピー可能な状態で保持し、復旧後に保存を再開する', async () => {
+    vi.spyOn(console, 'warn').mockImplementation(() => undefined)
+    const brokenValue = '{"version":1,"tabs":['
+    const storage = createStorage({ [EDITOR_STATE_STORAGE_KEY]: brokenValue })
+    const { tabs } = mountTabs(storage)
+
+    expect(tabs.storageRecoveryData.value).toBe(brokenValue)
+    expect(storage.setItem).not.toHaveBeenCalled()
+
+    tabs.markdown.value = '破損後に入力した内容'
+    await vi.advanceTimersByTimeAsync(EDITOR_CONTENT_SAVE_DELAY_MS)
+
+    expect(storage.values.get(EDITOR_STATE_STORAGE_KEY)).toBe(brokenValue)
+    expect(storage.setItem).not.toHaveBeenCalled()
+    expect(tabs.saveError.value).toBeNull()
+
+    expect(tabs.resumeSavingAfterRecoveryCopy()).toBe(true)
+    expect(tabs.storageRecoveryData.value).toBeNull()
+    expect(storage.values.get(EDITOR_STATE_STORAGE_KEY)).toContain('破損後に入力した内容')
+  })
+
   it('Storageの読み書きが失敗してもタブ編集を継続する', async () => {
     const storage = createStorage()
     storage.getItem.mockImplementation(() => {
@@ -328,5 +349,15 @@ describe('useEditorTabs', () => {
     expect(added?.name).toBe('Untitled 2')
     expect(tabs.tabs.value[0]?.content).toBe('保存できなくても残る内容')
     expect(tabs.tabs.value).toHaveLength(2)
+    expect(tabs.saveError.value).toContain('ブラウザへの保存に失敗しました')
+
+    storage.setItem.mockImplementation((key: string, value: string) => {
+      storage.values.set(key, value)
+    })
+    expect(tabs.retrySave()).toBe(true)
+    expect(tabs.saveError.value).toBeNull()
+    expect(storage.values.get(EDITOR_STATE_STORAGE_KEY)).toContain(
+      '保存できなくても残る内容',
+    )
   })
 })

@@ -10,7 +10,10 @@ import { tooltipDirective as vTooltip } from '../../directives/tooltip'
 import type { MarkdownEditorViewState } from '../../types/editorView'
 import type { InputReplacementRule } from '../../types/inputReplacement'
 import type { TextEditResult } from '../../utils/markdownEditor'
-import type { TextMatch } from '../../utils/textSearch'
+import {
+  selectTextMatchesForHighlight,
+  type TextMatch,
+} from '../../utils/textSearch'
 import EditorInputGuideContent from './EditorInputGuideContent.vue'
 import SearchReplacePanel from './SearchReplacePanel.vue'
 
@@ -178,9 +181,13 @@ const {
 const searchHighlightSegments = computed<SearchHighlightSegment[]>(() => {
   const segments: SearchHighlightSegment[] = []
   const activeMatch = currentMatch.value
+  const highlightedMatches = selectTextMatchesForHighlight(
+    matches.value,
+    activeMatch,
+  )
   let offset = 0
 
-  for (const match of matches.value) {
+  for (const match of highlightedMatches) {
     if (match.start > offset) {
       segments.push({
         text: props.modelValue.slice(offset, match.start),

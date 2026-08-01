@@ -282,6 +282,58 @@ h2 {
   margin-bottom: 0;
 }
 
+.permanent-delete-backdrop {
+  z-index: 30;
+}
+
+.permanent-delete-dialog {
+  width: min(100%, 420px);
+}
+
+.permanent-delete-dialog h2 {
+  margin: 0 0 16px;
+  font-size: 1.25rem;
+}
+
+.permanent-delete-dialog p {
+  margin-bottom: 24px;
+}
+
+.permanent-delete-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.permanent-delete-cancel-button,
+.permanent-delete-confirm-button {
+  min-height: 40px;
+  padding: 8px 16px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text);
+  background: var(--surface);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.permanent-delete-confirm-button {
+  border-color: var(--error-border);
+  color: var(--error-text);
+  background: var(--error-bg);
+}
+
+.permanent-delete-cancel-button:hover,
+.permanent-delete-cancel-button:focus-visible {
+  background: var(--surface-muted);
+}
+
+.permanent-delete-confirm-button:hover,
+.permanent-delete-confirm-button:focus-visible {
+  filter: brightness(0.96);
+}
+
 .icon-button:hover:not(:disabled) {
   background: var(--surface-muted);
 }
@@ -1434,6 +1486,32 @@ h2 {
   align-items: center;
   justify-content: space-between;
   gap: 16px;
+}
+
+.storage-save-notice,
+.storage-recovery-notice {
+  margin: 0 0 12px;
+}
+
+.app-notice-action {
+  padding: 6px 10px;
+  border: 1px solid currentcolor;
+  border-radius: 7px;
+  flex: 0 0 auto;
+  color: inherit;
+  background: transparent;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.app-notice-action:hover {
+  background: color-mix(in srgb, currentcolor 10%, transparent);
+}
+
+.app-notice-action:focus-visible {
+  outline: 2px solid currentcolor;
+  outline-offset: 2px;
 }
 
 .toast-notice {
