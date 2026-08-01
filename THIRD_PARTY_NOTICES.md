@@ -5,12 +5,14 @@ This file records third-party packages resolved by `package-lock.json`. It is ge
 
 - Lockfile SHA-256: `6845210e9de98cc71a65d98576112700f029ba8f936e7e497d0d077eb9bead26`
 - Production dependency tree: 92 unique package/version entries
-- Development-only dependency tree: 264 unique package/version entries
+- Development-only dependency tree: 230 unique package/version entries
+- Optional dependency tree excluded: 34 unique package/version entries
 
 “Production” follows npm lockfile dependency classification conservatively and can include peer
 packages used during the build. Development-only packages are not included in the static `dist/`
-output, but are listed for repository and build-environment review. This notice covers third-party
-materials only and does not grant a license for the Md Converter project itself.
+output, but are listed for repository and build-environment review. Optional packages are excluded
+deterministically because their installation varies by platform and environment. This notice covers
+third-party materials only and does not grant a license for the Md Converter project itself.
 
 ## Dependency manifest
 
@@ -31,9 +33,6 @@ materials only and does not grant a license for the Md Converter project itself.
 | [@csstools/css-parser-algorithms@4.0.0](https://www.npmjs.com/package/@csstools/css-parser-algorithms/v/4.0.0) | development only | [MIT](https://spdx.org/licenses/MIT.html) | Copyright 2022 Romain Menke, Antonio Laguna <antonio@laguna.es> | [N140](#n140) |
 | [@csstools/css-syntax-patches-for-csstree@1.1.6](https://www.npmjs.com/package/@csstools/css-syntax-patches-for-csstree/v/1.1.6) | development only | [MIT-0](https://spdx.org/licenses/MIT-0.html) | Not stated in installed package metadata or local notice text | [N105](#n105) |
 | [@csstools/css-tokenizer@4.0.0](https://www.npmjs.com/package/@csstools/css-tokenizer/v/4.0.0) | development only | [MIT](https://spdx.org/licenses/MIT.html) | Copyright 2022 Romain Menke, Antonio Laguna <antonio@laguna.es> | [N140](#n140) |
-| [@emnapi/core@1.11.1](https://www.npmjs.com/package/@emnapi/core/v/1.11.1) | development only | [MIT](https://spdx.org/licenses/MIT.html) | Not stated in installed package metadata or local notice text | package metadata only |
-| [@emnapi/runtime@1.11.1](https://www.npmjs.com/package/@emnapi/runtime/v/1.11.1) | development only | [MIT](https://spdx.org/licenses/MIT.html) | Not stated in installed package metadata or local notice text | package metadata only |
-| [@emnapi/wasi-threads@1.2.2](https://www.npmjs.com/package/@emnapi/wasi-threads/v/1.2.2) | development only | [MIT](https://spdx.org/licenses/MIT.html) | Not stated in installed package metadata or local notice text | package metadata only |
 | [@eslint-community/eslint-utils@4.9.1](https://www.npmjs.com/package/@eslint-community/eslint-utils/v/4.9.1) | development only | [MIT](https://spdx.org/licenses/MIT.html) | Copyright (c) 2018 Toru Nagashima | [N087](#n087) |
 | [@eslint-community/regexpp@4.12.2](https://www.npmjs.com/package/@eslint-community/regexpp/v/4.12.2) | development only | [MIT](https://spdx.org/licenses/MIT.html) | Copyright (c) 2018 Toru Nagashima | [N087](#n087) |
 | [@eslint/config-array@0.23.5](https://www.npmjs.com/package/@eslint/config-array/v/0.23.5) | development only | [Apache-2.0](https://spdx.org/licenses/Apache-2.0.html) | Nicholas C. Zakas | [N026](#n026) |
@@ -49,31 +48,13 @@ materials only and does not grant a license for the Md Converter project itself.
 | [@humanwhocodes/retry@0.4.3](https://www.npmjs.com/package/@humanwhocodes/retry/v/0.4.3) | development only | [Apache-2.0](https://spdx.org/licenses/Apache-2.0.html) | Nicholas C. Zaks | [N026](#n026) |
 | [@isaacs/cliui@8.0.2](https://www.npmjs.com/package/@isaacs/cliui/v/8.0.2) | development only | [ISC](https://spdx.org/licenses/ISC.html) | Copyright (c) 2015, Contributors | [N094](#n094) |
 | [@jridgewell/sourcemap-codec@1.5.5](https://www.npmjs.com/package/@jridgewell/sourcemap-codec/v/1.5.5) | production | [MIT](https://spdx.org/licenses/MIT.html) | Copyright 2024 Justin Ridgewell <justin@ridgewell.name> | [N082](#n082) |
-| [@napi-rs/wasm-runtime@1.1.6](https://www.npmjs.com/package/@napi-rs/wasm-runtime/v/1.1.6) | development only | [MIT](https://spdx.org/licenses/MIT.html) | Not stated in installed package metadata or local notice text | package metadata only |
 | [@nodelib/fs.scandir@2.1.5](https://www.npmjs.com/package/@nodelib/fs.scandir/v/2.1.5) | development only | [MIT](https://spdx.org/licenses/MIT.html) | Not stated in installed package metadata or local notice text | [N024](#n024) |
 | [@nodelib/fs.stat@2.0.5](https://www.npmjs.com/package/@nodelib/fs.stat/v/2.0.5) | development only | [MIT](https://spdx.org/licenses/MIT.html) | Not stated in installed package metadata or local notice text | [N024](#n024) |
 | [@nodelib/fs.walk@1.2.8](https://www.npmjs.com/package/@nodelib/fs.walk/v/1.2.8) | development only | [MIT](https://spdx.org/licenses/MIT.html) | Not stated in installed package metadata or local notice text | [N024](#n024) |
 | [@one-ini/wasm@0.1.1](https://www.npmjs.com/package/@one-ini/wasm/v/0.1.1) | development only | [MIT](https://spdx.org/licenses/MIT.html) | Copyright (c) 2019 Jed Mao | [N139](#n139) |
 | [@oxc-project/types@0.139.0](https://www.npmjs.com/package/@oxc-project/types/v/0.139.0) | development only | [MIT](https://spdx.org/licenses/MIT.html) | Copyright (c) 2024-present VoidZero Inc. & Contributors; Copyright (c) 2023 Boshen | [N053](#n053) |
-| [@pkgjs/parseargs@0.11.0](https://www.npmjs.com/package/@pkgjs/parseargs/v/0.11.0) | development only | [MIT](https://spdx.org/licenses/MIT.html) | Not stated in installed package metadata or local notice text | [N026](#n026) |
-| [@rolldown/binding-android-arm64@1.1.5](https://www.npmjs.com/package/@rolldown/binding-android-arm64/v/1.1.5) | development only | [MIT](https://spdx.org/licenses/MIT.html) | Not stated in installed package metadata or local notice text | package metadata only |
-| [@rolldown/binding-darwin-arm64@1.1.5](https://www.npmjs.com/package/@rolldown/binding-darwin-arm64/v/1.1.5) | development only | [MIT](https://spdx.org/licenses/MIT.html) | Not stated in installed package metadata or local notice text | package metadata only |
-| [@rolldown/binding-darwin-x64@1.1.5](https://www.npmjs.com/package/@rolldown/binding-darwin-x64/v/1.1.5) | development only | [MIT](https://spdx.org/licenses/MIT.html) | Not stated in installed package metadata or local notice text | package metadata only |
-| [@rolldown/binding-freebsd-x64@1.1.5](https://www.npmjs.com/package/@rolldown/binding-freebsd-x64/v/1.1.5) | development only | [MIT](https://spdx.org/licenses/MIT.html) | Not stated in installed package metadata or local notice text | package metadata only |
-| [@rolldown/binding-linux-arm-gnueabihf@1.1.5](https://www.npmjs.com/package/@rolldown/binding-linux-arm-gnueabihf/v/1.1.5) | development only | [MIT](https://spdx.org/licenses/MIT.html) | Not stated in installed package metadata or local notice text | package metadata only |
-| [@rolldown/binding-linux-arm64-gnu@1.1.5](https://www.npmjs.com/package/@rolldown/binding-linux-arm64-gnu/v/1.1.5) | development only | [MIT](https://spdx.org/licenses/MIT.html) | Not stated in installed package metadata or local notice text | package metadata only |
-| [@rolldown/binding-linux-arm64-musl@1.1.5](https://www.npmjs.com/package/@rolldown/binding-linux-arm64-musl/v/1.1.5) | development only | [MIT](https://spdx.org/licenses/MIT.html) | Not stated in installed package metadata or local notice text | package metadata only |
-| [@rolldown/binding-linux-ppc64-gnu@1.1.5](https://www.npmjs.com/package/@rolldown/binding-linux-ppc64-gnu/v/1.1.5) | development only | [MIT](https://spdx.org/licenses/MIT.html) | Not stated in installed package metadata or local notice text | package metadata only |
-| [@rolldown/binding-linux-s390x-gnu@1.1.5](https://www.npmjs.com/package/@rolldown/binding-linux-s390x-gnu/v/1.1.5) | development only | [MIT](https://spdx.org/licenses/MIT.html) | Not stated in installed package metadata or local notice text | package metadata only |
-| [@rolldown/binding-linux-x64-gnu@1.1.5](https://www.npmjs.com/package/@rolldown/binding-linux-x64-gnu/v/1.1.5) | development only | [MIT](https://spdx.org/licenses/MIT.html) | Not stated in installed package metadata or local notice text | package metadata only |
-| [@rolldown/binding-linux-x64-musl@1.1.5](https://www.npmjs.com/package/@rolldown/binding-linux-x64-musl/v/1.1.5) | development only | [MIT](https://spdx.org/licenses/MIT.html) | Not stated in installed package metadata or local notice text | package metadata only |
-| [@rolldown/binding-openharmony-arm64@1.1.5](https://www.npmjs.com/package/@rolldown/binding-openharmony-arm64/v/1.1.5) | development only | [MIT](https://spdx.org/licenses/MIT.html) | Not stated in installed package metadata or local notice text | package metadata only |
-| [@rolldown/binding-wasm32-wasi@1.1.5](https://www.npmjs.com/package/@rolldown/binding-wasm32-wasi/v/1.1.5) | development only | [MIT](https://spdx.org/licenses/MIT.html) | Not stated in installed package metadata or local notice text | package metadata only |
-| [@rolldown/binding-win32-arm64-msvc@1.1.5](https://www.npmjs.com/package/@rolldown/binding-win32-arm64-msvc/v/1.1.5) | development only | [MIT](https://spdx.org/licenses/MIT.html) | Not stated in installed package metadata or local notice text | package metadata only |
-| [@rolldown/binding-win32-x64-msvc@1.1.5](https://www.npmjs.com/package/@rolldown/binding-win32-x64-msvc/v/1.1.5) | development only | [MIT](https://spdx.org/licenses/MIT.html) | Not stated in installed package metadata or local notice text | [upstream](https://github.com/rolldown/rolldown) |
 | [@rolldown/pluginutils@1.0.1](https://www.npmjs.com/package/@rolldown/pluginutils/v/1.0.1) | development only | [MIT](https://spdx.org/licenses/MIT.html) | Copyright (c) 2026-present, rolldown/plugins repository contributors | [N032](#n032) |
 | [@standard-schema/spec@1.1.0](https://www.npmjs.com/package/@standard-schema/spec/v/1.1.0) | development only | [MIT](https://spdx.org/licenses/MIT.html) | Copyright (c) 2024 Colin McDonnell | [N060](#n060) |
-| [@tybys/wasm-util@0.10.3](https://www.npmjs.com/package/@tybys/wasm-util/v/0.10.3) | development only | [MIT](https://spdx.org/licenses/MIT.html) | Not stated in installed package metadata or local notice text | package metadata only |
 | [@types/chai@5.2.3](https://www.npmjs.com/package/@types/chai/v/5.2.3) | development only | [MIT](https://spdx.org/licenses/MIT.html) | Not stated in installed package metadata or local notice text | [N159](#n159) |
 | [@types/debug@4.1.13](https://www.npmjs.com/package/@types/debug/v/4.1.13) | production | [MIT](https://spdx.org/licenses/MIT.html) | Not stated in installed package metadata or local notice text | [N159](#n159) |
 | [@types/deep-eql@4.0.2](https://www.npmjs.com/package/@types/deep-eql/v/4.0.2) | development only | [MIT](https://spdx.org/licenses/MIT.html) | Not stated in installed package metadata or local notice text | [N159](#n159) |
@@ -189,7 +170,6 @@ materials only and does not grant a license for the Md Converter project itself.
 | [flat-cache@4.0.1](https://www.npmjs.com/package/flat-cache/v/4.0.1) | development only | [MIT](https://spdx.org/licenses/MIT.html) | Jared Wray https://jaredwray.com | [N152](#n152) |
 | [flatted@3.4.2](https://www.npmjs.com/package/flatted/v/3.4.2) | development only | [ISC](https://spdx.org/licenses/ISC.html) | Copyright (c) 2018-2020, Andrea Giammarchi, @WebReflection | [N072](#n072) |
 | [foreground-child@3.3.1](https://www.npmjs.com/package/foreground-child/v/3.3.1) | development only | [ISC](https://spdx.org/licenses/ISC.html) | Copyright (c) 2015-2023 Isaac Z. Schlueter and Contributors | [N057](#n057) |
-| [fsevents@2.3.3](https://www.npmjs.com/package/fsevents/v/2.3.3) | development only | [MIT](https://spdx.org/licenses/MIT.html) | Not stated in installed package metadata or local notice text | package metadata only |
 | [glob@10.5.0](https://www.npmjs.com/package/glob/v/10.5.0) | development only | [ISC](https://spdx.org/licenses/ISC.html) | Copyright (c) 2009-2023 Isaac Z. Schlueter and Contributors | [N030](#n030) |
 | [glob-parent@5.1.2](https://www.npmjs.com/package/glob-parent/v/5.1.2) | development only | [ISC](https://spdx.org/licenses/ISC.html) | Copyright (c) 2015, 2019 Elan Shanker | [N069](#n069) |
 | [glob-parent@6.0.2](https://www.npmjs.com/package/glob-parent/v/6.0.2) | development only | [ISC](https://spdx.org/licenses/ISC.html) | Copyright (c) 2015, 2019 Elan Shanker, 2021 Blaine Bublitz <blaine.bublitz@gmail.com>, Eric Schoffstall <yo@contra.io> and other contributors | [N025](#n025) |
@@ -215,17 +195,6 @@ materials only and does not grant a license for the Md Converter project itself.
 | [keyv@4.5.4](https://www.npmjs.com/package/keyv/v/4.5.4) | development only | [MIT](https://spdx.org/licenses/MIT.html) | Jared Wray <me@jaredwray.com> (http://jaredwray.com) | [upstream](https://github.com/jaredwray/keyv) |
 | [levn@0.4.1](https://www.npmjs.com/package/levn/v/0.4.1) | development only | [MIT](https://spdx.org/licenses/MIT.html) | George Zahariev <z@georgezahariev.com> | [N009](#n009) |
 | [lightningcss@1.32.0](https://www.npmjs.com/package/lightningcss/v/1.32.0) | development only | [MPL-2.0](https://spdx.org/licenses/MPL-2.0.html) | Not stated in installed package metadata or local notice text | [N054](#n054) |
-| [lightningcss-android-arm64@1.32.0](https://www.npmjs.com/package/lightningcss-android-arm64/v/1.32.0) | development only | [MPL-2.0](https://spdx.org/licenses/MPL-2.0.html) | Not stated in installed package metadata or local notice text | package metadata only |
-| [lightningcss-darwin-arm64@1.32.0](https://www.npmjs.com/package/lightningcss-darwin-arm64/v/1.32.0) | development only | [MPL-2.0](https://spdx.org/licenses/MPL-2.0.html) | Not stated in installed package metadata or local notice text | package metadata only |
-| [lightningcss-darwin-x64@1.32.0](https://www.npmjs.com/package/lightningcss-darwin-x64/v/1.32.0) | development only | [MPL-2.0](https://spdx.org/licenses/MPL-2.0.html) | Not stated in installed package metadata or local notice text | package metadata only |
-| [lightningcss-freebsd-x64@1.32.0](https://www.npmjs.com/package/lightningcss-freebsd-x64/v/1.32.0) | development only | [MPL-2.0](https://spdx.org/licenses/MPL-2.0.html) | Not stated in installed package metadata or local notice text | package metadata only |
-| [lightningcss-linux-arm-gnueabihf@1.32.0](https://www.npmjs.com/package/lightningcss-linux-arm-gnueabihf/v/1.32.0) | development only | [MPL-2.0](https://spdx.org/licenses/MPL-2.0.html) | Not stated in installed package metadata or local notice text | package metadata only |
-| [lightningcss-linux-arm64-gnu@1.32.0](https://www.npmjs.com/package/lightningcss-linux-arm64-gnu/v/1.32.0) | development only | [MPL-2.0](https://spdx.org/licenses/MPL-2.0.html) | Not stated in installed package metadata or local notice text | package metadata only |
-| [lightningcss-linux-arm64-musl@1.32.0](https://www.npmjs.com/package/lightningcss-linux-arm64-musl/v/1.32.0) | development only | [MPL-2.0](https://spdx.org/licenses/MPL-2.0.html) | Not stated in installed package metadata or local notice text | package metadata only |
-| [lightningcss-linux-x64-gnu@1.32.0](https://www.npmjs.com/package/lightningcss-linux-x64-gnu/v/1.32.0) | development only | [MPL-2.0](https://spdx.org/licenses/MPL-2.0.html) | Not stated in installed package metadata or local notice text | package metadata only |
-| [lightningcss-linux-x64-musl@1.32.0](https://www.npmjs.com/package/lightningcss-linux-x64-musl/v/1.32.0) | development only | [MPL-2.0](https://spdx.org/licenses/MPL-2.0.html) | Not stated in installed package metadata or local notice text | package metadata only |
-| [lightningcss-win32-arm64-msvc@1.32.0](https://www.npmjs.com/package/lightningcss-win32-arm64-msvc/v/1.32.0) | development only | [MPL-2.0](https://spdx.org/licenses/MPL-2.0.html) | Not stated in installed package metadata or local notice text | package metadata only |
-| [lightningcss-win32-x64-msvc@1.32.0](https://www.npmjs.com/package/lightningcss-win32-x64-msvc/v/1.32.0) | development only | [MPL-2.0](https://spdx.org/licenses/MPL-2.0.html) | Not stated in installed package metadata or local notice text | [N054](#n054) |
 | [locate-path@6.0.0](https://www.npmjs.com/package/locate-path/v/6.0.0) | development only | [MIT](https://spdx.org/licenses/MIT.html) | Sindre Sorhus sindresorhus@gmail.com https://sindresorhus.com | [N015](#n015) |
 | [longest-streak@3.1.0](https://www.npmjs.com/package/longest-streak/v/3.1.0) | production | [MIT](https://spdx.org/licenses/MIT.html) | Copyright (c) 2015 Titus Wormer <mailto:tituswormer@gmail.com> | [N041](#n041) |
 | [lru-cache@10.4.3](https://www.npmjs.com/package/lru-cache/v/10.4.3) | development only | [ISC](https://spdx.org/licenses/ISC.html) | Copyright (c) 2010-2023 Isaac Z. Schlueter and Contributors | [N085](#n085) |
@@ -337,7 +306,6 @@ materials only and does not grant a license for the Md Converter project itself.
 | [tr46@6.0.0](https://www.npmjs.com/package/tr46/v/6.0.0) | development only | [MIT](https://spdx.org/licenses/MIT.html) | Sebastian Mayr <npm@smayr.name> | [N073](#n073) |
 | [trough@2.2.0](https://www.npmjs.com/package/trough/v/2.2.0) | production | [MIT](https://spdx.org/licenses/MIT.html) | Copyright (c) 2016 Titus Wormer <tituswormer@gmail.com> | [N135](#n135) |
 | [ts-api-utils@2.5.0](https://www.npmjs.com/package/ts-api-utils/v/2.5.0) | development only | [MIT](https://spdx.org/licenses/MIT.html) | JoshuaKGoldberg npm@joshuakgoldberg.com | [N107](#n107) |
-| [tslib@2.8.1](https://www.npmjs.com/package/tslib/v/2.8.1) | development only | [0BSD](https://spdx.org/licenses/0BSD.html) | Not stated in installed package metadata or local notice text | package metadata only |
 | [type-check@0.4.0](https://www.npmjs.com/package/type-check/v/0.4.0) | development only | [MIT](https://spdx.org/licenses/MIT.html) | George Zahariev <z@georgezahariev.com> | [N009](#n009) |
 | [typescript@6.0.3](https://www.npmjs.com/package/typescript/v/6.0.3) | production | [Apache-2.0](https://spdx.org/licenses/Apache-2.0.html) | Microsoft Corp. | [N111](#n111) |
 | [typescript-eslint@8.63.0](https://www.npmjs.com/package/typescript-eslint/v/8.63.0) | development only | [MIT](https://spdx.org/licenses/MIT.html) | Copyright (c) 2019 typescript-eslint and other contributors | [N100](#n100) |
@@ -1056,7 +1024,7 @@ IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 ### N026
 
-Applies to: @eslint/config-array@0.23.5 (LICENSE), @eslint/config-helpers@0.6.0 (LICENSE), @eslint/core@1.2.1 (LICENSE), @eslint/object-schema@3.0.5 (LICENSE), @eslint/plugin-kit@0.7.2 (LICENSE), @humanfs/core@0.19.2 (LICENSE), @humanfs/node@0.16.8 (LICENSE), @humanwhocodes/module-importer@1.0.1 (LICENSE), @humanwhocodes/retry@0.4.3 (LICENSE), @pkgjs/parseargs@0.11.0 (LICENSE)
+Applies to: @eslint/config-array@0.23.5 (LICENSE), @eslint/config-helpers@0.6.0 (LICENSE), @eslint/core@1.2.1 (LICENSE), @eslint/object-schema@3.0.5 (LICENSE), @eslint/plugin-kit@0.7.2 (LICENSE), @humanfs/core@0.19.2 (LICENSE), @humanfs/node@0.16.8 (LICENSE), @humanwhocodes/module-importer@1.0.1 (LICENSE), @humanwhocodes/retry@0.4.3 (LICENSE)
 
 ```text
 Apache License
@@ -2438,7 +2406,7 @@ SOFTWARE.
 
 ### N054
 
-Applies to: lightningcss-win32-x64-msvc@1.32.0 (LICENSE), lightningcss@1.32.0 (LICENSE)
+Applies to: lightningcss@1.32.0 (LICENSE)
 
 ```text
 Mozilla Public License Version 2.0

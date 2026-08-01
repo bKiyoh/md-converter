@@ -8,6 +8,10 @@ import {
 } from 'node:fs'
 import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import {
+  collectNoticePackages,
+  loadInstalledPackageMetadata,
+} from './license-notice-packages.mjs'
 
 const projectRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const lockPath = resolve(projectRoot, 'package-lock.json')
@@ -16,15 +20,6 @@ const checkOnly = process.argv.includes('--check')
 
 const lockText = readFileSync(lockPath, 'utf8')
 const lock = JSON.parse(lockText)
-
-function getPackageName(packagePath) {
-  const packageSuffix = packagePath.split('node_modules/').at(-1)
-  const pathParts = packageSuffix.split('/')
-
-  return pathParts[0].startsWith('@')
-    ? pathParts.slice(0, 2).join('/')
-    : pathParts[0]
-}
 
 function normalizeAuthor(author) {
   if (typeof author === 'string') {
@@ -45,18 +40,6 @@ function normalizeRepository(repository) {
   return repositoryUrl
     ? repositoryUrl.replace(/^git\+/, '').replace(/\.git$/, '')
     : ''
-}
-
-function readPackageMetadata(packagePath, expectedVersion) {
-  const metadataPath = resolve(projectRoot, packagePath, 'package.json')
-
-  if (!existsSync(metadataPath)) {
-    return null
-  }
-
-  const metadata = JSON.parse(readFileSync(metadataPath, 'utf8'))
-
-  return metadata.version === expectedVersion ? metadata : null
 }
 
 function readNoticeDocuments(packagePath) {
@@ -96,38 +79,12 @@ function createFence(content) {
   return '`'.repeat(longestRun + 1)
 }
 
-const packagesByIdentity = new Map()
-
-for (const [packagePath, lockEntry] of Object.entries(lock.packages)) {
-  if (!packagePath.startsWith('node_modules/') || !lockEntry.version) {
-    continue
-  }
-
-  const name = getPackageName(packagePath)
-  const identity = `${name}@${lockEntry.version}`
-  const existing = packagesByIdentity.get(identity)
-
-  if (existing && (!existing.dev || lockEntry.dev)) {
-    continue
-  }
-
-  packagesByIdentity.set(identity, {
-    name,
-    version: lockEntry.version,
-    license: lockEntry.license ?? 'NOASSERTION',
-    dev: lockEntry.dev === true,
-    packagePath,
-  })
-}
-
-const packages = [...packagesByIdentity.values()].sort((left, right) =>
-  left.name.localeCompare(right.name, 'en') ||
-  left.version.localeCompare(right.version, 'en'),
-)
+const { packages, excludedOptionalPackageCount } = collectNoticePackages(lock)
 const documentGroupsByHash = new Map()
 
 for (const packageEntry of packages) {
-  const metadata = readPackageMetadata(
+  const metadata = loadInstalledPackageMetadata(
+    projectRoot,
     packageEntry.packagePath,
     packageEntry.version,
   )
@@ -143,8 +100,8 @@ for (const packageEntry of packages) {
     ),
   ]
 
-  packageEntry.author = normalizeAuthor(metadata?.author)
-  packageEntry.repository = normalizeRepository(metadata?.repository)
+  packageEntry.author = normalizeAuthor(metadata.author)
+  packageEntry.repository = normalizeRepository(metadata.repository)
   packageEntry.copyright = copyrightLines.join('; ')
   packageEntry.documentHashes = []
 
@@ -195,11 +152,13 @@ const lines = [
   `- Lockfile SHA-256: \`${lockHash}\``,
   `- Production dependency tree: ${productionCount} unique package/version entries`,
   `- Development-only dependency tree: ${developmentCount} unique package/version entries`,
+  `- Optional dependency tree excluded: ${excludedOptionalPackageCount} unique package/version entries`,
   '',
   '“Production” follows npm lockfile dependency classification conservatively and can include peer',
   'packages used during the build. Development-only packages are not included in the static `dist/`',
-  'output, but are listed for repository and build-environment review. This notice covers third-party',
-  'materials only and does not grant a license for the Md Converter project itself.',
+  'output, but are listed for repository and build-environment review. Optional packages are excluded',
+  'deterministically because their installation varies by platform and environment. This notice covers',
+  'third-party materials only and does not grant a license for the Md Converter project itself.',
   '',
   '## Dependency manifest',
   '',
