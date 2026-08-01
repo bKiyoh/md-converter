@@ -5,6 +5,7 @@ import type {
   MarkdownDocument,
   TableCellNode,
 } from '../types/markdown'
+import { formatUnsupportedInlineFallback } from './unsupportedMarkdown'
 
 function escapeHtml(value: string): string {
   return value
@@ -17,13 +18,17 @@ function escapeHtml(value: string): string {
 
 function getSafeLinkUrl(url: string): string | null {
   const normalized = url.trim()
-  const scheme = /^([a-z][a-z\d+.-]*):/i.exec(normalized)?.[1]?.toLowerCase()
 
-  if (scheme && !['http', 'https', 'mailto', 'tel'].includes(scheme)) {
+  if (/[\u0000-\u001f\u007f]/u.test(normalized)) {
     return null
   }
 
-  return normalized
+  try {
+    const parsed = new URL(normalized, 'https://preview.invalid')
+    return ['http:', 'https:', 'mailto:', 'tel:'].includes(parsed.protocol) ? normalized : null
+  } catch {
+    return null
+  }
 }
 
 function renderInline(node: InlineNode): string {
@@ -48,6 +53,9 @@ function renderInline(node: InlineNode): string {
       const title = node.title === null ? '' : ` title="${escapeHtml(node.title)}"`
       return `<a href="${escapeHtml(safeUrl)}"${title}>${contents}</a>`
     }
+    case 'image':
+    case 'footnoteReference':
+      return escapeHtml(formatUnsupportedInlineFallback(node))
     case 'lineBreak':
       return node.kind === 'hard' ? '<br>' : '\n'
     case 'rawHtmlInline':

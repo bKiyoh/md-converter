@@ -61,6 +61,21 @@ function updateEditingName(event: Event): void {
   const value = (event.target as HTMLInputElement).value
   editingName.value = Array.from(value).slice(0, MAX_TAB_NAME_LENGTH).join('')
 }
+
+function handleButtonKeydown(event: KeyboardEvent): void {
+  if (event.isComposing) {
+    return
+  }
+
+  if (event.key === 'F2') {
+    event.preventDefault()
+    event.stopPropagation()
+    void startRenaming()
+    return
+  }
+
+  emit('keydown', event)
+}
 </script>
 
 <template>
@@ -90,10 +105,15 @@ function updateEditingName(event: Event): void {
     :data-document-tab-id="variant === 'document-tab' ? tab.id : undefined"
     :aria-pressed="variant === 'document-tab' ? active : undefined"
     :aria-label="variant === 'focus' ? `${tab.name}の名前を変更` : undefined"
+    :aria-keyshortcuts="
+      variant === 'document-tab'
+        ? 'F2 Alt+ArrowLeft Alt+ArrowRight'
+        : 'F2'
+    "
     :draggable="variant === 'document-tab' && dragEnabled"
     @click="emit('select', tab.id)"
     @dblclick="startRenaming"
-    @keydown="emit('keydown', $event)"
+    @keydown="handleButtonKeydown"
     @dragstart="emit('dragstart', $event)"
     @dragend="emit('dragend', $event)"
   >

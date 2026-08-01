@@ -12,6 +12,8 @@ export type OutputFormatStorage = LocalStorageAccess
 
 export type UseOutputFormatPreferenceResult = {
   selectedFormat: Ref<OutputFormat>
+  saveError: Ref<string | null>
+  retrySave: () => boolean
 }
 
 function deserializeOutputFormat(storedValue: string | null): OutputFormat {
@@ -21,7 +23,8 @@ function deserializeOutputFormat(storedValue: string | null): OutputFormat {
 export function useOutputFormatPreference(
   storage?: OutputFormatStorage | null,
 ): UseOutputFormatPreferenceResult {
-  const selectedFormat = useDebouncedLocalStorage<OutputFormat>({
+  const { value: selectedFormat, saveError, retrySave } =
+    useDebouncedLocalStorage<OutputFormat>({
     key: OUTPUT_FORMAT_STORAGE_KEY,
     initialValue: DEFAULT_OUTPUT_FORMAT,
     deserialize: deserializeOutputFormat,
@@ -30,5 +33,5 @@ export function useOutputFormatPreference(
     storage,
   })
 
-  return { selectedFormat }
+  return { selectedFormat, saveError, retrySave }
 }

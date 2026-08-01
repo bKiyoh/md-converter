@@ -1,11 +1,12 @@
 <script setup lang="ts">
 import { nextTick, ref } from 'vue'
 import type { ConversionWarning } from '../../types/conversion'
+import type { MarkdownDocument } from '../../types/markdown'
 import ConversionWarnings from './ConversionWarnings.vue'
 import MarkdownPreview from './MarkdownPreview.vue'
 
 defineProps<{
-  markdown: string
+  document: MarkdownDocument
   output: string
   characterCount: number
   warnings: ConversionWarning[]
@@ -96,7 +97,7 @@ function handleViewTabKeydown(event: KeyboardEvent, currentView: OutputView): vo
       aria-labelledby="preview-view-tab"
     >
       <MarkdownPreview
-        :markdown="markdown"
+        :document="document"
         :editor-internal-scroll="editorInternalScroll"
       />
     </div>

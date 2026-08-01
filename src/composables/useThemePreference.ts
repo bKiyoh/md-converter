@@ -11,6 +11,8 @@ export type ThemePreference = 'light' | 'dark'
 
 export type UseThemePreferenceResult = {
   theme: Ref<ThemePreference>
+  saveError: Ref<string | null>
+  retrySave: () => boolean
 }
 
 function deserializeTheme(storedValue: string | null): ThemePreference {
@@ -20,7 +22,8 @@ function deserializeTheme(storedValue: string | null): ThemePreference {
 export function useThemePreference(
   storage?: LocalStorageAccess | null,
 ): UseThemePreferenceResult {
-  const theme = useDebouncedLocalStorage<ThemePreference>({
+  const { value: theme, saveError, retrySave } =
+    useDebouncedLocalStorage<ThemePreference>({
     key: THEME_PREFERENCE_STORAGE_KEY,
     initialValue: 'light',
     deserialize: deserializeTheme,
@@ -29,5 +32,5 @@ export function useThemePreference(
     storage,
   })
 
-  return { theme }
+  return { theme, saveError, retrySave }
 }

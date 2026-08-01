@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { computed, nextTick, onBeforeUnmount, ref } from 'vue'
+import { computed, nextTick, onBeforeUnmount, ref, shallowRef, watch } from 'vue'
 import AppIcon from './components/common/AppIcon.vue'
 import AppNotice from './components/common/AppNotice.vue'
 import AppTitleButton from './components/common/AppTitleButton.vue'
+import AppTitleIcon from './components/common/AppTitleIcon.vue'
 import IconButton from './components/common/IconButton.vue'
 import SettingsPopover from './components/common/SettingsPopover.vue'
 import InputReplacementManager from './components/common/InputReplacementManager.vue'
@@ -25,7 +26,9 @@ import { converterRegistry, outputFormatOptions } from './converters/converterRe
 import { tooltipDirective as vTooltip } from './directives/tooltip'
 import { parseMarkdown } from './parser/parseMarkdown'
 import type { ConversionResult } from './types/conversion'
+import type { MarkdownDocument } from './types/markdown'
 import { countCharacters } from './utils/countCharacters'
+import { CONVERSION_DEBOUNCE_DELAY_MS } from './utils/conversionTiming'
 
 const {
   tabs,
@@ -35,6 +38,10 @@ const {
   markdown,
   canAddTab,
   canDeleteTab,
+  storageRecoveryData,
+  resumeSavingAfterRecoveryCopy,
+  saveError: editorSaveError,
+  retrySave: retryEditorSave,
   addTab,
   selectTab,
   reorderTab,
@@ -43,12 +50,22 @@ const {
   restoreTab,
   permanentlyDeleteTab,
 } = useEditorTabs()
-const { theme } = useThemePreference()
-const { selectedFormat } = useOutputFormatPreference()
+const {
+  theme,
+  saveError: themeSaveError,
+  retrySave: retryThemeSave,
+} = useThemePreference()
+const {
+  selectedFormat,
+  saveError: outputFormatSaveError,
+  retrySave: retryOutputFormatSave,
+} = useOutputFormatPreference()
 const {
   editorInternalScroll,
   workspaceSplitRatio,
   normalizeFullWidthMarkdown,
+  saveError: appSettingsSaveError,
+  retrySave: retryAppSettingsSave,
 } = useAppSettings()
 const {
   settings: inputReplacementSettings,
@@ -57,6 +74,8 @@ const {
   setRuleEnabled: setInputReplacementRuleEnabled,
   deleteRule: deleteInputReplacementRule,
   setEnabled: setInputReplacementEnabled,
+  saveError: inputReplacementSaveError,
+  retrySave: retryInputReplacementSave,
 } = useInputReplacementSettings()
 const {
   setWorkspaceElement,
@@ -72,6 +91,10 @@ const {
   resetSplitRatio,
 } = useWorkspaceSplitter(workspaceSplitRatio)
 const { copy, notice } = useClipboard()
+const {
+  copy: copyRecoveryData,
+  notice: recoveryCopyNotice,
+} = useClipboard()
 const activePanel = ref<WorkspacePanel>('input')
 const markdownEditor = ref<MarkdownEditorController | null>(null)
 const {
@@ -85,7 +108,7 @@ const {
 })
 const inputTab = ref<HTMLButtonElement | null>(null)
 const outputTab = ref<HTMLButtonElement | null>(null)
-const modalCloseButton = ref<HTMLButtonElement | null>(null)
+const infoModal = ref<HTMLElement | null>(null)
 const isInfoModalOpen = ref<boolean>(false)
 const isInputReplacementManagerOpen = ref<boolean>(false)
 let infoTrigger: HTMLElement | null = null
@@ -99,13 +122,29 @@ type TabNotice = {
 }
 
 const tabNotice = ref<TabNotice | null>(null)
+const parsedDocument = shallowRef<MarkdownDocument>({ blocks: [] })
+const conversionFailed = ref<boolean>(false)
+const conversionPending = ref<boolean>(false)
+let conversionTimer: ReturnType<typeof setTimeout> | undefined
 
 type WorkspacePanel = 'input' | 'output'
 
 const conversionResult = computed<ConversionResult>(() => {
+  if (conversionFailed.value) {
+    return {
+      output: '',
+      warnings: [
+        {
+          code: 'invalid-structure',
+          message:
+            '予期しないエラーが発生し、変換を完了できませんでした。入力内容は保持されています。',
+        },
+      ],
+    }
+  }
+
   try {
-    const document = parseMarkdown(markdown.value)
-    return converterRegistry[selectedFormat.value].convert(document)
+    return converterRegistry[selectedFormat.value].convert(parsedDocument.value)
   } catch {
     return {
       output: '',
@@ -120,6 +159,54 @@ const conversionResult = computed<ConversionResult>(() => {
   }
 })
 
+function refreshParsedDocument(): void {
+  try {
+    parsedDocument.value = parseMarkdown(markdown.value)
+    conversionFailed.value = false
+  } catch {
+    conversionFailed.value = true
+  } finally {
+    conversionPending.value = false
+  }
+}
+
+refreshParsedDocument()
+
+function flushPendingConversion(): void {
+  if (conversionTimer !== undefined) {
+    clearTimeout(conversionTimer)
+    conversionTimer = undefined
+  }
+
+  refreshParsedDocument()
+}
+
+watch(
+  markdown,
+  () => {
+    if (conversionTimer !== undefined) {
+      clearTimeout(conversionTimer)
+    }
+
+    conversionPending.value = true
+    conversionTimer = setTimeout(() => {
+      conversionTimer = undefined
+      refreshParsedDocument()
+    }, CONVERSION_DEBOUNCE_DELAY_MS)
+  },
+  { flush: 'sync' },
+)
+
+watch(
+  selectedFormat,
+  () => {
+    if (conversionTimer !== undefined) {
+      flushPendingConversion()
+    }
+  },
+  { flush: 'sync' },
+)
+
 const inputCharacterCount = computed<number>(() => countCharacters(markdown.value))
 const outputCharacterCount = computed<number>(() =>
   countCharacters(conversionResult.value.output),
@@ -131,9 +218,54 @@ const copySucceeded = computed<boolean>(() => notice.value?.kind === 'success')
 const effectiveEditorInternalScroll = computed<boolean>(
   () => isFocusMode.value || editorInternalScroll.value,
 )
+const storageSaveError = computed<string | null>(
+  () =>
+    editorSaveError.value ??
+    themeSaveError.value ??
+    outputFormatSaveError.value ??
+    appSettingsSaveError.value ??
+    inputReplacementSaveError.value,
+)
+
+function retryFailedSaves(): void {
+  if (editorSaveError.value) {
+    retryEditorSave()
+  }
+  if (themeSaveError.value) {
+    retryThemeSave()
+  }
+  if (outputFormatSaveError.value) {
+    retryOutputFormatSave()
+  }
+  if (appSettingsSaveError.value) {
+    retryAppSettingsSave()
+  }
+  if (inputReplacementSaveError.value) {
+    retryInputReplacementSave()
+  }
+}
 
 async function copyOutput(): Promise<void> {
+  if (conversionTimer !== undefined) {
+    flushPendingConversion()
+  }
   await copy(conversionResult.value.output, `${formatLabel.value}形式でコピーしました`)
+}
+
+async function copyStorageRecoveryData(): Promise<void> {
+  if (storageRecoveryData.value === null) {
+    return
+  }
+
+  const copied = await copyRecoveryData(
+    storageRecoveryData.value,
+    '破損した保存データを復旧用にコピーしました',
+    '復旧用データのコピーに失敗しました。クリップボードの権限を確認してください。',
+  )
+
+  if (copied) {
+    resumeSavingAfterRecoveryCopy()
+  }
 }
 
 async function openEditorSearch(showReplace = false): Promise<void> {
@@ -180,7 +312,11 @@ async function openInfoModal(event: MouseEvent): Promise<void> {
   infoTrigger = event.currentTarget instanceof HTMLElement ? event.currentTarget : null
   isInfoModalOpen.value = true
   await nextTick()
-  modalCloseButton.value?.focus()
+  focusInfoModalCloseButton()
+}
+
+function focusInfoModalCloseButton(): void {
+  infoModal.value?.querySelector<HTMLButtonElement>('.info-modal-close-button')?.focus()
 }
 
 async function closeInfoModal(): Promise<void> {
@@ -205,7 +341,7 @@ function handleInfoModalKeydown(event: KeyboardEvent): void {
     void closeInfoModal()
   } else if (event.key === 'Tab') {
     event.preventDefault()
-    modalCloseButton.value?.focus()
+    focusInfoModalCloseButton()
   }
 }
 
@@ -240,6 +376,10 @@ function handleTabKeydown(event: KeyboardEvent, currentPanel: WorkspacePanel): v
 onBeforeUnmount(() => {
   if (tabNoticeTimer !== undefined) {
     clearTimeout(tabNoticeTimer)
+  }
+
+  if (conversionTimer !== undefined) {
+    clearTimeout(conversionTimer)
   }
 })
 </script>
@@ -307,7 +447,9 @@ onBeforeUnmount(() => {
               <IconButton
                 class="copy-button"
                 accessible-label="変換結果をコピー"
-                :disabled="conversionResult.output.length === 0"
+                :disabled="
+                  !conversionPending && conversionResult.output.length === 0
+                "
                 @click="copyOutput"
               >
                 <AppIcon :name="copySucceeded ? 'check' : 'copy'" />
@@ -317,11 +459,36 @@ onBeforeUnmount(() => {
         </div>
       </header>
 
+      <AppNotice
+        v-if="storageRecoveryData !== null"
+        class="storage-recovery-notice"
+        :notice="{
+          kind: 'error',
+          message:
+            '保存されたタブデータが破損しています。元データを上書きしないよう自動保存を停止しました。',
+        }"
+        action-label="復旧用データをコピー"
+        @action="copyStorageRecoveryData"
+      />
+
+      <AppNotice
+        v-if="storageSaveError"
+        class="storage-save-notice"
+        :notice="{ kind: 'error', message: storageSaveError }"
+        action-label="保存を再試行"
+        @action="retryFailedSaves"
+      />
+
       <Transition name="toast">
         <AppNotice
           v-if="!isFocusMode && tabNotice"
           class="toast-notice"
           :notice="tabNotice"
+        />
+        <AppNotice
+          v-else-if="!isFocusMode && recoveryCopyNotice"
+          class="toast-notice"
+          :notice="recoveryCopyNotice"
         />
         <AppNotice
           v-else-if="!isFocusMode && notice"
@@ -443,7 +610,7 @@ onBeforeUnmount(() => {
         </div>
         <OutputPanel
           v-show="!isFocusMode"
-          :markdown="markdown"
+          :document="parsedDocument"
           :output="conversionResult.output"
           :character-count="outputCharacterCount"
           :warnings="conversionResult.warnings"
@@ -458,6 +625,7 @@ onBeforeUnmount(() => {
       @click.self="closeInfoModal"
     >
       <section
+        ref="infoModal"
         class="info-modal"
         role="dialog"
         aria-modal="true"
@@ -465,21 +633,29 @@ onBeforeUnmount(() => {
         aria-describedby="info-modal-description info-modal-privacy"
         @keydown="handleInfoModalKeydown"
       >
-        <h2 id="info-modal-title">Markdown Converter</h2>
+        <div class="info-modal-header">
+          <div class="info-modal-title">
+            <AppTitleIcon
+              class="info-modal-title-icon"
+              :dark-mode="theme === 'dark'"
+              alt=""
+            />
+            <h2 id="info-modal-title">Md Converter</h2>
+          </div>
+          <IconButton
+            class="info-modal-close-button"
+            accessible-label="このアプリについてを閉じる"
+            @click="closeInfoModal"
+          >
+            <AppIcon name="close" />
+          </IconButton>
+        </div>
         <p id="info-modal-description">
-          貼り付け先に合わせて、ブラウザ内でリアルタイムに変換します。
+          入力支援や検索・置換、プレビューを備えたMarkdownエディターで、BacklogやSlack等へ変換・コピーできます。
         </p>
         <p id="info-modal-privacy">
           入力内容と設定はこのブラウザのLocalStorageに保存され、外部サーバーには送信されません。ブラウザのサイトデータを削除すると、保存内容も削除されます。
         </p>
-        <button
-          ref="modalCloseButton"
-          class="modal-close-button"
-          type="button"
-          @click="closeInfoModal"
-        >
-          閉じる
-        </button>
       </section>
     </div>
 

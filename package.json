@@ -12,7 +12,9 @@
     "preview": "vite preview",
     "lint": "eslint .",
     "type-check": "vue-tsc -b",
-    "test": "vitest run"
+    "test": "vitest run",
+    "licenses:generate": "node scripts/generate-third-party-notices.mjs",
+    "licenses:check": "node scripts/generate-third-party-notices.mjs --check"
   },
   "dependencies": {
     "remark-gfm": "^4.0.1",
