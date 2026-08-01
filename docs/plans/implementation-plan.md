@@ -87,3 +87,10 @@
 - Firefox、macOS Safari、Android Chrome、iOS／iPadOS Safariと各最低バージョンは、この作業環境では未確認とする
 - 日本語IME、ブラウザ標準Undo／Redo、Clipboardの許可・拒否、タッチ操作、320px幅、767px境界、200%ズームは実機で確認し、未実施の項目を確認済みとして扱わない
 - 対応範囲、確認方法、手動確認手順の正本は `../release/browser-verification.md` とする
+
+### ライセンスと画像由来の確認
+
+- `package-lock.json`の全依存を対象に、パッケージ名、固定バージョン、用途区分、ライセンス、著作権者または作者、ライセンス全文を`THIRD_PARTY_NOTICES.md`へ生成する
+- 依存変更時は`npm run licenses:generate`で通知を更新し、`npm run licenses:check`をリリース確認へ含める
+- 画像3点のGit導入履歴、元faviconのC2PA情報、現在の加工方法とハッシュを`../release/asset-provenance.md`へ記録する
+- タイトル画像2点は制作者と元の生成・加工方法をリポジトリから確定できないため、権利者が公開利用を承認するまで正式リリース条件を満たしたものとして扱わない

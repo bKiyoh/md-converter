@@ -127,6 +127,17 @@ Markdown文書と設定はブラウザのLocalStorageへ保存します。保存
 
 正確な導入バージョンは `package-lock.json` で固定しています。Pinia、Vue Router、UIライブラリは導入していません。Parserと中間表現の設計判断は、[`docs/architecture/parser-design.md`](docs/architecture/parser-design.md) を参照してください。
 
+## ライセンスと画像資産
+
+依存パッケージの名前、固定バージョン、ライセンス、著作権表示、ライセンス全文は
+[`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md) に収録しています。依存関係を変更した場合は
+`npm run licenses:generate` で更新し、`npm run licenses:check` でlockfileとの一致を確認します。
+
+タイトル画像とfaviconの確認できた生成・加工履歴、ハッシュ、公開前の権利確認事項は
+[`docs/release/asset-provenance.md`](docs/release/asset-provenance.md) に記録しています。本プロジェクト
+自身のソースコードライセンスは未選択であり、第三者通知は本プロジェクトの利用許諾を
+付与するものではありません。
+
 ## 既知の制約
 
 - 入力はCommonMarkを基礎としたGFMとして解析します。他のMarkdown方言、画像、脚注には対応していません。生HTMLは実行せず、文字列として保持して警告します。

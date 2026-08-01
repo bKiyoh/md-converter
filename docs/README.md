@@ -46,6 +46,8 @@ docs/
 | [`plans/implementation-plan.md`](plans/implementation-plan.md) | 現在のマイルストーン、対象範囲、完了条件 |
 | [`architecture/parser-design.md`](architecture/parser-design.md) | Parserの採用理由、中間表現へ保持する情報、制約 |
 | [`release/browser-verification.md`](release/browser-verification.md) | 正式対応ブラウザ、確認済み環境、リリース前の手動確認項目 |
+| [`release/asset-provenance.md`](release/asset-provenance.md) | 画像資産の生成・加工履歴、ハッシュ、公開前の権利確認事項 |
+| [`../THIRD_PARTY_NOTICES.md`](../THIRD_PARTY_NOTICES.md) | 依存パッケージの版、ライセンス、著作権表示、ライセンス全文 |
 
 実装計画は作業範囲を定める文書であり、製品仕様の正本ではない。設計文書は実装上の
 判断を記録する資料であり、製品仕様を上書きしない。
