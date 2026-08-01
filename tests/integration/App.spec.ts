@@ -1564,6 +1564,41 @@ describe('App', () => {
     expect(localStorage.getItem(LEGACY_MARKDOWN_DRAFT_STORAGE_KEY)).toBeNull()
   })
 
+  it('深くネストした保存済みMarkdownを解析できなくても入力を保持して起動する', async () => {
+    const deeplyNestedMarkdown = `${'> '.repeat(5_000)}deep`
+    localStorage.setItem(
+      EDITOR_STATE_STORAGE_KEY,
+      JSON.stringify({
+        version: 1,
+        tabs: [
+          {
+            id: 'deep-tab',
+            name: '深い引用',
+            content: deeplyNestedMarkdown,
+            createdAt: 1,
+            updatedAt: 1,
+          },
+        ],
+        activeTabId: 'deep-tab',
+        deletedTabs: [],
+      }),
+    )
+
+    const wrapper = mount(App)
+
+    expect(wrapper.find('.app').exists()).toBe(true)
+    expect(wrapper.get<HTMLTextAreaElement>('#markdown-input').element.value).toBe(
+      deeplyNestedMarkdown,
+    )
+    expect(wrapper.get<HTMLTextAreaElement>('#conversion-output').element.value).toBe('')
+    expect(wrapper.get('.warning-summary-button').text()).toBe('⚠ 警告 1件')
+
+    await wrapper.get('.warning-summary-button').trigger('click')
+    expect(wrapper.get('.warnings').text()).toContain(
+      '予期しないエラーが発生し、変換を完了できませんでした。入力内容は保持されています。',
+    )
+  })
+
   it('画像を含む文書でも対応部分を変換し、画像だけを警告する', async () => {
     const wrapper = mount(App)
 

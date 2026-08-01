@@ -122,7 +122,7 @@ type TabNotice = {
 }
 
 const tabNotice = ref<TabNotice | null>(null)
-const parsedDocument = shallowRef<MarkdownDocument>(parseMarkdown(markdown.value))
+const parsedDocument = shallowRef<MarkdownDocument>({ blocks: [] })
 const conversionFailed = ref<boolean>(false)
 const conversionPending = ref<boolean>(false)
 let conversionTimer: ReturnType<typeof setTimeout> | undefined
@@ -169,6 +169,8 @@ function refreshParsedDocument(): void {
     conversionPending.value = false
   }
 }
+
+refreshParsedDocument()
 
 function flushPendingConversion(): void {
   if (conversionTimer !== undefined) {
