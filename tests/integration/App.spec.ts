@@ -549,7 +549,7 @@ describe('App', () => {
     await closeButton.trigger('mouseenter')
     expect(document.body.querySelector('.app-tooltip')).toBeNull()
     expect(wrapper.get('#info-modal-description').text()).toBe(
-      '貼り付け先に合わせて、ブラウザ内でリアルタイムに変換します。',
+      '入力支援や検索・置換、プレビューを備えたMarkdownエディターで、BacklogやSlack等へ変換・コピーできます。',
     )
     expect(wrapper.get('#info-modal-privacy').text()).toBe(
       '入力内容と設定はこのブラウザのLocalStorageに保存され、外部サーバーには送信されません。ブラウザのサイトデータを削除すると、保存内容も削除されます。',

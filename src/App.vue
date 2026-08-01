@@ -489,7 +489,7 @@ onBeforeUnmount(() => {
           </IconButton>
         </div>
         <p id="info-modal-description">
-          貼り付け先に合わせて、ブラウザ内でリアルタイムに変換します。
+          入力支援や検索・置換、プレビューを備えたMarkdownエディターで、BacklogやSlack等へ変換・コピーできます。
         </p>
         <p id="info-modal-privacy">
           入力内容と設定はこのブラウザのLocalStorageに保存され、外部サーバーには送信されません。ブラウザのサイトデータを削除すると、保存内容も削除されます。
