@@ -113,6 +113,17 @@ describe('App', () => {
     const format = wrapper.get<HTMLSelectElement>('#output-format')
 
     expect(format.findAll('option')).toHaveLength(4)
+    expect(
+      format.findAll<HTMLOptionElement>('option').map((option) => ({
+        value: option.element.value,
+        label: option.text(),
+      })),
+    ).toEqual([
+      { value: 'backlog-notation', label: 'Backlog記法' },
+      { value: 'backlog-markdown', label: 'Backlog Markdown' },
+      { value: 'slack', label: 'Slack' },
+      { value: 'plain-text', label: 'プレーンテキスト' },
+    ])
 
     await input.setValue('**重要**')
     await format.setValue('backlog-notation')

@@ -1102,7 +1102,7 @@ h2 {
   position: absolute;
   z-index: 1;
   top: 50%;
-  left: 11px;
+  left: 0;
   display: grid;
   place-items: center;
   color: var(--muted);

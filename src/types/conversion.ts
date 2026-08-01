@@ -1,9 +1,9 @@
 import type { MarkdownDocument, SourceLocation } from './markdown'
 
 export const OUTPUT_FORMATS = [
-  'slack',
-  'backlog-markdown',
   'backlog-notation',
+  'backlog-markdown',
+  'slack',
   'plain-text',
 ] as const
 
