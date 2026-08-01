@@ -31,6 +31,18 @@ describe('convertToSlack', () => {
     })
   })
 
+  it('画像だけを代替テキストへ変換し、前後の本文を保持する', () => {
+    const result = convert('本文\n\n![説明](image.png)\n\n続き')
+
+    expect(result.output).toBe('本文\n\n画像: 説明 (image.png)\n\n続き')
+    expect(result.warnings).toEqual([
+      expect.objectContaining({
+        code: 'unsupported-image',
+        location: { line: 3, column: 1 },
+      }),
+    ])
+  })
+
   it('見出しを太字へ変換し、見出しレベルの情報損失を警告する', () => {
     const result = convert('## 見出し')
 

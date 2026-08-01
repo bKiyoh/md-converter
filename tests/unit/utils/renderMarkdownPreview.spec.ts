@@ -80,4 +80,13 @@ describe('renderMarkdownPreview', () => {
     expect(html).toContain('&lt;img src=x&gt;')
     expect(html).not.toContain('<img')
   })
+
+  it('画像を読み込まず代替テキストとURLを表示する', () => {
+    const html = renderMarkdownPreview(
+      parseMarkdownForPreview('本文\n\n![説明](https://example.com/image.png)\n\n続き'),
+    )
+
+    expect(html).toContain('<p>画像: 説明 (https://example.com/image.png)</p>')
+    expect(html).not.toContain('<img')
+  })
 })

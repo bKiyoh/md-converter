@@ -1,6 +1,9 @@
 import type {
   BlockContent,
   Definition,
+  FootnoteReference,
+  Image,
+  ImageReference,
   LinkReference,
   ListItem,
   PhrasingContent,
@@ -94,6 +97,43 @@ function normalizeLinkReference(
   )
 }
 
+function normalizeImage(node: Image): InlineNode {
+  return withLocation(
+    {
+      type: 'image' as const,
+      alt: node.alt ?? '',
+      url: node.url,
+    },
+    node.position?.start,
+  )
+}
+
+function normalizeImageReference(
+  node: ImageReference,
+  context: NormalizationContext,
+): InlineNode {
+  const definition = context.definitions.get(node.identifier)
+
+  return withLocation(
+    {
+      type: 'image' as const,
+      alt: node.alt ?? '',
+      url: definition?.url ?? null,
+    },
+    node.position?.start,
+  )
+}
+
+function normalizeFootnoteReference(node: FootnoteReference): InlineNode {
+  return withLocation(
+    {
+      type: 'footnoteReference' as const,
+      label: node.label ?? node.identifier,
+    },
+    node.position?.start,
+  )
+}
+
 function normalizeInlineNode(
   node: PhrasingContent,
   context: NormalizationContext,
@@ -140,6 +180,12 @@ function normalizeInlineNode(
       ]
     case 'linkReference':
       return [normalizeLinkReference(node, context)]
+    case 'image':
+      return [normalizeImage(node)]
+    case 'imageReference':
+      return [normalizeImageReference(node, context)]
+    case 'footnoteReference':
+      return [normalizeFootnoteReference(node)]
     case 'break':
       return [withLocation({ type: 'lineBreak' as const, kind: 'hard' as const }, node.position?.start)]
     case 'html':
@@ -152,10 +198,6 @@ function normalizeInlineNode(
           node.position?.start,
         ),
       ]
-    case 'image':
-    case 'imageReference':
-    case 'footnoteReference':
-      throw new Error(`MVP対象外のインラインノードです: ${node.type}`)
   }
 }
 

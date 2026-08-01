@@ -22,6 +22,34 @@ describe('convertToPlainText', () => {
     expect(convert('')).toEqual({ output: '', warnings: [] })
   })
 
+  it('画像だけを代替テキストへ変換し、前後の本文を保持する', () => {
+    const result = convert('本文\n\n![説明](image.png)\n\n続き')
+
+    expect(result.output).toBe('本文\n\n画像: 説明 (image.png)\n\n続き')
+    expect(result.warnings).toEqual([
+      expect.objectContaining({
+        code: 'unsupported-image',
+        location: { line: 3, column: 1 },
+      }),
+    ])
+  })
+
+  it('脚注参照をラベルへ変換して警告する', () => {
+    const result = convertToPlainText({
+      blocks: [
+        {
+          type: 'paragraph',
+          children: [{ type: 'footnoteReference', label: '注1' }],
+        },
+      ],
+    })
+
+    expect(result.output).toBe('脚注参照: 注1')
+    expect(result.warnings).toEqual([
+      expect.objectContaining({ code: 'unsupported-footnote' }),
+    ])
+  })
+
   it('見出しレベル1〜3を異なる表現へ警告なしで変換する', () => {
     expect(convert('# 見出し1\n\n## 見出し2\n\n### 見出し3')).toEqual({
       output: '【見出し1】\n\n■ 見出し2\n\n▼ 見出し3',

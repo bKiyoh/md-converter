@@ -1467,6 +1467,19 @@ describe('App', () => {
     expect(localStorage.getItem(LEGACY_MARKDOWN_DRAFT_STORAGE_KEY)).toBeNull()
   })
 
+  it('画像を含む文書でも対応部分を変換し、画像だけを警告する', async () => {
+    const wrapper = mount(App)
+
+    await wrapper
+      .get<HTMLTextAreaElement>('#markdown-input')
+      .setValue('本文\n\n![説明](image.png)\n\n続き')
+
+    expect(wrapper.get<HTMLTextAreaElement>('#conversion-output').element.value).toBe(
+      '本文\n\n画像: 説明 (image.png)\n\n続き',
+    )
+    expect(wrapper.get('.warning-summary-button').text()).toBe('⚠ 警告 1件')
+  })
+
   it('LocalStorage保存失敗を永続表示し、再試行成功後に解除する', async () => {
     const setItem = vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
       throw new DOMException('quota exceeded', 'QuotaExceededError')

@@ -5,6 +5,7 @@ import type {
   MarkdownDocument,
   TableCellNode,
 } from '../types/markdown'
+import { formatUnsupportedInlineFallback } from './unsupportedMarkdown'
 
 function escapeHtml(value: string): string {
   return value
@@ -52,6 +53,9 @@ function renderInline(node: InlineNode): string {
       const title = node.title === null ? '' : ` title="${escapeHtml(node.title)}"`
       return `<a href="${escapeHtml(safeUrl)}"${title}>${contents}</a>`
     }
+    case 'image':
+    case 'footnoteReference':
+      return escapeHtml(formatUnsupportedInlineFallback(node))
     case 'lineBreak':
       return node.kind === 'hard' ? '<br>' : '\n'
     case 'rawHtmlInline':

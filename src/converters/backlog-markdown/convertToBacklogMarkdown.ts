@@ -13,7 +13,9 @@ import type {
   TableAlignment,
   TableNode,
 } from '../../types/markdown'
+import { formatUnsupportedInlineFallback } from '../../utils/unsupportedMarkdown'
 import { addRawHtmlWarning } from '../rawHtmlWarning'
+import { addUnsupportedInlineWarning } from '../unsupportedInline'
 
 type RenderContext = {
   warnings: ConversionWarning[]
@@ -85,6 +87,10 @@ function renderInlineNode(node: InlineNode, context: InlineRenderContext): strin
       const title = node.title === null ? '' : ` "${renderLinkTitle(node.title)}"`
       return `[${label}](${renderLinkDestination(node.url)}${title})`
     }
+    case 'image':
+    case 'footnoteReference':
+      addUnsupportedInlineWarning(context.renderContext.warnings, node)
+      return escapeText(formatUnsupportedInlineFallback(node), context)
     case 'lineBreak':
       return node.kind === 'hard' ? '  \n' : '\n'
     case 'rawHtmlInline':
