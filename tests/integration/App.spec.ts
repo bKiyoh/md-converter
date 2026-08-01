@@ -535,10 +535,15 @@ describe('App', () => {
     await titleButton.trigger('click')
 
     const modal = wrapper.get('.info-modal')
-    const closeButton = wrapper.get<HTMLButtonElement>('.modal-close-button')
+    const closeButton = wrapper.get<HTMLButtonElement>('.info-modal-close-button')
     expect(modal.attributes('role')).toBe('dialog')
     expect(modal.attributes('aria-modal')).toBe('true')
     expect(wrapper.get('#info-modal-title').text()).toBe('Markdown Converter')
+    expect(closeButton.attributes('aria-label')).toBe('このアプリについてを閉じる')
+    expect(closeButton.attributes('data-tooltip')).toBe('')
+    expect(closeButton.find('[data-icon="close"]').exists()).toBe(true)
+    await closeButton.trigger('mouseenter')
+    expect(document.body.querySelector('.app-tooltip')).toBeNull()
     expect(wrapper.get('#info-modal-description').text()).toBe(
       '貼り付け先に合わせて、ブラウザ内でリアルタイムに変換します。',
     )
@@ -562,7 +567,13 @@ describe('App', () => {
     expect(findEvent.defaultPrevented).toBe(false)
     expect(wrapper.find('.search-replace-panel').exists()).toBe(false)
 
-    await modal.trigger('keydown', { key: 'Escape' })
+    await closeButton.trigger('click')
+
+    expect(wrapper.find('.info-modal').exists()).toBe(false)
+    expect(document.activeElement).toBe(titleButton.element)
+
+    await titleButton.trigger('click')
+    await wrapper.get('.info-modal').trigger('keydown', { key: 'Escape' })
 
     expect(wrapper.find('.info-modal').exists()).toBe(false)
     expect(document.activeElement).toBe(titleButton.element)

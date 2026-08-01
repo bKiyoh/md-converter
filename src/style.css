@@ -238,8 +238,12 @@ h2 {
   box-shadow: 0 20px 60px rgb(0 0 0 / 28%);
 }
 
-.info-modal h2 {
+.info-modal-header {
+  display: flex;
   margin-bottom: 12px;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
 }
 
 .info-modal p {
@@ -248,14 +252,8 @@ h2 {
   line-height: 1.7;
 }
 
-.modal-close-button {
-  min-height: 40px;
-  padding: 8px 18px;
-  border: 1px solid var(--accent);
-  border-radius: 8px;
-  color: var(--accent-contrast);
-  background: var(--accent);
-  font-weight: 700;
+.info-modal p:last-child {
+  margin-bottom: 0;
 }
 
 .icon-button:hover:not(:disabled) {
