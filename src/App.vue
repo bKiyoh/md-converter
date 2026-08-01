@@ -3,6 +3,7 @@ import { computed, nextTick, onBeforeUnmount, ref } from 'vue'
 import AppIcon from './components/common/AppIcon.vue'
 import AppNotice from './components/common/AppNotice.vue'
 import AppTitleButton from './components/common/AppTitleButton.vue'
+import AppTitleIcon from './components/common/AppTitleIcon.vue'
 import IconButton from './components/common/IconButton.vue'
 import SettingsPopover from './components/common/SettingsPopover.vue'
 import InputReplacementManager from './components/common/InputReplacementManager.vue'
@@ -85,7 +86,7 @@ const {
 })
 const inputTab = ref<HTMLButtonElement | null>(null)
 const outputTab = ref<HTMLButtonElement | null>(null)
-const modalCloseButton = ref<HTMLButtonElement | null>(null)
+const infoModal = ref<HTMLElement | null>(null)
 const isInfoModalOpen = ref<boolean>(false)
 const isInputReplacementManagerOpen = ref<boolean>(false)
 let infoTrigger: HTMLElement | null = null
@@ -180,7 +181,11 @@ async function openInfoModal(event: MouseEvent): Promise<void> {
   infoTrigger = event.currentTarget instanceof HTMLElement ? event.currentTarget : null
   isInfoModalOpen.value = true
   await nextTick()
-  modalCloseButton.value?.focus()
+  focusInfoModalCloseButton()
+}
+
+function focusInfoModalCloseButton(): void {
+  infoModal.value?.querySelector<HTMLButtonElement>('.info-modal-close-button')?.focus()
 }
 
 async function closeInfoModal(): Promise<void> {
@@ -205,7 +210,7 @@ function handleInfoModalKeydown(event: KeyboardEvent): void {
     void closeInfoModal()
   } else if (event.key === 'Tab') {
     event.preventDefault()
-    modalCloseButton.value?.focus()
+    focusInfoModalCloseButton()
   }
 }
 
@@ -458,6 +463,7 @@ onBeforeUnmount(() => {
       @click.self="closeInfoModal"
     >
       <section
+        ref="infoModal"
         class="info-modal"
         role="dialog"
         aria-modal="true"
@@ -465,21 +471,29 @@ onBeforeUnmount(() => {
         aria-describedby="info-modal-description info-modal-privacy"
         @keydown="handleInfoModalKeydown"
       >
-        <h2 id="info-modal-title">Markdown Converter</h2>
+        <div class="info-modal-header">
+          <div class="info-modal-title">
+            <AppTitleIcon
+              class="info-modal-title-icon"
+              :dark-mode="theme === 'dark'"
+              alt=""
+            />
+            <h2 id="info-modal-title">Md Converter</h2>
+          </div>
+          <IconButton
+            class="info-modal-close-button"
+            accessible-label="このアプリについてを閉じる"
+            @click="closeInfoModal"
+          >
+            <AppIcon name="close" />
+          </IconButton>
+        </div>
         <p id="info-modal-description">
-          貼り付け先に合わせて、ブラウザ内でリアルタイムに変換します。
+          入力支援や検索・置換、プレビューを備えたMarkdownエディターで、BacklogやSlack等へ変換・コピーできます。
         </p>
         <p id="info-modal-privacy">
           入力内容と設定はこのブラウザのLocalStorageに保存され、外部サーバーには送信されません。ブラウザのサイトデータを削除すると、保存内容も削除されます。
         </p>
-        <button
-          ref="modalCloseButton"
-          class="modal-close-button"
-          type="button"
-          @click="closeInfoModal"
-        >
-          閉じる
-        </button>
       </section>
     </div>
 

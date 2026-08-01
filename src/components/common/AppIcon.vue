@@ -61,8 +61,8 @@ defineProps<{
       <path d="M9.1 9a3 3 0 1 1 5.8 1c0 2-3 2-3 4M12 18h.01" />
     </template>
     <template v-else-if="name === 'file-output'">
-      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h8" />
-      <path d="M14 2v6h6M8 13h4M8 17h2M13 17h8M18 14l3 3-3 3" />
+      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z" />
+      <path d="M14 2v6h6M8 12h4M8 16h8M13 13l3 3-3 3" />
     </template>
     <template v-else-if="name === 'search'">
       <circle cx="11" cy="11" r="7" />
