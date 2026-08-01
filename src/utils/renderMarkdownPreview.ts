@@ -17,13 +17,17 @@ function escapeHtml(value: string): string {
 
 function getSafeLinkUrl(url: string): string | null {
   const normalized = url.trim()
-  const scheme = /^([a-z][a-z\d+.-]*):/i.exec(normalized)?.[1]?.toLowerCase()
 
-  if (scheme && !['http', 'https', 'mailto', 'tel'].includes(scheme)) {
+  if (/[\u0000-\u001f\u007f]/u.test(normalized)) {
     return null
   }
 
-  return normalized
+  try {
+    const parsed = new URL(normalized, 'https://preview.invalid')
+    return ['http:', 'https:', 'mailto:', 'tel:'].includes(parsed.protocol) ? normalized : null
+  } catch {
+    return null
+  }
 }
 
 function renderInline(node: InlineNode): string {
