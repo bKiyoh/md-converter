@@ -1,6 +1,5 @@
 <script setup lang="ts">
-import titleIconDark from '../../assets/title-icon-dark.png'
-import titleIconLight from '../../assets/title-icon-light.png'
+import AppTitleIcon from './AppTitleIcon.vue'
 import IconButton from './IconButton.vue'
 
 defineProps<{
@@ -19,10 +18,10 @@ const emit = defineEmits<{
     tooltip="このアプリについて"
     @click="emit('click', $event)"
   >
-    <img
+    <AppTitleIcon
       class="brand-title-icon"
-      :src="darkMode ? titleIconDark : titleIconLight"
-      alt="Markdown Converter"
+      :dark-mode="darkMode"
+      alt="Md Converter"
     />
   </IconButton>
 </template>

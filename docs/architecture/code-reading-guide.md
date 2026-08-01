@@ -4,7 +4,7 @@
 
 ## この文書の目的
 
-この文書は、Markdown Converterを変更・レビューする開発者に向けて、コードベースの
+この文書は、Md Converterを変更・レビューする開発者に向けて、コードベースの
 構成、主要な処理の流れ、責務の境界、状態管理、テストの保証範囲を説明する。
 
 すべてのコードを自力で再実装できることは目的としない。現在の構成を図にして説明でき、
@@ -25,7 +25,7 @@
 
 ## 1. プロダクトとシステム境界
 
-Markdown Converterは、Markdown文書をSlack、Backlog Markdown、Backlog記法、
+Md Converterは、Markdown文書をSlack、Backlog Markdown、Backlog記法、
 プレーンテキスト向けに変換するVue 3のシングルページアプリケーションである。
 
 | 項目 | 現在の構成 |

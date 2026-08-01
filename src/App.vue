@@ -3,6 +3,7 @@ import { computed, nextTick, onBeforeUnmount, ref } from 'vue'
 import AppIcon from './components/common/AppIcon.vue'
 import AppNotice from './components/common/AppNotice.vue'
 import AppTitleButton from './components/common/AppTitleButton.vue'
+import AppTitleIcon from './components/common/AppTitleIcon.vue'
 import IconButton from './components/common/IconButton.vue'
 import SettingsPopover from './components/common/SettingsPopover.vue'
 import InputReplacementManager from './components/common/InputReplacementManager.vue'
@@ -471,7 +472,14 @@ onBeforeUnmount(() => {
         @keydown="handleInfoModalKeydown"
       >
         <div class="info-modal-header">
-          <h2 id="info-modal-title">Markdown Converter</h2>
+          <div class="info-modal-title">
+            <AppTitleIcon
+              class="info-modal-title-icon"
+              :dark-mode="theme === 'dark'"
+              alt=""
+            />
+            <h2 id="info-modal-title">Md Converter</h2>
+          </div>
           <IconButton
             class="info-modal-close-button"
             accessible-label="このアプリについてを閉じる"

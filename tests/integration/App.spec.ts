@@ -522,7 +522,7 @@ describe('App', () => {
     expect(titleButton.attributes('aria-label')).toBe('このアプリについて')
     expect(titleButton.attributes('title')).toBeUndefined()
     expect(titleButton.attributes('data-tooltip')).toBe('このアプリについて')
-    expect(titleButton.get('.brand-title-icon').attributes('alt')).toBe('Markdown Converter')
+    expect(titleButton.get('.brand-title-icon').attributes('alt')).toBe('Md Converter')
     expect(wrapper.find('.info-button').exists()).toBe(false)
     expect(wrapper.find('.info-modal').exists()).toBe(false)
     expect(wrapper.get('.app-content').attributes()).not.toHaveProperty('inert')
@@ -538,7 +538,11 @@ describe('App', () => {
     const closeButton = wrapper.get<HTMLButtonElement>('.info-modal-close-button')
     expect(modal.attributes('role')).toBe('dialog')
     expect(modal.attributes('aria-modal')).toBe('true')
-    expect(wrapper.get('#info-modal-title').text()).toBe('Markdown Converter')
+    expect(wrapper.get('#info-modal-title').text()).toBe('Md Converter')
+    expect(wrapper.get('.info-modal-title-icon').attributes('alt')).toBe('')
+    expect(wrapper.get('.info-modal-title-icon').attributes('src')).toContain(
+      'title-icon-light.png',
+    )
     expect(closeButton.attributes('aria-label')).toBe('このアプリについてを閉じる')
     expect(closeButton.attributes('data-tooltip')).toBe('')
     expect(closeButton.find('[data-icon="close"]').exists()).toBe(true)
@@ -578,6 +582,17 @@ describe('App', () => {
     expect(wrapper.find('.info-modal').exists()).toBe(false)
     expect(document.activeElement).toBe(titleButton.element)
     wrapper.unmount()
+  })
+
+  it('情報モーダルのタイトルアイコンを現在のテーマに合わせる', async () => {
+    localStorage.setItem(THEME_PREFERENCE_STORAGE_KEY, 'dark')
+    const wrapper = mount(App)
+
+    await wrapper.get('.brand-title-button').trigger('click')
+
+    expect(wrapper.get('.info-modal-title-icon').attributes('src')).toContain(
+      'title-icon-dark.png',
+    )
   })
 
   it('設定ボタンでポップオーバーを開き、再押下で閉じる', async () => {
@@ -621,7 +636,7 @@ describe('App', () => {
     expect(wrapper.get('.format-field').element.nextElementSibling).toBe(
       wrapper.get('.copy-tooltip-target').element,
     )
-    expect(wrapper.get('.brand-title-icon').attributes('alt')).toBe('Markdown Converter')
+    expect(wrapper.get('.brand-title-icon').attributes('alt')).toBe('Md Converter')
     expect(wrapper.get('.brand-title-icon').attributes('src')).toContain('title-icon-light.png')
     expect(focusButton.attributes('aria-label')).toBe('フォーカスモードを開始')
     expect(focusButton.attributes('data-tooltip')).toBe('フォーカスモードを開始（Esc）')

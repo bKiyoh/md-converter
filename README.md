@@ -1,4 +1,4 @@
-# Markdown Converter
+# Md Converter
 
 Markdownで作成した文章を、Slack、Backlog、プレーンテキスト向けの形式へ変換・コピーするWebアプリです。入力、変換、自動保存はブラウザ内で完結し、入力内容を外部サーバーへ送信しません。
 
