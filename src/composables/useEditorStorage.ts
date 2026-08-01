@@ -1,4 +1,4 @@
-import { onBeforeUnmount, ref, type Ref } from 'vue'
+import { onBeforeUnmount, onMounted, ref, type Ref } from 'vue'
 import type { DeletedTab, EditorState, EditorTab } from '../types/editorTabs'
 import { STORAGE_SAVE_ERROR_MESSAGE } from './useDebouncedLocalStorage'
 
@@ -273,6 +273,24 @@ export function useEditorStorage(options: UseEditorStorageOptions): {
     return saveState()
   }
 
+  function flushPendingSave(): void {
+    if (!hasPendingSave) {
+      return
+    }
+
+    saveImmediately()
+  }
+
+  function handlePageHide(): void {
+    flushPendingSave()
+  }
+
+  function handleVisibilityChange(): void {
+    if (document.visibilityState === 'hidden') {
+      flushPendingSave()
+    }
+  }
+
   function scheduleSave(): void {
     if (saveTimer !== undefined) {
       clearTimeout(saveTimer)
@@ -290,14 +308,15 @@ export function useEditorStorage(options: UseEditorStorageOptions): {
     return saveImmediately()
   }
 
-  onBeforeUnmount(() => {
-    if (saveTimer !== undefined) {
-      clearTimeout(saveTimer)
-    }
+  onMounted(() => {
+    window.addEventListener('pagehide', handlePageHide)
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+  })
 
-    if (hasPendingSave) {
-      saveState()
-    }
+  onBeforeUnmount(() => {
+    window.removeEventListener('pagehide', handlePageHide)
+    document.removeEventListener('visibilitychange', handleVisibilityChange)
+    flushPendingSave()
   })
 
   return {

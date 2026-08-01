@@ -311,6 +311,44 @@ describe('useEditorTabs', () => {
     expect(saved.tabs[0]?.content).toBe('破棄直前の内容')
   })
 
+  it('保存待機中にページを離れても最新入力を直ちに保存する', async () => {
+    const storage = createStorage()
+    const { tabs } = mountTabs(storage)
+    storage.setItem.mockClear()
+    tabs.markdown.value = 'ページ離脱直前の内容'
+
+    window.dispatchEvent(new Event('pagehide'))
+
+    const saved = JSON.parse(storage.values.get(EDITOR_STATE_STORAGE_KEY)!) as {
+      tabs: Array<{ content: string }>
+    }
+    expect(saved.tabs[0]?.content).toBe('ページ離脱直前の内容')
+    expect(storage.setItem).toHaveBeenCalledOnce()
+
+    await vi.advanceTimersByTimeAsync(EDITOR_CONTENT_SAVE_DELAY_MS)
+    expect(storage.setItem).toHaveBeenCalledOnce()
+  })
+
+  it('保存待機中にページが非表示になっても最新入力を直ちに保存する', () => {
+    const visibilityState = vi
+      .spyOn(document, 'visibilityState', 'get')
+      .mockReturnValue('hidden')
+    const storage = createStorage()
+    const { tabs } = mountTabs(storage)
+    storage.setItem.mockClear()
+    tabs.markdown.value = 'バックグラウンド移行直前の内容'
+
+    document.dispatchEvent(new Event('visibilitychange'))
+
+    const saved = JSON.parse(storage.values.get(EDITOR_STATE_STORAGE_KEY)!) as {
+      tabs: Array<{ content: string }>
+    }
+    expect(saved.tabs[0]?.content).toBe('バックグラウンド移行直前の内容')
+    expect(storage.setItem).toHaveBeenCalledOnce()
+
+    visibilityState.mockRestore()
+  })
+
   it('破損した保存値をコピー可能な状態で保持し、復旧後に保存を再開する', async () => {
     vi.spyOn(console, 'warn').mockImplementation(() => undefined)
     const brokenValue = '{"version":1,"tabs":['
