@@ -458,7 +458,7 @@ onBeforeUnmount(() => {
       </header>
 
       <AppNotice
-        v-if="storageRecoveryData"
+        v-if="storageRecoveryData !== null"
         class="storage-recovery-notice"
         :notice="{
           kind: 'error',

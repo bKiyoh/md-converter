@@ -1634,6 +1634,27 @@ describe('App', () => {
     )
   })
 
+  it('タブ保存値が空文字でも復旧通知を表示して保存を再開できる', async () => {
+    vi.spyOn(console, 'warn').mockImplementation(() => undefined)
+    localStorage.setItem(EDITOR_STATE_STORAGE_KEY, '')
+    const writeText = vi.fn(() => Promise.resolve())
+    Object.defineProperty(navigator, 'clipboard', {
+      configurable: true,
+      value: { writeText },
+    })
+    const wrapper = mount(App)
+
+    const notice = wrapper.get('.storage-recovery-notice')
+    expect(localStorage.getItem(EDITOR_STATE_STORAGE_KEY)).toBe('')
+
+    await notice.get<HTMLButtonElement>('.app-notice-action').trigger('click')
+    await flushPromises()
+
+    expect(writeText).toHaveBeenCalledWith('')
+    expect(wrapper.find('.storage-recovery-notice').exists()).toBe(false)
+    expect(localStorage.getItem(EDITOR_STATE_STORAGE_KEY)).not.toBe('')
+  })
+
   it('選択した変換形式を保存し、再読み込み後も同じ形式で変換する', async () => {
     localStorage.setItem(LEGACY_MARKDOWN_DRAFT_STORAGE_KEY, '**重要**')
     const wrapper = mount(App)
