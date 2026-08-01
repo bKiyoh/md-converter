@@ -33,6 +33,8 @@ function mountSettings(storage: LocalStorageAccess | null): VueWrapper {
           v-model="normalizeFullWidthMarkdown"
           type="checkbox"
         />
+        <output data-testid="save-error">{{ saveError }}</output>
+        <button data-testid="retry-save" @click="retrySave">retry</button>
       `,
     }),
   )
@@ -221,7 +223,7 @@ describe('useAppSettings', () => {
       getItem: vi.fn(() => {
         throw new DOMException('denied')
       }),
-      setItem: vi.fn(() => {
+      setItem: vi.fn<(key: string, value: string) => void>(() => {
         throw new DOMException('quota exceeded')
       }),
     }
@@ -234,5 +236,13 @@ describe('useAppSettings', () => {
 
     expect(input.element.checked).toBe(false)
     expect(storage.setItem).toHaveBeenCalled()
+    expect(wrapper.get('[data-testid="save-error"]').text()).toContain(
+      'ブラウザへの保存に失敗しました',
+    )
+
+    storage.setItem.mockImplementation(() => undefined)
+    await wrapper.get('[data-testid="retry-save"]').trigger('click')
+
+    expect(wrapper.get('[data-testid="save-error"]').text()).toBe('')
   })
 })

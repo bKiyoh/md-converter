@@ -1,6 +1,15 @@
 import { onBeforeUnmount, ref, watch, type Ref } from 'vue'
 
+export const STORAGE_SAVE_ERROR_MESSAGE =
+  'ブラウザへの保存に失敗しました。編集中の内容をコピーしてから空き容量やブラウザ設定を確認し、保存を再試行してください。'
+
 export type LocalStorageAccess = Pick<Storage, 'getItem' | 'setItem'>
+
+export type UseDebouncedLocalStorageResult<Value> = {
+  value: Ref<Value>
+  saveError: Ref<string | null>
+  retrySave: () => boolean
+}
 
 type UseDebouncedLocalStorageOptions<Value> = {
   key: string
@@ -21,10 +30,11 @@ export function getBrowserLocalStorage(): LocalStorageAccess | null {
 
 export function useDebouncedLocalStorage<Value>(
   options: UseDebouncedLocalStorageOptions<Value>,
-): Ref<Value> {
+): UseDebouncedLocalStorageResult<Value> {
   const storage =
     options.storage === undefined ? getBrowserLocalStorage() : options.storage
   const value = ref(options.initialValue) as Ref<Value>
+  const saveError = ref<string | null>(null)
   let saveTimer: ReturnType<typeof setTimeout> | undefined
   let hasPendingSave = false
 
@@ -36,16 +46,31 @@ export function useDebouncedLocalStorage<Value>(
     }
   }
 
-  function saveValue(): void {
-    if (storage) {
-      try {
-        storage.setItem(options.key, options.serialize(value.value))
-      } catch {
-        // Storageが利用できなくても、画面上の状態と操作は継続させる。
-      }
+  function saveValue(): boolean {
+    hasPendingSave = false
+
+    if (!storage) {
+      saveError.value = STORAGE_SAVE_ERROR_MESSAGE
+      return false
     }
 
-    hasPendingSave = false
+    try {
+      storage.setItem(options.key, options.serialize(value.value))
+      saveError.value = null
+      return true
+    } catch {
+      saveError.value = STORAGE_SAVE_ERROR_MESSAGE
+      return false
+    }
+  }
+
+  function retrySave(): boolean {
+    if (saveTimer !== undefined) {
+      clearTimeout(saveTimer)
+      saveTimer = undefined
+    }
+
+    return saveValue()
   }
 
   watch(value, () => {
@@ -76,5 +101,5 @@ export function useDebouncedLocalStorage<Value>(
     }
   })
 
-  return value
+  return { value, saveError, retrySave }
 }

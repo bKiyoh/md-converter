@@ -23,6 +23,8 @@ export type UseInputReplacementSettingsOptions = {
 
 export type UseInputReplacementSettingsResult = {
   settings: Ref<InputReplacementSettings>
+  saveError: Ref<string | null>
+  retrySave: () => boolean
   addRule: (source: string, replacement: string) => boolean
   updateRule: (id: string, source: string, replacement: string) => boolean
   setRuleEnabled: (id: string, enabled: boolean) => boolean
@@ -116,7 +118,8 @@ function deserializeInputReplacementSettings(
 export function useInputReplacementSettings(
   options: UseInputReplacementSettingsOptions = {},
 ): UseInputReplacementSettingsResult {
-  const settings = useDebouncedLocalStorage<InputReplacementSettings>({
+  const { value: settings, saveError, retrySave } =
+    useDebouncedLocalStorage<InputReplacementSettings>({
     key: INPUT_REPLACEMENT_STORAGE_KEY,
     initialValue: createInitialSettings(),
     deserialize: deserializeInputReplacementSettings,
@@ -225,6 +228,8 @@ export function useInputReplacementSettings(
 
   return {
     settings,
+    saveError,
+    retrySave,
     addRule,
     updateRule,
     setRuleEnabled,

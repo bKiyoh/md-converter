@@ -27,6 +27,8 @@ export type UseEditorTabsResult = {
   markdown: WritableComputedRef<string>
   canAddTab: ComputedRef<boolean>
   canDeleteTab: ComputedRef<boolean>
+  saveError: Ref<string | null>
+  retrySave: () => boolean
   addTab: () => EditorTab | null
   selectTab: (id: string) => boolean
   reorderTab: (
@@ -130,7 +132,7 @@ export function useEditorTabs(options: UseEditorTabsOptions = {}): UseEditorTabs
     }
   }
 
-  const { saveImmediately, scheduleSave } = useEditorStorage({
+  const { saveError, saveImmediately, retrySave, scheduleSave } = useEditorStorage({
     storage,
     getState,
     removeLegacyDraftAfterSave: loaded.shouldRemoveLegacyDraft,
@@ -319,6 +321,8 @@ export function useEditorTabs(options: UseEditorTabsOptions = {}): UseEditorTabs
     markdown,
     canAddTab,
     canDeleteTab,
+    saveError,
+    retrySave,
     addTab,
     selectTab,
     reorderTab,

@@ -17,6 +17,8 @@ export type AppSettings = {
 
 export type UseAppSettingsResult = {
   settings: Ref<AppSettings>
+  saveError: Ref<string | null>
+  retrySave: () => boolean
   editorInternalScroll: WritableComputedRef<boolean>
   workspaceSplitRatio: WritableComputedRef<number>
   normalizeFullWidthMarkdown: WritableComputedRef<boolean>
@@ -73,7 +75,7 @@ function deserializeSettings(storedValue: string | null): AppSettings {
 export function useAppSettings(
   storage?: LocalStorageAccess | null,
 ): UseAppSettingsResult {
-  const settings = useDebouncedLocalStorage<AppSettings>({
+  const { value: settings, saveError, retrySave } = useDebouncedLocalStorage<AppSettings>({
     key: APP_SETTINGS_STORAGE_KEY,
     initialValue: createDefaultSettings(),
     deserialize: deserializeSettings,
@@ -111,6 +113,8 @@ export function useAppSettings(
 
   return {
     settings,
+    saveError,
+    retrySave,
     editorInternalScroll,
     workspaceSplitRatio,
     normalizeFullWidthMarkdown,

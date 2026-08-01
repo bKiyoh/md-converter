@@ -328,5 +328,15 @@ describe('useEditorTabs', () => {
     expect(added?.name).toBe('Untitled 2')
     expect(tabs.tabs.value[0]?.content).toBe('保存できなくても残る内容')
     expect(tabs.tabs.value).toHaveLength(2)
+    expect(tabs.saveError.value).toContain('ブラウザへの保存に失敗しました')
+
+    storage.setItem.mockImplementation((key: string, value: string) => {
+      storage.values.set(key, value)
+    })
+    expect(tabs.retrySave()).toBe(true)
+    expect(tabs.saveError.value).toBeNull()
+    expect(storage.values.get(EDITOR_STATE_STORAGE_KEY)).toContain(
+      '保存できなくても残る内容',
+    )
   })
 })

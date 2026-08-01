@@ -1436,6 +1436,31 @@ h2 {
   gap: 16px;
 }
 
+.storage-save-notice {
+  margin: 0 0 12px;
+}
+
+.app-notice-action {
+  padding: 6px 10px;
+  border: 1px solid currentcolor;
+  border-radius: 7px;
+  flex: 0 0 auto;
+  color: inherit;
+  background: transparent;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.app-notice-action:hover {
+  background: color-mix(in srgb, currentcolor 10%, transparent);
+}
+
+.app-notice-action:focus-visible {
+  outline: 2px solid currentcolor;
+  outline-offset: 2px;
+}
+
 .toast-notice {
   position: fixed;
   z-index: 20;

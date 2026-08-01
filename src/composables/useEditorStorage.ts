@@ -1,5 +1,6 @@
-import { onBeforeUnmount } from 'vue'
+import { onBeforeUnmount, ref, type Ref } from 'vue'
 import type { DeletedTab, EditorState, EditorTab } from '../types/editorTabs'
+import { STORAGE_SAVE_ERROR_MESSAGE } from './useDebouncedLocalStorage'
 
 export const EDITOR_STATE_STORAGE_KEY = 'markdown-editor-state-v1'
 export const LEGACY_MARKDOWN_DRAFT_STORAGE_KEY = 'md-converter:draft:v1'
@@ -210,9 +211,12 @@ export function getBrowserEditorStorage(): EditorStorageAccess | null {
 }
 
 export function useEditorStorage(options: UseEditorStorageOptions): {
+  saveError: Ref<string | null>
   saveImmediately: () => boolean
+  retrySave: () => boolean
   scheduleSave: () => void
 } {
+  const saveError = ref<string | null>(null)
   let saveTimer: ReturnType<typeof setTimeout> | undefined
   let hasPendingSave = false
   let shouldRemoveLegacyDraft = options.removeLegacyDraftAfterSave
@@ -220,6 +224,7 @@ export function useEditorStorage(options: UseEditorStorageOptions): {
   function saveState(): boolean {
     if (!options.storage) {
       hasPendingSave = false
+      saveError.value = STORAGE_SAVE_ERROR_MESSAGE
       return false
     }
 
@@ -232,9 +237,11 @@ export function useEditorStorage(options: UseEditorStorageOptions): {
       }
 
       hasPendingSave = false
+      saveError.value = null
       return true
     } catch {
       hasPendingSave = false
+      saveError.value = STORAGE_SAVE_ERROR_MESSAGE
       return false
     }
   }
@@ -270,5 +277,5 @@ export function useEditorStorage(options: UseEditorStorageOptions): {
     }
   })
 
-  return { saveImmediately, scheduleSave }
+  return { saveError, saveImmediately, retrySave: saveImmediately, scheduleSave }
 }

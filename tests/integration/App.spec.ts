@@ -1467,6 +1467,25 @@ describe('App', () => {
     expect(localStorage.getItem(LEGACY_MARKDOWN_DRAFT_STORAGE_KEY)).toBeNull()
   })
 
+  it('LocalStorage保存失敗を永続表示し、再試行成功後に解除する', async () => {
+    const setItem = vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
+      throw new DOMException('quota exceeded', 'QuotaExceededError')
+    })
+    const wrapper = mount(App)
+
+    const notice = wrapper.get('.storage-save-notice')
+    expect(notice.attributes('role')).toBe('alert')
+    expect(notice.text()).toContain('編集中の内容をコピーして')
+    expect(notice.text()).toContain('保存を再試行')
+
+    setItem.mockRestore()
+    await notice.get<HTMLButtonElement>('.app-notice-action').trigger('click')
+    await flushPromises()
+
+    expect(wrapper.find('.storage-save-notice').exists()).toBe(false)
+    expect(localStorage.getItem(EDITOR_STATE_STORAGE_KEY)).not.toBeNull()
+  })
+
   it('選択した変換形式を保存し、再読み込み後も同じ形式で変換する', async () => {
     localStorage.setItem(LEGACY_MARKDOWN_DRAFT_STORAGE_KEY, '**重要**')
     const wrapper = mount(App)

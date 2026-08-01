@@ -36,6 +36,8 @@ const {
   markdown,
   canAddTab,
   canDeleteTab,
+  saveError: editorSaveError,
+  retrySave: retryEditorSave,
   addTab,
   selectTab,
   reorderTab,
@@ -44,12 +46,22 @@ const {
   restoreTab,
   permanentlyDeleteTab,
 } = useEditorTabs()
-const { theme } = useThemePreference()
-const { selectedFormat } = useOutputFormatPreference()
+const {
+  theme,
+  saveError: themeSaveError,
+  retrySave: retryThemeSave,
+} = useThemePreference()
+const {
+  selectedFormat,
+  saveError: outputFormatSaveError,
+  retrySave: retryOutputFormatSave,
+} = useOutputFormatPreference()
 const {
   editorInternalScroll,
   workspaceSplitRatio,
   normalizeFullWidthMarkdown,
+  saveError: appSettingsSaveError,
+  retrySave: retryAppSettingsSave,
 } = useAppSettings()
 const {
   settings: inputReplacementSettings,
@@ -58,6 +70,8 @@ const {
   setRuleEnabled: setInputReplacementRuleEnabled,
   deleteRule: deleteInputReplacementRule,
   setEnabled: setInputReplacementEnabled,
+  saveError: inputReplacementSaveError,
+  retrySave: retryInputReplacementSave,
 } = useInputReplacementSettings()
 const {
   setWorkspaceElement,
@@ -132,6 +146,32 @@ const copySucceeded = computed<boolean>(() => notice.value?.kind === 'success')
 const effectiveEditorInternalScroll = computed<boolean>(
   () => isFocusMode.value || editorInternalScroll.value,
 )
+const storageSaveError = computed<string | null>(
+  () =>
+    editorSaveError.value ??
+    themeSaveError.value ??
+    outputFormatSaveError.value ??
+    appSettingsSaveError.value ??
+    inputReplacementSaveError.value,
+)
+
+function retryFailedSaves(): void {
+  if (editorSaveError.value) {
+    retryEditorSave()
+  }
+  if (themeSaveError.value) {
+    retryThemeSave()
+  }
+  if (outputFormatSaveError.value) {
+    retryOutputFormatSave()
+  }
+  if (appSettingsSaveError.value) {
+    retryAppSettingsSave()
+  }
+  if (inputReplacementSaveError.value) {
+    retryInputReplacementSave()
+  }
+}
 
 async function copyOutput(): Promise<void> {
   await copy(conversionResult.value.output, `${formatLabel.value}形式でコピーしました`)
@@ -321,6 +361,14 @@ onBeforeUnmount(() => {
           </div>
         </div>
       </header>
+
+      <AppNotice
+        v-if="storageSaveError"
+        class="storage-save-notice"
+        :notice="{ kind: 'error', message: storageSaveError }"
+        action-label="保存を再試行"
+        @action="retryFailedSaves"
+      />
 
       <Transition name="toast">
         <AppNotice
