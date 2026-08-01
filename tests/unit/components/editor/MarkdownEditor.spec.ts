@@ -679,6 +679,17 @@ describe('MarkdownEditor', () => {
     wrapper.unmount()
   })
 
+  it('総一致件数を維持しながらハイライトDOMを2,000件に制限する', async () => {
+    const wrapper = mountInteractiveEditor('x '.repeat(2_500))
+
+    await wrapper.get('.editor-search-button').trigger('click')
+    await wrapper.get<HTMLInputElement>('#markdown-search-input').setValue('x')
+
+    expect(wrapper.get('.search-result-status').text()).toBe('1 / 2500')
+    expect(wrapper.findAll('.search-highlight')).toHaveLength(2_000)
+    wrapper.unmount()
+  })
+
   it('textareaの縦横スクロール位置をハイライト層へ同期する', async () => {
     const wrapper = mountInteractiveEditor('match '.repeat(100))
 

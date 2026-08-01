@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   findMatchIndexAtOrAfter,
   findTextMatches,
+  selectTextMatchesForHighlight,
   replaceAllTextMatches,
   replaceTextMatch,
 } from '../../../src/utils/textSearch'
@@ -80,5 +81,27 @@ describe('text replacement', () => {
       value: '本文',
       count: 0,
     })
+  })
+})
+
+describe('selectTextMatchesForHighlight', () => {
+  it('総一致から現在位置を含む指定件数だけを選ぶ', () => {
+    const matches = Array.from({ length: 10 }, (_, index) => ({
+      start: index * 2,
+      end: index * 2 + 1,
+    }))
+
+    expect(selectTextMatchesForHighlight(matches, matches[8]!, 4)).toEqual(
+      matches.slice(6, 10),
+    )
+  })
+
+  it('現在位置がない場合は先頭から選ぶ', () => {
+    const matches = Array.from({ length: 5 }, (_, index) => ({
+      start: index,
+      end: index + 1,
+    }))
+
+    expect(selectTextMatchesForHighlight(matches, null, 2)).toEqual(matches.slice(0, 2))
   })
 })

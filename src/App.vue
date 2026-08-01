@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, nextTick, onBeforeUnmount, ref } from 'vue'
+import { computed, nextTick, onBeforeUnmount, ref, shallowRef, watch } from 'vue'
 import AppIcon from './components/common/AppIcon.vue'
 import AppNotice from './components/common/AppNotice.vue'
 import AppTitleButton from './components/common/AppTitleButton.vue'
@@ -26,7 +26,9 @@ import { converterRegistry, outputFormatOptions } from './converters/converterRe
 import { tooltipDirective as vTooltip } from './directives/tooltip'
 import { parseMarkdown } from './parser/parseMarkdown'
 import type { ConversionResult } from './types/conversion'
+import type { MarkdownDocument } from './types/markdown'
 import { countCharacters } from './utils/countCharacters'
+import { CONVERSION_DEBOUNCE_DELAY_MS } from './utils/conversionTiming'
 
 const {
   tabs,
@@ -120,13 +122,29 @@ type TabNotice = {
 }
 
 const tabNotice = ref<TabNotice | null>(null)
+const parsedDocument = shallowRef<MarkdownDocument>(parseMarkdown(markdown.value))
+const conversionFailed = ref<boolean>(false)
+const conversionPending = ref<boolean>(false)
+let conversionTimer: ReturnType<typeof setTimeout> | undefined
 
 type WorkspacePanel = 'input' | 'output'
 
 const conversionResult = computed<ConversionResult>(() => {
+  if (conversionFailed.value) {
+    return {
+      output: '',
+      warnings: [
+        {
+          code: 'invalid-structure',
+          message:
+            '予期しないエラーが発生し、変換を完了できませんでした。入力内容は保持されています。',
+        },
+      ],
+    }
+  }
+
   try {
-    const document = parseMarkdown(markdown.value)
-    return converterRegistry[selectedFormat.value].convert(document)
+    return converterRegistry[selectedFormat.value].convert(parsedDocument.value)
   } catch {
     return {
       output: '',
@@ -140,6 +158,52 @@ const conversionResult = computed<ConversionResult>(() => {
     }
   }
 })
+
+function refreshParsedDocument(): void {
+  try {
+    parsedDocument.value = parseMarkdown(markdown.value)
+    conversionFailed.value = false
+  } catch {
+    conversionFailed.value = true
+  } finally {
+    conversionPending.value = false
+  }
+}
+
+function flushPendingConversion(): void {
+  if (conversionTimer !== undefined) {
+    clearTimeout(conversionTimer)
+    conversionTimer = undefined
+  }
+
+  refreshParsedDocument()
+}
+
+watch(
+  markdown,
+  () => {
+    if (conversionTimer !== undefined) {
+      clearTimeout(conversionTimer)
+    }
+
+    conversionPending.value = true
+    conversionTimer = setTimeout(() => {
+      conversionTimer = undefined
+      refreshParsedDocument()
+    }, CONVERSION_DEBOUNCE_DELAY_MS)
+  },
+  { flush: 'sync' },
+)
+
+watch(
+  selectedFormat,
+  () => {
+    if (conversionTimer !== undefined) {
+      flushPendingConversion()
+    }
+  },
+  { flush: 'sync' },
+)
 
 const inputCharacterCount = computed<number>(() => countCharacters(markdown.value))
 const outputCharacterCount = computed<number>(() =>
@@ -180,6 +244,9 @@ function retryFailedSaves(): void {
 }
 
 async function copyOutput(): Promise<void> {
+  if (conversionTimer !== undefined) {
+    flushPendingConversion()
+  }
   await copy(conversionResult.value.output, `${formatLabel.value}形式でコピーしました`)
 }
 
@@ -308,6 +375,10 @@ onBeforeUnmount(() => {
   if (tabNoticeTimer !== undefined) {
     clearTimeout(tabNoticeTimer)
   }
+
+  if (conversionTimer !== undefined) {
+    clearTimeout(conversionTimer)
+  }
 })
 </script>
 
@@ -374,7 +445,9 @@ onBeforeUnmount(() => {
               <IconButton
                 class="copy-button"
                 accessible-label="変換結果をコピー"
-                :disabled="conversionResult.output.length === 0"
+                :disabled="
+                  !conversionPending && conversionResult.output.length === 0
+                "
                 @click="copyOutput"
               >
                 <AppIcon :name="copySucceeded ? 'check' : 'copy'" />
@@ -535,7 +608,7 @@ onBeforeUnmount(() => {
         </div>
         <OutputPanel
           v-show="!isFocusMode"
-          :markdown="markdown"
+          :document="parsedDocument"
           :output="conversionResult.output"
           :character-count="outputCharacterCount"
           :warnings="conversionResult.warnings"

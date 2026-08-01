@@ -13,6 +13,7 @@ import {
   THEME_PREFERENCE_STORAGE_KEY,
 } from '../../src/composables/useThemePreference'
 import { COPY_NOTICE_DURATION_MS } from '../../src/composables/useClipboard'
+import { CONVERSION_DEBOUNCE_DELAY_MS } from '../../src/utils/conversionTiming'
 import App from '../../src/App.vue'
 
 describe('App', () => {
@@ -27,6 +28,10 @@ describe('App', () => {
     vi.restoreAllMocks()
   })
 
+  async function completeConversion(): Promise<void> {
+    await vi.advanceTimersByTimeAsync(CONVERSION_DEBOUNCE_DELAY_MS)
+  }
+
   it('入力を選択中の形式へリアルタイム変換し、文字数を表示する', async () => {
     const wrapper = mount(App)
     const input = wrapper.get<HTMLTextAreaElement>('#markdown-input')
@@ -36,6 +41,7 @@ describe('App', () => {
     expect(output.attributes('readonly')).toBeDefined()
 
     await input.setValue('# 見出し😀')
+    await completeConversion()
 
     expect(output.element.value).toBe('*見出し😀*')
     expect(wrapper.get('#markdown-input-count').text()).toBe('6文字')
@@ -54,11 +60,26 @@ describe('App', () => {
     expect(wrapper.get('.warnings').text()).toContain('見出しレベルを表現できない')
   })
 
+  it('連続入力の最後から150ミリ秒後にだけ変換結果を更新する', async () => {
+    const wrapper = mount(App)
+    const input = wrapper.get<HTMLTextAreaElement>('#markdown-input')
+    const output = wrapper.get<HTMLTextAreaElement>('#conversion-output')
+
+    await input.setValue('最初')
+    await vi.advanceTimersByTimeAsync(CONVERSION_DEBOUNCE_DELAY_MS - 1)
+    expect(output.element.value).toBe('')
+
+    await input.setValue('最後')
+    await completeConversion()
+    expect(output.element.value).toBe('最後')
+  })
+
   it('同じ警告をまとめて件数と位置を重ね表示し、Escapeキーで閉じる', async () => {
     const wrapper = mount(App, { attachTo: document.body })
     const input = wrapper.get<HTMLTextAreaElement>('#markdown-input')
 
     await input.setValue('# 見出し1\n\n## 見出し2')
+    await completeConversion()
 
     const warningButton = wrapper.get<HTMLButtonElement>('.warning-summary-button')
     expect(warningButton.text()).toBe('⚠ 警告 2件')
@@ -92,6 +113,7 @@ describe('App', () => {
     const input = wrapper.get<HTMLTextAreaElement>('#markdown-input')
 
     await input.setValue('前の文章\n\n<div>テスト</div>\n\n後の文章')
+    await completeConversion()
 
     expect(wrapper.get<HTMLTextAreaElement>('#conversion-output').element.value).toBe(
       '前の文章\n\n<div>テスト</div>\n\n後の文章',
@@ -142,6 +164,7 @@ describe('App', () => {
     expect(wrapper.find('#markdown-preview').exists()).toBe(false)
 
     await input.setValue('# プレビュー')
+    await completeConversion()
     await previewTab.trigger('click')
 
     expect(previewTab.attributes('aria-selected')).toBe('true')
@@ -158,13 +181,14 @@ describe('App', () => {
     expect(wrapper.findAll('.panel-kicker').some((item) => item.text() === 'Output')).toBe(false)
   })
 
-  it('プレビュー表示中の入力変更を即時反映し、形式選択を維持する', async () => {
+  it('プレビュー表示中の入力変更をデバウンス後に反映し、形式選択を維持する', async () => {
     const wrapper = mount(App)
     const input = wrapper.get<HTMLTextAreaElement>('#markdown-input')
 
     await wrapper.get<HTMLSelectElement>('#output-format').setValue('plain-text')
     await wrapper.get('#preview-view-tab').trigger('click')
     await input.setValue('**更新**')
+    await completeConversion()
 
     expect(wrapper.get('#markdown-preview').html()).toContain('<strong>更新</strong>')
 
@@ -210,9 +234,11 @@ describe('App', () => {
     ).toBe(wrapper.findAll('.document-tab-item')[1]!.element)
     expect(input.element.value).toBe('')
     await input.setValue('2つ目')
+    await completeConversion()
     expect(wrapper.get<HTMLTextAreaElement>('#conversion-output').element.value).toBe('2つ目')
 
     await wrapper.findAll<HTMLButtonElement>('.document-tab-button')[0]!.trigger('click')
+    await completeConversion()
     expect(input.element.value).toBe('# 最初')
     expect(wrapper.get<HTMLTextAreaElement>('#conversion-output').element.value).toBe('*最初*')
     expect(wrapper.findAll('.document-tab-button')[0]?.attributes('aria-pressed')).toBe('true')
@@ -1178,6 +1204,7 @@ describe('App', () => {
     await input.trigger('keydown', { key: 'Enter' })
 
     expect(input.element.value).toBe('# 見出し\n')
+    await completeConversion()
     expect(wrapper.get<HTMLTextAreaElement>('#conversion-output').element.value).toBe(
       '*見出し*',
     )
@@ -1473,6 +1500,7 @@ describe('App', () => {
     await wrapper
       .get<HTMLTextAreaElement>('#markdown-input')
       .setValue('本文\n\n![説明](image.png)\n\n続き')
+    await completeConversion()
 
     expect(wrapper.get<HTMLTextAreaElement>('#conversion-output').element.value).toBe(
       '本文\n\n画像: 説明 (image.png)\n\n続き',

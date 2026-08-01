@@ -93,18 +93,20 @@ App.vue の markdown
   │     ├─ 選択中タブのcontentを更新
   │     └─ useEditorStorageへ保存を予約
   │
-  └─→ App.vue の conversionResult（computed）
+  └─→ App.vue の parsedDocument（150msデバウンス）
         ├─ parseMarkdown(markdown)
         │    ├─ remarkでmdastを生成
         │    └─ MarkdownDocumentへ正規化
-        └─ converterRegistry[selectedFormat].convert(document)
-             └─ ConversionResult
-                  ├─ output
-                  └─ warnings
+        ├─ converterRegistry[selectedFormat].convert(document)
+        │    └─ ConversionResult
+        │         ├─ output
+        │         └─ warnings
+        └─ MarkdownPreviewへ同じdocumentを渡す
 ```
 
-入力本文または選択中の変換形式が変わると、Vueの依存追跡によって
-`conversionResult` が再計算される。変換中に予期しない例外が発生した場合、
+入力本文が変わると待機中の解析を取り消し、最後の変更から150ミリ秒後に中間表現を
+更新する。選択中の変換形式が変わった場合とコピー操作時は、待機中の解析を直ちに
+完了して `conversionResult` を再計算する。変換中に予期しない例外が発生した場合、
 `App.vue` は入力を保持したまま空の出力と `invalid-structure` 警告を返す。
 
 出力形式とConverterの対応は
@@ -114,22 +116,21 @@ App.vue の markdown
 
 ### 2.3 Markdownプレビュー
 
-プレビューは変換結果とは別の出力経路を持つ。
+プレビューは変換結果と同じ解析済み中間表現から、別の描画経路で生成する。
 
 ```text
 OutputPanel
   └─ MarkdownPreview
-       ├─ parseMarkdownForPreview(markdown)
-       │    └─ 生HTMLノードを中間表現へ含めない
        └─ renderMarkdownPreview(document)
             ├─ 許可したHTML要素だけを生成
             ├─ テキストと属性をエスケープ
-            └─ URLスキームを検証
+            ├─ URLスキームを検証
+            └─ 生HTMLノードを描画しない
 ```
 
-変換用Parserとプレビュー用Parserは同じ正規化処理を利用するが、プレビューでは
-`ignoreHtml` を指定する。プレビューはConverterの文字列をHTMLへ変換せず、
-`MarkdownDocument` から直接HTMLを生成する。
+プレビューはConverterの文字列をHTMLへ変換せず、Appから受け取った
+`MarkdownDocument` から直接HTMLを生成する。中間表現に含まれる生HTMLノードは
+プレビューレンダラーで破棄し、DOMへ出力しない。
 
 ### 2.4 入力支援と検索・置換
 

@@ -8,6 +8,8 @@ export type ReplaceTextResult = {
   count: number
 }
 
+export const MAX_SEARCH_HIGHLIGHT_MATCHES = 2_000
+
 function containsLineBreak(value: string): boolean {
   return value.includes('\n') || value.includes('\r')
 }
@@ -37,6 +39,31 @@ export function findTextMatches(value: string, query: string): TextMatch[] {
   }
 
   return matches
+}
+
+export function selectTextMatchesForHighlight(
+  matches: readonly TextMatch[],
+  currentMatch: TextMatch | null,
+  limit = MAX_SEARCH_HIGHLIGHT_MATCHES,
+): TextMatch[] {
+  if (limit <= 0 || matches.length === 0) {
+    return []
+  }
+
+  if (matches.length <= limit) {
+    return matches.slice()
+  }
+
+  const currentIndex = currentMatch
+    ? matches.findIndex(
+        (match) =>
+          match.start === currentMatch.start && match.end === currentMatch.end,
+      )
+    : -1
+  const centeredStart = currentIndex < 0 ? 0 : currentIndex - Math.floor(limit / 2)
+  const start = Math.min(Math.max(centeredStart, 0), matches.length - limit)
+
+  return matches.slice(start, start + limit)
 }
 
 export function findMatchIndexAtOrAfter(
