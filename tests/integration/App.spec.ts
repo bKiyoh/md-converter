@@ -496,7 +496,7 @@ describe('App', () => {
     wrapper.unmount()
   })
 
-  it('削除済みタブを復元または完全削除しても一覧を閉じない', async () => {
+  it('完全削除を確認・キャンセルでき、確定後も削除済み一覧を維持する', async () => {
     const wrapper = mount(App, { attachTo: document.body })
 
     await wrapper.get('.document-tab-add-button').trigger('click')
@@ -520,10 +520,47 @@ describe('App', () => {
       .get<HTMLButtonElement>('.deleted-tab-action--permanent-delete')
       .trigger('click')
 
+    const dialog = wrapper.get('.permanent-delete-dialog')
+    const cancelButton = dialog.get<HTMLButtonElement>('.permanent-delete-cancel-button')
+    const confirmButton = dialog.get<HTMLButtonElement>('.permanent-delete-confirm-button')
+    expect(dialog.attributes('role')).toBe('dialog')
+    expect(dialog.attributes('aria-modal')).toBe('true')
+    expect(dialog.text()).toContain('「Untitled 3」を完全に削除します。元に戻せません。')
+    expect(document.activeElement).toBe(cancelButton.element)
+
+    await cancelButton.trigger('keydown', { key: 'Tab', shiftKey: true })
+    expect(document.activeElement).toBe(confirmButton.element)
+    await confirmButton.trigger('keydown', { key: 'Tab' })
+    expect(document.activeElement).toBe(cancelButton.element)
+
+    await dialog.trigger('keydown', { key: 'Escape' })
+    expect(wrapper.find('.permanent-delete-dialog').exists()).toBe(false)
+    expect(wrapper.find('.deleted-tab-action--permanent-delete').exists()).toBe(true)
+    expect(document.activeElement).toBe(
+      wrapper.get<HTMLButtonElement>('.deleted-tab-action--permanent-delete').element,
+    )
+
+    await wrapper
+      .get<HTMLButtonElement>('.deleted-tab-action--permanent-delete')
+      .trigger('click')
+    await wrapper.get('.permanent-delete-backdrop').trigger('click')
+    expect(wrapper.find('.permanent-delete-dialog').exists()).toBe(false)
+    expect(wrapper.find('.deleted-tab-action--permanent-delete').exists()).toBe(true)
+
+    await wrapper
+      .get<HTMLButtonElement>('.deleted-tab-action--permanent-delete')
+      .trigger('click')
+    await wrapper
+      .get<HTMLButtonElement>('.permanent-delete-confirm-button')
+      .trigger('click')
+
     expect(wrapper.find('.deleted-tabs-panel').exists()).toBe(true)
     expect(wrapper.get('.deleted-tabs-empty').text()).toBe('削除済みタブはありません。')
     expect(wrapper.get<HTMLButtonElement>('.deleted-tabs-toggle').attributes('aria-expanded')).toBe(
       'true',
+    )
+    expect(document.activeElement).toBe(
+      wrapper.get<HTMLButtonElement>('.deleted-tabs-toggle').element,
     )
     wrapper.unmount()
   })

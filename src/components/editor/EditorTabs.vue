@@ -29,10 +29,13 @@ const root = ref<HTMLElement | null>(null)
 const deletedTabsOpen = ref<boolean>(false)
 const deletedTabsToggle = ref<HTMLButtonElement | null>(null)
 const deletedTabsPanel = ref<HTMLElement | null>(null)
+const permanentDeleteDialog = ref<HTMLElement | null>(null)
+const pendingPermanentDelete = ref<DeletedTab | null>(null)
 const draggedTabId = ref<string | null>(null)
 const dropIndicator = ref<{ tabId: string; position: TabDropPosition } | null>(null)
 const reorderAnnouncement = ref<string>('')
 let suppressedSelectionId: string | null = null
+let permanentDeleteTrigger: HTMLButtonElement | null = null
 let selectionSuppressionTimer: ReturnType<typeof setTimeout> | undefined
 
 async function selectAndFocus(id: string): Promise<void> {
@@ -205,6 +208,79 @@ function requestDelete(id: string): void {
   emit('delete', id)
 }
 
+async function requestPermanentDelete(
+  tab: DeletedTab,
+  event: MouseEvent,
+): Promise<void> {
+  permanentDeleteTrigger =
+    event.currentTarget instanceof HTMLButtonElement ? event.currentTarget : null
+  pendingPermanentDelete.value = tab
+  await nextTick()
+  permanentDeleteDialog.value
+    ?.querySelector<HTMLButtonElement>('.permanent-delete-cancel-button')
+    ?.focus()
+}
+
+async function cancelPermanentDelete(): Promise<void> {
+  const trigger = permanentDeleteTrigger
+  pendingPermanentDelete.value = null
+  permanentDeleteTrigger = null
+  await nextTick()
+
+  if (trigger?.isConnected) {
+    trigger.focus()
+  } else {
+    deletedTabsToggle.value?.focus()
+  }
+}
+
+async function confirmPermanentDelete(): Promise<void> {
+  const tab = pendingPermanentDelete.value
+
+  if (!tab) {
+    return
+  }
+
+  pendingPermanentDelete.value = null
+  permanentDeleteTrigger = null
+  emit('permanentlyDelete', tab.id)
+  await nextTick()
+  deletedTabsToggle.value?.focus()
+}
+
+function handlePermanentDeleteDialogKeydown(event: KeyboardEvent): void {
+  if (event.key === 'Escape') {
+    event.preventDefault()
+    event.stopPropagation()
+    void cancelPermanentDelete()
+    return
+  }
+
+  if (event.key !== 'Tab') {
+    return
+  }
+
+  const buttons = Array.from(
+    permanentDeleteDialog.value?.querySelectorAll<HTMLButtonElement>(
+      'button:not(:disabled)',
+    ) ?? [],
+  )
+  const first = buttons[0]
+  const last = buttons.at(-1)
+
+  if (!first || !last) {
+    return
+  }
+
+  if (event.shiftKey && document.activeElement === first) {
+    event.preventDefault()
+    last.focus()
+  } else if (!event.shiftKey && document.activeElement === last) {
+    event.preventDefault()
+    first.focus()
+  }
+}
+
 function handleRename(id: string, name: string): void {
   emit('rename', id, name)
 }
@@ -249,7 +325,11 @@ onBeforeUnmount(() => {
 <template>
   <section ref="root" class="document-tabs" aria-label="Markdown文書">
     <p class="visually-hidden" aria-live="polite">{{ reorderAnnouncement }}</p>
-    <div class="document-tabs-main">
+    <div
+      class="document-tabs-main"
+      :aria-hidden="pendingPermanentDelete ? 'true' : undefined"
+      :inert="pendingPermanentDelete ? true : undefined"
+    >
       <div class="document-tablist" role="group" aria-label="Markdown文書タブ">
         <div
           v-for="(tab, index) in tabs"
@@ -331,6 +411,8 @@ onBeforeUnmount(() => {
       id="deleted-tabs-panel"
       ref="deletedTabsPanel"
       class="deleted-tabs-panel"
+      :aria-hidden="pendingPermanentDelete ? 'true' : undefined"
+      :inert="pendingPermanentDelete ? true : undefined"
       aria-labelledby="deleted-tabs-heading"
     >
       <h2 id="deleted-tabs-heading">削除済みタブ</h2>
@@ -353,7 +435,7 @@ onBeforeUnmount(() => {
               class="deleted-tab-action deleted-tab-action--permanent-delete"
               type="button"
               :aria-label="`${tab.name}を完全に削除`"
-              @click.stop="emit('permanentlyDelete', tab.id)"
+              @click.stop="requestPermanentDelete(tab, $event)"
             >
               <AppIcon name="trash-x" />
             </button>
@@ -361,5 +443,43 @@ onBeforeUnmount(() => {
         </li>
       </ul>
     </section>
+
+    <div
+      v-if="pendingPermanentDelete"
+      class="modal-backdrop permanent-delete-backdrop"
+      @click.self.stop="cancelPermanentDelete"
+    >
+      <section
+        ref="permanentDeleteDialog"
+        class="info-modal permanent-delete-dialog"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="permanent-delete-title"
+        aria-describedby="permanent-delete-description"
+        @click.stop
+        @keydown="handlePermanentDeleteDialogKeydown"
+      >
+        <h2 id="permanent-delete-title">タブを完全に削除</h2>
+        <p id="permanent-delete-description">
+          「{{ pendingPermanentDelete.name }}」を完全に削除します。元に戻せません。
+        </p>
+        <div class="permanent-delete-actions">
+          <button
+            class="permanent-delete-cancel-button"
+            type="button"
+            @click="cancelPermanentDelete"
+          >
+            キャンセル
+          </button>
+          <button
+            class="permanent-delete-confirm-button"
+            type="button"
+            @click="confirmPermanentDelete"
+          >
+            完全に削除
+          </button>
+        </div>
+      </section>
+    </div>
   </section>
 </template>
