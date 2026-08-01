@@ -200,6 +200,15 @@ PCでは左右2カラムとし、中央の区切りバーをドラッグして�
 
 成功・失敗の通知は、ヘッダーの操作と重ならず画面レイアウトへ影響しない固定配置のトーストとして右下に重ねて表示し、一定時間後に消去する。コピーボタンはConverterが返した変換結果の状態値をコピーする。
 
+## 対応ブラウザ
+
+- 正式対応はChrome 111以降、Edge 111以降、Firefox 114以降、macOS Safari 16.4以降、Android Chrome 111以降、iOS／iPadOS Safari 16.4以降とする
+- 最低バージョンはVite 8の本番ビルド既定値 `baseline-widely-available` に合わせ、独自のレガシーブラウザ向けpolyfillは追加しない
+- コピー機能はHTTPSまたはlocalhostの安全なコンテキストと、ブラウザによるClipboard APIの許可を前提とする
+- LocalStorageが無効または利用不可の場合は編集を継続し、永続警告を表示するが、再読み込み後の復元は保証しない
+- Internet Explorer、最低バージョン未満のブラウザ、アプリ内WebView、タッチ専用のタブ並べ替えは対象外とする
+- 確認済みのブラウザ版、確認日、確認方法、未確認範囲は `docs/release/browser-verification.md` に記録し、未確認項目を確認済みとしてリリース判断しない
+
 ## 現在の完了条件
 
 - 主要Markdown要素を各形式へ変換できる

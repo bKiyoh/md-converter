@@ -31,6 +31,26 @@ Markdownで作成した文章を、Slack、Backlog、プレーンテキスト向
 
 Node.jsの範囲は、使用するVite、Vitest、ESLintの公式な実行条件を満たす共通範囲です。開発環境と公開時のビルド環境には `.node-version` でNode.js `22.20.0`を指定しています。
 
+## 対応ブラウザ
+
+本番ビルドの正式対応範囲は次のとおりです。最低バージョンはVite 8の既定の
+`baseline-widely-available`（2026-01-01基準）に合わせています。
+
+| 環境 | 最低バージョン | 2026-08-01の確認状況 |
+| --- | ---: | --- |
+| Google Chrome（Windows、macOS） | 111 | Windows版150で本番ビルドのヘッドレス表示を確認 |
+| Microsoft Edge（Windows、macOS） | 111 | Windows版150で本番ビルドのヘッドレス表示を確認 |
+| Mozilla Firefox（Windows、macOS） | 114 | 実ブラウザ未確認 |
+| Safari（macOS） | 16.4 | 実機未確認 |
+| Google Chrome（Android） | 111 | 実機未確認 |
+| Safari（iOS、iPadOS） | 16.4 | 実機未確認 |
+
+Internet Explorer、上記未満のバージョン、アプリ内WebViewは対象外です。コピー機能は
+HTTPSまたはlocalhostの安全なコンテキストと、ブラウザによるClipboard APIの許可を
+必要とします。LocalStorageを無効化した環境では画面上の編集を続けられますが、再読み込み
+後の復元は保証しません。確認済みの版、確認方法、リリース前の手動確認項目は
+[`docs/release/browser-verification.md`](docs/release/browser-verification.md) に記録しています。
+
 ## セットアップ
 
 ```bash
@@ -113,8 +133,8 @@ Markdown文書と設定はブラウザのLocalStorageへ保存します。保存
 - Slackのテーブルはコードブロック、プレーンテキストのテーブルは2列の`項目：値`またはタブ区切りへ変換するため、列幅や配置が貼り付け先で揃わない場合があります。
 - Backlogのチェックリストは課題詳細だけで操作可能です。対象外の入力欄では文字列として表示されます。
 - 文字数はUnicodeコードポイント単位です。結合文字や複数コードポイントからなる絵文字は、見た目より多く数える場合があります。
-- Clipboard APIとLocalStorageの利用可否はブラウザ設定や実行環境に依存します。対応ブラウザの正式な範囲と実機検証は未確定です。
-- Markdownタブの並べ替えはブラウザ標準のDrag and Drop APIを使用し、PCのマウスまたはトラックパッド操作を対応範囲とします。タッチ専用操作とキーボードによる並べ替えには対応していません。
+- Clipboard APIとLocalStorageの利用可否はブラウザ設定や実行環境に依存します。ブラウザ別の確認状況は「対応ブラウザ」を参照してください。
+- Markdownタブのドラッグ並べ替えはPCのマウスまたはトラックパッド操作を対応範囲とし、タッチ専用操作には対応していません。キーボードでは `Alt + ←` / `Alt + →` で並べ替えられます。
 - 削除済みタブは30日間保持します。複数ウィンドウ間の同期・競合解決と独自の編集履歴には対応していません。
 - 入力置換のUndo／Redo単位はブラウザ標準textareaの編集履歴に依存するため、ブラウザによって操作単位が異なる場合があります。
 - 全角Markdown補正は直接入力とIME確定後だけを対象とし、貼り付けた全角Markdownの一括補正には対応していません。Undo／Redo単位はブラウザ標準textareaの編集履歴に依存します。
