@@ -34,7 +34,7 @@ function mountOutputFormatPreference(storage: OutputFormatStorage): VueWrapper {
 }
 
 describe('useOutputFormatPreference', () => {
-  it('保存値がない場合はSlackを使用する', () => {
+  it('保存値がない場合はBacklog記法を使用する', () => {
     const storage = {
       getItem: vi.fn(() => null),
       setItem: vi.fn(),
@@ -42,7 +42,8 @@ describe('useOutputFormatPreference', () => {
 
     const wrapper = mountOutputFormatPreference(storage)
 
-    expect(wrapper.get<HTMLSelectElement>('select').element.value).toBe(DEFAULT_OUTPUT_FORMAT)
+    expect(DEFAULT_OUTPUT_FORMAT).toBe('backlog-notation')
+    expect(wrapper.get<HTMLSelectElement>('select').element.value).toBe('backlog-notation')
     expect(storage.getItem).toHaveBeenCalledWith(OUTPUT_FORMAT_STORAGE_KEY)
   })
 
@@ -73,7 +74,7 @@ describe('useOutputFormatPreference', () => {
     expect(storage.setItem).toHaveBeenCalledWith(OUTPUT_FORMAT_STORAGE_KEY, 'plain-text')
   })
 
-  it('保存値が不正な場合はSlackへフォールバックする', () => {
+  it('保存値が不正な場合はBacklog記法へフォールバックする', () => {
     const storage = {
       getItem: vi.fn(() => 'unknown-format'),
       setItem: vi.fn(),
@@ -81,7 +82,7 @@ describe('useOutputFormatPreference', () => {
 
     const wrapper = mountOutputFormatPreference(storage)
 
-    expect(wrapper.get<HTMLSelectElement>('select').element.value).toBe(DEFAULT_OUTPUT_FORMAT)
+    expect(wrapper.get<HTMLSelectElement>('select').element.value).toBe('backlog-notation')
   })
 
   it('Storageの読み書きが失敗しても画面上の形式を変更できる', async () => {
@@ -98,12 +99,12 @@ describe('useOutputFormatPreference', () => {
 
     expect(select.element.value).toBe(DEFAULT_OUTPUT_FORMAT)
 
-    await select.setValue('backlog-notation')
+    await select.setValue('slack')
 
-    expect(select.element.value).toBe('backlog-notation')
+    expect(select.element.value).toBe('slack')
     expect(storage.setItem).toHaveBeenCalledWith(
       OUTPUT_FORMAT_STORAGE_KEY,
-      'backlog-notation',
+      'slack',
     )
   })
 })

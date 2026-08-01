@@ -319,7 +319,7 @@ Piniaなどのグローバルストアは使用していない。アプリ全体
 | --- | --- | --- | --- |
 | `markdown-editor-state-v1` | タブ、本文、選択中ID、削除済みタブ | 本文は500ms後、タブ操作は即時 | 空の`Untitled` 1件へフォールバック |
 | `md-converter:theme:v1` | `light` / `dark` | 変更から500ms後 | `light` |
-| `md-converter:output-format:v1` | 選択中の出力形式 | 即時 | `slack` |
+| `md-converter:output-format:v1` | 選択中の出力形式 | 即時 | `backlog-notation` |
 | `md-converter:settings:v1` | 内部スクロール、左右比率、全角補正 | 即時 | 項目ごとの既定値 |
 | `md-converter:input-replacements:v1` | 有効状態と入力置換ルール | 即時 | 有効・ルールなし |
 

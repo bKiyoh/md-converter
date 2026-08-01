@@ -19,6 +19,8 @@ import App from '../../src/App.vue'
 describe('App', () => {
   beforeEach(() => {
     localStorage.clear()
+    // Slack固有の既存検証を維持し、未保存時の既定値は専用テストで確認する。
+    localStorage.setItem(OUTPUT_FORMAT_STORAGE_KEY, 'slack')
     vi.useFakeTimers()
   })
 
@@ -151,6 +153,16 @@ describe('App', () => {
     await format.setValue('backlog-notation')
 
     expect(wrapper.get<HTMLTextAreaElement>('#conversion-output').element.value).toBe("''重要''")
+  })
+
+  it('保存済みの変換形式がない場合はBacklog記法を使用する', () => {
+    localStorage.removeItem(OUTPUT_FORMAT_STORAGE_KEY)
+
+    const wrapper = mount(App)
+
+    expect(wrapper.get<HTMLSelectElement>('#output-format').element.value).toBe(
+      'backlog-notation',
+    )
   })
 
   it('右ペインの初期表示を変換結果とし、Markdownプレビューへ切り替えられる', async () => {
@@ -1708,12 +1720,14 @@ describe('App', () => {
     )
   })
 
-  it('保存された変換形式が不正な場合はSlackを使用する', () => {
+  it('保存された変換形式が不正な場合はBacklog記法を使用する', () => {
     localStorage.setItem(OUTPUT_FORMAT_STORAGE_KEY, 'unknown-format')
 
     const wrapper = mount(App)
 
-    expect(wrapper.get<HTMLSelectElement>('#output-format').element.value).toBe('slack')
+    expect(wrapper.get<HTMLSelectElement>('#output-format').element.value).toBe(
+      'backlog-notation',
+    )
   })
 
   it('選択中の形式名を含むメッセージを表示して変換結果をコピーする', async () => {

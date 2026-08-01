@@ -6,7 +6,7 @@ import {
 } from './useDebouncedLocalStorage'
 
 export const OUTPUT_FORMAT_STORAGE_KEY = 'md-converter:output-format:v1'
-export const DEFAULT_OUTPUT_FORMAT: OutputFormat = 'slack'
+export const DEFAULT_OUTPUT_FORMAT: OutputFormat = 'backlog-notation'
 
 export type OutputFormatStorage = LocalStorageAccess
 
