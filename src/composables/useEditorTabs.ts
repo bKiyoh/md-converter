@@ -27,6 +27,8 @@ export type UseEditorTabsResult = {
   markdown: WritableComputedRef<string>
   canAddTab: ComputedRef<boolean>
   canDeleteTab: ComputedRef<boolean>
+  storageRecoveryData: Ref<string | null>
+  resumeSavingAfterRecoveryCopy: () => boolean
   saveError: Ref<string | null>
   retrySave: () => boolean
   addTab: () => EditorTab | null
@@ -122,6 +124,7 @@ export function useEditorTabs(options: UseEditorTabsOptions = {}): UseEditorTabs
   const tabs = ref<EditorTab[]>(loaded.state.tabs)
   const deletedTabs = ref<DeletedTab[]>(loaded.state.deletedTabs)
   const activeTabId = ref<string>(loaded.state.activeTabId)
+  const storageRecoveryData = ref<string | null>(loaded.recoveryData)
 
   function getState(): EditorState {
     return {
@@ -132,10 +135,17 @@ export function useEditorTabs(options: UseEditorTabsOptions = {}): UseEditorTabs
     }
   }
 
-  const { saveError, saveImmediately, retrySave, scheduleSave } = useEditorStorage({
+  const {
+    saveError,
+    saveImmediately,
+    resumePersistence,
+    retrySave,
+    scheduleSave,
+  } = useEditorStorage({
     storage,
     getState,
     removeLegacyDraftAfterSave: loaded.shouldRemoveLegacyDraft,
+    persistenceBlocked: loaded.recoveryData !== null,
   })
 
   if (loaded.shouldPersist) {
@@ -160,6 +170,15 @@ export function useEditorTabs(options: UseEditorTabsOptions = {}): UseEditorTabs
   })
   const canAddTab = computed<boolean>(() => tabs.value.length < MAX_EDITOR_TABS)
   const canDeleteTab = computed<boolean>(() => tabs.value.length > 1)
+
+  function resumeSavingAfterRecoveryCopy(): boolean {
+    if (storageRecoveryData.value === null) {
+      return false
+    }
+
+    storageRecoveryData.value = null
+    return resumePersistence()
+  }
 
   function createUniqueId(): string {
     const usedIds = new Set([
@@ -321,6 +340,8 @@ export function useEditorTabs(options: UseEditorTabsOptions = {}): UseEditorTabs
     markdown,
     canAddTab,
     canDeleteTab,
+    storageRecoveryData,
+    resumeSavingAfterRecoveryCopy,
     saveError,
     retrySave,
     addTab,

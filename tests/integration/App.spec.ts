@@ -1486,6 +1486,43 @@ describe('App', () => {
     expect(localStorage.getItem(EDITOR_STATE_STORAGE_KEY)).not.toBeNull()
   })
 
+  it('破損したタブ保存値を上書きせず、復旧用コピー後に保存を再開する', async () => {
+    vi.spyOn(console, 'warn').mockImplementation(() => undefined)
+    const brokenValue = '{"version":1,"tabs":['
+    localStorage.setItem(EDITOR_STATE_STORAGE_KEY, brokenValue)
+    const writeText = vi.fn(() => Promise.resolve())
+    Object.defineProperty(navigator, 'clipboard', {
+      configurable: true,
+      value: { writeText },
+    })
+    const wrapper = mount(App)
+    const input = wrapper.get<HTMLTextAreaElement>('#markdown-input')
+
+    expect(wrapper.get('.storage-recovery-notice').text()).toContain(
+      '元データを上書きしないよう自動保存を停止しました',
+    )
+    expect(localStorage.getItem(EDITOR_STATE_STORAGE_KEY)).toBe(brokenValue)
+
+    await input.setValue('破損後に入力した内容')
+    await vi.advanceTimersByTimeAsync(EDITOR_CONTENT_SAVE_DELAY_MS)
+    expect(localStorage.getItem(EDITOR_STATE_STORAGE_KEY)).toBe(brokenValue)
+
+    await wrapper
+      .get('.storage-recovery-notice')
+      .get<HTMLButtonElement>('.app-notice-action')
+      .trigger('click')
+    await flushPromises()
+
+    expect(writeText).toHaveBeenCalledWith(brokenValue)
+    expect(wrapper.find('.storage-recovery-notice').exists()).toBe(false)
+    expect(wrapper.get('.toast-notice').text()).toBe(
+      '破損した保存データを復旧用にコピーしました',
+    )
+    expect(localStorage.getItem(EDITOR_STATE_STORAGE_KEY)).toContain(
+      '破損後に入力した内容',
+    )
+  })
+
   it('選択した変換形式を保存し、再読み込み後も同じ形式で変換する', async () => {
     localStorage.setItem(LEGACY_MARKDOWN_DRAFT_STORAGE_KEY, '**重要**')
     const wrapper = mount(App)

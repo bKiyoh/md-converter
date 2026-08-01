@@ -12,7 +12,11 @@ export type ClipboardNotice = {
 }
 
 export type UseClipboardResult = {
-  copy: (text: string, successMessage: string) => Promise<void>
+  copy: (
+    text: string,
+    successMessage: string,
+    failureMessage?: string,
+  ) => Promise<boolean>
   notice: Ref<ClipboardNotice | null>
 }
 
@@ -43,7 +47,11 @@ export function useClipboard(
     }, COPY_NOTICE_DURATION_MS)
   }
 
-  async function copy(text: string, successMessage: string): Promise<void> {
+  async function copy(
+    text: string,
+    successMessage: string,
+    failureMessage = COPY_FAILURE_MESSAGE,
+  ): Promise<boolean> {
     try {
       if (!clipboard) {
         throw new Error('Clipboard API is unavailable')
@@ -51,8 +59,10 @@ export function useClipboard(
 
       await clipboard.writeText(text)
       showNotice({ kind: 'success', message: successMessage })
+      return true
     } catch {
-      showNotice({ kind: 'error', message: COPY_FAILURE_MESSAGE })
+      showNotice({ kind: 'error', message: failureMessage })
+      return false
     }
   }
 

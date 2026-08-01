@@ -36,6 +36,8 @@ const {
   markdown,
   canAddTab,
   canDeleteTab,
+  storageRecoveryData,
+  resumeSavingAfterRecoveryCopy,
   saveError: editorSaveError,
   retrySave: retryEditorSave,
   addTab,
@@ -87,6 +89,10 @@ const {
   resetSplitRatio,
 } = useWorkspaceSplitter(workspaceSplitRatio)
 const { copy, notice } = useClipboard()
+const {
+  copy: copyRecoveryData,
+  notice: recoveryCopyNotice,
+} = useClipboard()
 const activePanel = ref<WorkspacePanel>('input')
 const markdownEditor = ref<MarkdownEditorController | null>(null)
 const {
@@ -175,6 +181,22 @@ function retryFailedSaves(): void {
 
 async function copyOutput(): Promise<void> {
   await copy(conversionResult.value.output, `${formatLabel.value}形式でコピーしました`)
+}
+
+async function copyStorageRecoveryData(): Promise<void> {
+  if (storageRecoveryData.value === null) {
+    return
+  }
+
+  const copied = await copyRecoveryData(
+    storageRecoveryData.value,
+    '破損した保存データを復旧用にコピーしました',
+    '復旧用データのコピーに失敗しました。クリップボードの権限を確認してください。',
+  )
+
+  if (copied) {
+    resumeSavingAfterRecoveryCopy()
+  }
 }
 
 async function openEditorSearch(showReplace = false): Promise<void> {
@@ -363,6 +385,18 @@ onBeforeUnmount(() => {
       </header>
 
       <AppNotice
+        v-if="storageRecoveryData"
+        class="storage-recovery-notice"
+        :notice="{
+          kind: 'error',
+          message:
+            '保存されたタブデータが破損しています。元データを上書きしないよう自動保存を停止しました。',
+        }"
+        action-label="復旧用データをコピー"
+        @action="copyStorageRecoveryData"
+      />
+
+      <AppNotice
         v-if="storageSaveError"
         class="storage-save-notice"
         :notice="{ kind: 'error', message: storageSaveError }"
@@ -375,6 +409,11 @@ onBeforeUnmount(() => {
           v-if="!isFocusMode && tabNotice"
           class="toast-notice"
           :notice="tabNotice"
+        />
+        <AppNotice
+          v-else-if="!isFocusMode && recoveryCopyNotice"
+          class="toast-notice"
+          :notice="recoveryCopyNotice"
         />
         <AppNotice
           v-else-if="!isFocusMode && notice"

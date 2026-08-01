@@ -146,7 +146,8 @@ describe('loadEditorState', () => {
         updatedAt: 500,
       },
     ])
-    expect(result.shouldPersist).toBe(true)
+    expect(result.shouldPersist).toBe(false)
+    expect(result.recoveryData).toBe('{broken')
     expect(warn).toHaveBeenCalledOnce()
   })
 })
