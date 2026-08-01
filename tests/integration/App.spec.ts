@@ -348,11 +348,44 @@ describe('App', () => {
     wrapper.unmount()
   })
 
-  it('タブ名をダブルクリックで変更し、Escapeでは取り消す', async () => {
+  it('Alt+左右キーでタブを並べ替えて保存し、対象タブへフォーカスを維持する', async () => {
+    const wrapper = mount(App, { attachTo: document.body })
+
+    await wrapper.get('.document-tab-add-button').trigger('click')
+    await wrapper.get('.document-tab-add-button').trigger('click')
+    const thirdButton = wrapper.findAll<HTMLButtonElement>('.document-tab-button')[2]!
+    thirdButton.element.focus()
+
+    await thirdButton.trigger('keydown', { key: 'ArrowLeft', altKey: true })
+
+    const reorderedButtons = wrapper.findAll<HTMLButtonElement>('.document-tab-button')
+    expect(reorderedButtons.map((tab) => tab.text())).toEqual([
+      'Untitled',
+      'Untitled 3',
+      'Untitled 2',
+    ])
+    expect(reorderedButtons[1]?.attributes('aria-pressed')).toBe('true')
+    expect(document.activeElement).toBe(reorderedButtons[1]!.element)
+    expect(wrapper.get('.document-tabs [aria-live="polite"]').text()).toBe(
+      'Untitled 3を2番目へ移動しました',
+    )
+
+    const saved = JSON.parse(localStorage.getItem(EDITOR_STATE_STORAGE_KEY)!) as {
+      tabs: Array<{ name: string }>
+    }
+    expect(saved.tabs.map((tab) => tab.name)).toEqual([
+      'Untitled',
+      'Untitled 3',
+      'Untitled 2',
+    ])
+    wrapper.unmount()
+  })
+
+  it('タブ名をF2またはダブルクリックで変更し、Escapeでは取り消す', async () => {
     const wrapper = mount(App)
     const tab = wrapper.get<HTMLButtonElement>('.document-tab-button')
 
-    await tab.trigger('dblclick')
+    await tab.trigger('keydown', { key: 'F2' })
     const nameInput = wrapper.get<HTMLInputElement>('.document-tab-name-input')
     await nameInput.setValue('  議事録  ')
     await nameInput.trigger('keydown', { key: 'Enter' })
@@ -867,7 +900,7 @@ describe('App', () => {
     const wrapper = mount(App, { attachTo: document.body })
 
     await wrapper.get('.focus-mode-button').trigger('click')
-    await wrapper.get('.focus-tab-name-button').trigger('dblclick')
+    await wrapper.get('.focus-tab-name-button').trigger('keydown', { key: 'F2' })
     const nameInput = wrapper.get<HTMLInputElement>('.focus-tab-name-input')
     await nameInput.setValue('変更しない')
     await nameInput.trigger('keydown', { key: 'Escape' })

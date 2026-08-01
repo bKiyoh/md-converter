@@ -31,6 +31,7 @@ const deletedTabsToggle = ref<HTMLButtonElement | null>(null)
 const deletedTabsPanel = ref<HTMLElement | null>(null)
 const draggedTabId = ref<string | null>(null)
 const dropIndicator = ref<{ tabId: string; position: TabDropPosition } | null>(null)
+const reorderAnnouncement = ref<string>('')
 let suppressedSelectionId: string | null = null
 let selectionSuppressionTimer: ReturnType<typeof setTimeout> | undefined
 
@@ -69,6 +70,19 @@ function scrollTabControlIntoView(control: HTMLElement | null): void {
 }
 
 function handleTabKeydown(event: KeyboardEvent, index: number): void {
+  if (event.isComposing) {
+    return
+  }
+
+  if (
+    event.altKey &&
+    (event.key === 'ArrowLeft' || event.key === 'ArrowRight')
+  ) {
+    event.preventDefault()
+    void moveTabWithKeyboard(index, event.key === 'ArrowLeft' ? -1 : 1)
+    return
+  }
+
   let nextIndex: number | null = null
 
   if (event.key === 'ArrowLeft') {
@@ -85,6 +99,30 @@ function handleTabKeydown(event: KeyboardEvent, index: number): void {
     event.preventDefault()
     void selectAndFocus(props.tabs[nextIndex]!.id)
   }
+}
+
+async function moveTabWithKeyboard(index: number, direction: -1 | 1): Promise<void> {
+  const targetIndex = index + direction
+  const tab = props.tabs[index]
+  const target = props.tabs[targetIndex]
+
+  if (!tab || !target) {
+    return
+  }
+
+  emit(
+    'reorder',
+    tab.id,
+    target.id,
+    direction < 0 ? 'before' : 'after',
+  )
+  reorderAnnouncement.value = `${tab.name}を${targetIndex + 1}番目へ移動しました`
+
+  await nextTick()
+  const buttons = root.value?.querySelectorAll<HTMLButtonElement>('[data-document-tab-id]')
+  Array.from(buttons ?? [])
+    .find((button) => button.dataset.documentTabId === tab.id)
+    ?.focus()
 }
 
 function handleTabSelect(id: string): void {
@@ -210,6 +248,7 @@ onBeforeUnmount(() => {
 
 <template>
   <section ref="root" class="document-tabs" aria-label="Markdown文書">
+    <p class="visually-hidden" aria-live="polite">{{ reorderAnnouncement }}</p>
     <div class="document-tabs-main">
       <div class="document-tablist" role="group" aria-label="Markdown文書タブ">
         <div
