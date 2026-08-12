@@ -20,7 +20,7 @@
 [`product-spec.md`](../specs/product-spec.md) と各機能仕様、変換規則は
 [`conversion-rules.md`](../specs/conversion-rules.md) を正本とする。Parserの設計判断は
 [`parser-design.md`](parser-design.md)、作業範囲と開発ルールは
-[`implementation-plan.md`](../plans/implementation-plan.md) と
+[`maintenance-plan.md`](../post-release/maintenance-plan.md) と
 [`AGENTS.md`](../../AGENTS.md) を参照する。
 
 ## 1. プロダクトとシステム境界
