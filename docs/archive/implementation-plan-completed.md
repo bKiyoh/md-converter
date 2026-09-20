@@ -1,7 +1,7 @@
 # Md Converter 完了済み実装計画（履歴）
 
 > この文書は完了したマイルストーンの計画と判断経緯を保存する履歴資料です。
-> 現行の実装計画は [`implementation-plan.md`](../plans/implementation-plan.md)、現行仕様への
+> リリース後の現行計画は [`maintenance-plan.md`](../post-release/maintenance-plan.md)、現行仕様への
 > 入口は [`README.md`](../README.md) を参照してください。この文書は現行仕様の正本ではありません。
 
 ## 0. この計画の前提と対象範囲

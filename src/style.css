@@ -1665,7 +1665,10 @@ h2 {
   display: grid;
   height: 100%;
   min-height: 0;
-  grid-template-columns: 25% 50% 25%;
+  grid-template-columns:
+    minmax(0, 1fr)
+    clamp(50vw, calc(75vw - 360px), 1680px)
+    minmax(0, 1fr);
 }
 
 .focus-mode-controls {
@@ -1673,7 +1676,7 @@ h2 {
   min-width: 0;
   min-height: 0;
   padding: 12px;
-  padding-left: max(12px, calc((100vw - 1440px) / 2));
+  padding-left: clamp(12px, calc((100vw - 1440px) / 8 + 12px), 96px);
   grid-column: 1;
   grid-row: 1;
   flex-direction: column;

@@ -177,7 +177,7 @@ src/
 
 ## 開発ワークフロー
 
-新機能または仕様変更の実装は、`docs/plans/implementation-plan.md` に定義された
+新機能または仕様変更の実装は、`docs/post-release/maintenance-plan.md` に定義された
 マイルストーン単位で行う。アクティブなマイルストーンがない場合は、対象仕様書を
 更新してから新しいマイルストーンの対象範囲、対象外、完了条件を定義する。
 
@@ -211,7 +211,7 @@ src/
 - 仕様や実装計画に矛盾がある場合は、推測で進めず報告する
 - 変換仕様を変更した場合は、対応するテストも更新する
 - 実行できなかった検証は、成功したものとして扱わない
-- 対象マイルストーンの完了条件は、`docs/plans/implementation-plan.md` に従う
+- 対象マイルストーンの完了条件は、`docs/post-release/maintenance-plan.md` に従う
 
 ---
 
@@ -230,7 +230,7 @@ src/
 - 指示されたマイルストーン以外を先行実装しない
 - 仕様に曖昧な点がある場合は、勝手に機能を増やさず仮定を明示する
 - 既存の動作を変更する場合は、影響範囲を説明する
-- 実装計画の変更が必要な場合は、コードより先に`docs/plans/implementation-plan.md`を更新する
+- 実装計画の変更が必要な場合は、コードより先に`docs/post-release/maintenance-plan.md`を更新する
 - 仕様変更が必要な場合は、該当する仕様書を更新してから実装する
 - 実装後にlint、型チェック、単体テストを実行する
 - 必要に応じてビルドを実行する
@@ -264,7 +264,7 @@ npm run build
 以下の順番で対応する。
 
 1. 変更が必要な理由を整理する
-2. `docs/plans/implementation-plan.md`を更新する
+2. `docs/post-release/maintenance-plan.md`を更新する
 3. 影響する仕様書を確認する
 4. 必要に応じて`docs/specs/product-spec.md`または`docs/specs/conversion-rules.md`を更新する
 5. 更新後の計画に基づいて実装する
