@@ -282,11 +282,33 @@ function renderBlock(block: BlockNode, context: RenderContext): string {
   }
 }
 
+function getBlockSeparator(previous: BlockNode, current: BlockNode): string {
+  if (
+    (current.type === 'heading' && previous.type !== 'heading') ||
+    (previous.type === 'paragraph' && current.type === 'paragraph')
+  ) {
+    return '\n\n'
+  }
+
+  return '\n'
+}
+
 function renderBlocks(blocks: BlockNode[], context: RenderContext): string {
-  return blocks
-    .map((block) => renderBlock(block, context))
-    .filter((output) => output.length > 0)
-    .join('\n\n')
+  const renderedBlocks = blocks
+    .map((block) => ({ block, output: renderBlock(block, context) }))
+    .filter(({ output }) => output.length > 0)
+
+  return renderedBlocks
+    .map((current, index) => {
+      const previous = renderedBlocks[index - 1]
+
+      if (!previous) {
+        return current.output
+      }
+
+      return `${getBlockSeparator(previous.block, current.block)}${current.output}`
+    })
+    .join('')
 }
 
 export function convertToPlainText(document: MarkdownDocument): ConversionResult {

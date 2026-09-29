@@ -52,7 +52,7 @@ describe('convertToPlainText', () => {
 
   it('見出しレベル1〜3を異なる表現へ警告なしで変換する', () => {
     expect(convert('# 見出し1\n\n## 見出し2\n\n### 見出し3')).toEqual({
-      output: '【見出し1】\n\n■ 見出し2\n\n▼ 見出し3',
+      output: '【見出し1】\n■ 見出し2\n▼ 見出し3',
       warnings: [],
     })
   })
@@ -60,7 +60,7 @@ describe('convertToPlainText', () => {
   it('見出しレベル4〜6を共通の小見出し表現へ変換し、各見出しを警告する', () => {
     const result = convert('#### 見出し4\n\n##### 見出し5\n\n###### 見出し6')
 
-    expect(result.output).toBe('● 見出し4\n\n● 見出し5\n\n● 見出し6')
+    expect(result.output).toBe('● 見出し4\n● 見出し5\n● 見出し6')
     expect(result.warnings).toEqual([
       expect.objectContaining({
         code: 'lossy-conversion',
@@ -80,9 +80,9 @@ describe('convertToPlainText', () => {
     ])
   })
 
-  it('見出しと他のブロックの間を1行の空行で区切り、先頭と末尾へ余分な空行を作らない', () => {
+  it('見出しの直前だけを空行で区切り、直後と先頭と末尾へ余分な空行を作らない', () => {
     expect(convert('\n\n前の本文\n\n\n# 見出し\n\n\n後の本文\n\n')).toEqual({
-      output: '前の本文\n\n【見出し】\n\n後の本文',
+      output: '前の本文\n\n【見出し】\n後の本文',
       warnings: [],
     })
   })
@@ -131,7 +131,7 @@ describe('convertToPlainText', () => {
 4. 四番目`)
 
     expect(result).toEqual({
-      output: '- 親\n  - 子\n    - 孫\n\n3. 三番目\n4. 四番目',
+      output: '- 親\n  - 子\n    - 孫\n3. 三番目\n4. 四番目',
       warnings: [],
     })
   })
@@ -150,6 +150,19 @@ describe('convertToPlainText', () => {
         location: { line: 2, column: 3 },
       }),
     ])
+  })
+
+  it('緩いリストの項目内と項目間にある空行を保持する', () => {
+    expect(
+      convert(`- 1段落目
+
+  2段落目
+
+- 次の項目`),
+    ).toEqual({
+      output: '- 1段落目\n\n  2段落目\n\n- 次の項目',
+      warnings: [],
+    })
   })
 
   it('引用の空行を保ち、各行へ引用記号を付ける', () => {
@@ -254,9 +267,32 @@ const value = 1
     ])
   })
 
-  it('ソフト改行と明示改行を保持し、ブロック間を空行で区切る', () => {
+  it('ソフト改行と明示改行を保持し、段落間を空行で区切る', () => {
     expect(convert('ソフト\n改行  \n明示\n\n次の段落')).toEqual({
       output: 'ソフト\n改行\n明示\n\n次の段落',
+      warnings: [],
+    })
+  })
+
+  it('構造記号で区別できるトップレベルブロックを改行1つで区切る', () => {
+    const result = convert(`本文
+
+- 項目
+
+> 引用
+
+\`\`\`
+code
+\`\`\`
+
+| 項目 | 内容 |
+| --- | --- |
+| 状態 | 完了 |
+
+---`)
+
+    expect(result).toEqual({
+      output: '本文\n- 項目\n> 引用\n    code\n状態：完了\n──────────',
       warnings: [],
     })
   })
@@ -265,9 +301,9 @@ const value = 1
     expect(convert('---')).toEqual({ output: '──────────', warnings: [] })
   })
 
-  it('水平線の前後を他のブロックと1行の空行で区切る', () => {
+  it('水平線の前後を他のブロックと改行1つで区切る', () => {
     expect(convert('前\n\n---\n\n後')).toEqual({
-      output: '前\n\n──────────\n\n後',
+      output: '前\n──────────\n後',
       warnings: [],
     })
   })
@@ -286,7 +322,7 @@ const value = 1
 
 後`)
 
-    expect(result.output).toBe('前 <span>内</span>\n\n<div>テスト</div>\n\n後')
+    expect(result.output).toBe('前 <span>内</span>\n<div>テスト</div>\n後')
     expect(result.warnings).toHaveLength(3)
     expect(result.warnings.every((warning) => warning.code === 'unsupported-node')).toBe(true)
     expect(result.warnings[2]).toEqual(
