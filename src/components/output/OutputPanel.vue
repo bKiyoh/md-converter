@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { nextTick, ref } from 'vue'
+import { nextTick, onBeforeUnmount, ref, shallowRef, watch } from 'vue'
 import type { ConversionWarning } from '../../types/conversion'
 import type { MarkdownDocument } from '../../types/markdown'
 import ConversionWarnings from './ConversionWarnings.vue'
@@ -13,11 +13,22 @@ defineProps<{
   editorInternalScroll: boolean
 }>()
 
+const emit = defineEmits<{
+  'scroll-element': [element: HTMLElement | null]
+}>()
+
 type OutputView = 'preview' | 'conversion'
 
 const activeView = ref<OutputView>('conversion')
 const previewTab = ref<HTMLButtonElement | null>(null)
 const conversionTab = ref<HTMLButtonElement | null>(null)
+const outputTextarea = ref<HTMLTextAreaElement | null>(null)
+const previewElement = shallowRef<HTMLElement | null>(null)
+
+watch([activeView, outputTextarea, previewElement], () => {
+  emit('scroll-element', activeView.value === 'preview' ? previewElement.value : outputTextarea.value)
+}, { immediate: true, flush: 'post' })
+onBeforeUnmount(() => emit('scroll-element', null))
 
 function selectView(view: OutputView): void {
   activeView.value = view
@@ -99,6 +110,7 @@ function handleViewTabKeydown(event: KeyboardEvent, currentView: OutputView): vo
       <MarkdownPreview
         :document="document"
         :editor-internal-scroll="editorInternalScroll"
+        @scroll-element="previewElement = $event"
       />
     </div>
 
@@ -112,6 +124,7 @@ function handleViewTabKeydown(event: KeyboardEvent, currentView: OutputView): vo
       <label class="visually-hidden" for="conversion-output">変換結果</label>
       <textarea
         id="conversion-output"
+        ref="outputTextarea"
         class="text-area output-area"
         :value="output"
         aria-describedby="conversion-output-count"

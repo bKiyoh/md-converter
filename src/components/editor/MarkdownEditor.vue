@@ -42,6 +42,7 @@ const props = withDefaults(
 const emit = defineEmits<{
   'update:modelValue': [value: string]
   'request-search': [showReplace: boolean]
+  'scroll-element': [element: HTMLTextAreaElement | null]
 }>()
 
 type SearchHighlightSegment = {
@@ -497,11 +498,13 @@ watch(
 )
 
 onMounted(() => {
+  emit('scroll-element', textarea.value)
   resizeTextarea()
   document.addEventListener('keydown', handleDocumentKeydown)
 })
 
 onBeforeUnmount(() => {
+  emit('scroll-element', null)
   document.removeEventListener('keydown', handleDocumentKeydown)
 })
 

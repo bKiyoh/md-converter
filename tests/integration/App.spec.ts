@@ -180,7 +180,7 @@ describe('App', () => {
     await previewTab.trigger('click')
 
     expect(previewTab.attributes('aria-selected')).toBe('true')
-    expect(wrapper.get('#markdown-preview').html()).toContain('<h1>プレビュー</h1>')
+    expect(wrapper.get('#markdown-preview h1').text()).toBe('プレビュー')
     expect(wrapper.get('#markdown-preview').classes()).toContain(
       'preview-surface--internal-scroll',
     )
@@ -575,6 +575,26 @@ describe('App', () => {
       wrapper.get<HTMLButtonElement>('.deleted-tabs-toggle').element,
     )
     wrapper.unmount()
+  })
+
+  it('設定のすぐ左に文字ラベルのない同期チェックボックスを表示し、保存・復元する', async () => {
+    const wrapper = mount(App, { attachTo: document.body })
+    const control = wrapper.get('.scroll-sync-toggle')
+    const checkbox = control.get<HTMLInputElement>('input[type="checkbox"]')
+    expect(control.element.nextElementSibling).toBe(wrapper.get('.settings-root').element)
+    expect(control.text()).toBe('')
+    expect(control.find('[data-icon="scroll-sync"]').exists()).toBe(true)
+    expect(checkbox.attributes('aria-label')).toBe('スクロール同期')
+    expect(checkbox.element.checked).toBe(true)
+    expect(control.attributes('data-tooltip')).toBe('スクロール同期：ON')
+    await checkbox.setValue(false)
+    expect(control.attributes('data-tooltip')).toBe('スクロール同期：OFF')
+    expect(control.classes()).not.toContain('scroll-sync-toggle--checked')
+    expect(JSON.parse(localStorage.getItem(APP_SETTINGS_STORAGE_KEY)!).scrollSync).toBe(false)
+    wrapper.unmount()
+    const reloaded = mount(App)
+    expect(reloaded.get<HTMLInputElement>('#scroll-sync-setting').element.checked).toBe(false)
+    reloaded.unmount()
   })
 
   it('空の変換結果ではコピーボタンを無効にする', async () => {
@@ -1235,6 +1255,7 @@ describe('App', () => {
         editorInternalScroll: false,
         workspaceSplitRatio: 0.5,
         normalizeFullWidthMarkdown: false,
+        scrollSync: true,
       }),
     )
 

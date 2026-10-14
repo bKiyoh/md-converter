@@ -100,7 +100,8 @@ App.vue の markdown
         ├─ converterRegistry[selectedFormat].convert(document)
         │    └─ ConversionResult
         │         ├─ output
-        │         └─ warnings
+        │         ├─ warnings
+        │         └─ sourceMap（要求時だけ生成）
         └─ MarkdownPreviewへ同じdocumentを渡す
 ```
 
@@ -131,6 +132,24 @@ OutputPanel
 プレビューはConverterの文字列をHTMLへ変換せず、Appから受け取った
 `MarkdownDocument` から直接HTMLを生成する。中間表現に含まれる生HTMLノードは
 プレビューレンダラーで破棄し、DOMへ出力しない。
+
+描画するブロック、リスト項目、表の行には、既存の開始行から検証済みの
+`data-source-line` を付ける。`App.vue` が所有する `useScrollSync` は、各Componentが
+通知するスクロール要素を接続し、原文の行とプレビュー内の目印の座標を対応付ける。
+textareaの折り返しは、実際の文字組みと内幅を複製した非表示DOMで計測する。
+このDOMは計測の直後に破棄し、検索ハイライトの表示状態には依存しない。
+
+変換結果も同じ `useScrollSync` へ接続する。`OutputPanel` は現在表示中のスクロール要素
+だけを通知し、タブ切り替え時には旧要素の監視を解除する。変換結果の場合は
+`sourceMap` が持つ原文開始行と出力開始行を使い、両textareaの折り返しを同じ計測処理で
+求める。変換形式変更後もエディター位置を優先し、対応点を計測し直す。
+
+両方向の位置補間は `utils/scrollMapping.ts` に分離する。計測値は本文・解析結果・
+文書タブ・表示条件・サイズの変更で破棄し、通常のスクロールでは再利用する。
+追従は描画フレーム単位にまとめ、書き込み後の位置を記録してscrollイベントの
+反響を抑止する。解析待ちと非表示中は停止し、更新・再表示後はエディターから
+合わせ直す。同期のON/OFFは `useAppSettings` の `scrollSync` へ保存し、
+`ScrollSyncToggle` と同期の有効条件へ接続する。文書の位置情報は永続化しない。
 
 ### 2.4 入力支援と検索・置換
 
@@ -215,7 +234,7 @@ Componentは表示領域で分類される。
 | `useMarkdownEditor` | textareaイベントとMarkdown編集操作の接続 |
 | `useTextSearch` | 検索状態、現在位置、置換操作 |
 | `useInputReplacementSettings` | 入力置換ルールと全体設定 |
-| `useAppSettings` | 内部スクロール、左右比率、全角Markdown補正設定 |
+| `useAppSettings` | 内部スクロール、左右比率、全角Markdown補正、スクロール同期設定 |
 | `useOutputFormatPreference` | 選択中の変換形式 |
 | `useThemePreference` | ライト・ダークテーマ |
 | `useWorkspaceSplitter` | 左右ペイン比率の計算とポインター・キーボード操作 |
@@ -262,9 +281,15 @@ Converterの契約は [`types/conversion.ts`](../../src/types/conversion.ts) に
 ```ts
 interface Converter {
   readonly format: OutputFormat
-  convert(document: MarkdownDocument): ConversionResult
+  convert(document: MarkdownDocument, options?: ConversionOptions): ConversionResult
 }
 ```
+
+`includeSourceMap: true` を指定した場合だけ `ConversionResult.sourceMap` に原文行・出力行を
+付与する。4形式のブロック結合を `converters/renderConvertedBlocks.ts` へ集約し、既存の
+区切り・空ブロックの扱いと出力行数の記録を同じ処理で行う。通常の呼び出しは従来どおり
+`output` と `warnings` だけを返す。Appは通常の変換時に位置情報も取得し、コピーは
+引き続き `output` だけを使用する。
 
 各ConverterはBlockとInlineのノード種別ごとに文字列を生成する。変換先で完全に
 表現できない場合も、可能な限り内容を残し、必要に応じて `ConversionWarning` を返す。
@@ -303,7 +328,7 @@ Piniaなどのグローバルストアは使用していない。アプリ全体
 | 変換結果と警告 | `App.vue` の `computed` | 出力、コピー | しない。入力から再計算 |
 | 選択中の出力形式 | `useOutputFormatPreference` | ヘッダー、変換 | する |
 | テーマ | `useThemePreference` | アプリ全体 | する |
-| 内部スクロール、左右比率、全角補正 | `useAppSettings` | アプリ全体 | する |
+| 内部スクロール、左右比率、全角補正、同期 | `useAppSettings` | アプリ全体 | する |
 | 入力置換の設定とルール | `useInputReplacementSettings` | 設定、Editor | する |
 | 検索語、置換語、現在の一致 | `useTextSearch` | MarkdownEditor | しない |
 | フォーカスモード、ヘルプ表示 | `useFocusMode` | アプリ全体 | しない |
@@ -320,7 +345,7 @@ Piniaなどのグローバルストアは使用していない。アプリ全体
 | `markdown-editor-state-v1` | タブ、本文、選択中ID、削除済みタブ | 本文は500ms後、タブ操作は即時 | 空の`Untitled` 1件へフォールバック |
 | `md-converter:theme:v1` | `light` / `dark` | 変更から500ms後 | `light` |
 | `md-converter:output-format:v1` | 選択中の出力形式 | 即時 | `backlog-notation` |
-| `md-converter:settings:v1` | 内部スクロール、左右比率、全角補正 | 即時 | 項目ごとの既定値 |
+| `md-converter:settings:v1` | 内部スクロール、左右比率、全角補正、同期 | 即時 | 項目ごとの既定値（同期はON） |
 | `md-converter:input-replacements:v1` | 有効状態と入力置換ルール | 即時 | 有効・ルールなし |
 
 旧キー `md-converter:draft:v1` だけが存在する場合、
@@ -360,7 +385,8 @@ tests/
 │  ├─ parser/
 │  └─ utils/
 └─ integration/
-   └─ App.spec.ts
+   ├─ App.spec.ts
+   └─ ScrollSync.spec.ts
 ```
 
 ### 5.1 テストの層
@@ -372,7 +398,7 @@ tests/
 | 純粋処理 | `tests/unit/utils/*.spec.ts` | 編集、検索・置換、入力置換、全角補正、プレビューHTML、文字数 |
 | 状態と永続化 | `tests/unit/composables/*.spec.ts` | 状態遷移、保存と復元、不正値、移行、操作上限 |
 | Component | `tests/unit/components/**/*.spec.ts` | Props・Emit、DOMイベント、キーボード操作、アクセシビリティ属性 |
-| アプリ結合 | `tests/integration/App.spec.ts` | 入力から変換・表示・保存・コピーまでの主要な画面横断フロー |
+| アプリ結合 | `tests/integration/*.spec.ts` | 入力から変換・表示・保存・コピーまでの主要な画面横断フロー、スクロール同期の適用条件 |
 | Directive | `tests/unit/directives/tooltip.spec.ts` | ツールチップの表示、位置、終了条件、後始末 |
 
 Converterテストでは実装内部の補助関数ではなく、入力Markdownに対する出力と警告を

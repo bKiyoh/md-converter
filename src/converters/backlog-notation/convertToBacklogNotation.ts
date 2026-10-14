@@ -1,5 +1,7 @@
 import type {
+  ConversionOptions,
   ConversionResult,
+  ConversionSourcePosition,
   ConversionWarning,
   Converter,
 } from '../../types/conversion'
@@ -14,6 +16,7 @@ import type {
 } from '../../types/markdown'
 import { formatUnsupportedInlineFallback } from '../../utils/unsupportedMarkdown'
 import { addRawHtmlWarning } from '../rawHtmlWarning'
+import { renderConvertedBlocks } from '../renderConvertedBlocks'
 import { addUnsupportedInlineWarning } from '../unsupportedInline'
 
 type RenderContext = {
@@ -296,16 +299,27 @@ function renderBlock(block: BlockNode, context: RenderContext): string {
   }
 }
 
-function renderBlocks(blocks: BlockNode[], context: RenderContext): string {
-  return blocks.map((block) => renderBlock(block, context)).join('\n\n')
+function renderBlocks(
+  blocks: BlockNode[],
+  context: RenderContext,
+  sourceMap?: ConversionSourcePosition[],
+): string {
+  return renderConvertedBlocks(blocks, (block) => renderBlock(block, context), {
+    separator: '\n\n', sourceMap,
+  })
 }
 
-export function convertToBacklogNotation(document: MarkdownDocument): ConversionResult {
+export function convertToBacklogNotation(
+  document: MarkdownDocument,
+  options?: ConversionOptions,
+): ConversionResult {
   const context: RenderContext = { warnings: [] }
+  const sourceMap: ConversionSourcePosition[] | undefined = options?.includeSourceMap ? [] : undefined
 
   return {
-    output: renderBlocks(document.blocks, context),
+    output: renderBlocks(document.blocks, context, sourceMap),
     warnings: context.warnings,
+    ...(sourceMap ? { sourceMap } : {}),
   }
 }
 
