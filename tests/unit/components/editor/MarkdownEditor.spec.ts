@@ -1019,6 +1019,11 @@ describe('MarkdownEditor', () => {
     expect(wrapper.get('.input-guide-panel .editor-input-guide').text()).toContain(
       'Ctrl / Command + B',
     )
+    expect(guidePanel.text()).toContain('Ctrl / Command + Enter')
+    expect(guidePanel.text()).toContain('フォーカスモード中のみ')
+    expect(guidePanel.findAll('h3').map((heading) => heading.text())).toEqual([
+      'フォーカスモード', '装飾ショートカット', '行の加工',
+    ])
     expect(wrapper.get('.editor-panel').classes()).toContain('editor-panel--guide-open')
 
     await textarea.trigger('click')

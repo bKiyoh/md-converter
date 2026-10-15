@@ -1884,13 +1884,6 @@ h2 {
   grid-area: 1 / 1;
 }
 
-.focus-mode-preview-controls {
-  grid-column: 3;
-  grid-row: 1;
-  padding: 20px 12px;
-  align-self: start;
-}
-
 .focus-mode-preview {
   flex: 1;
   min-height: 0;
@@ -1988,16 +1981,7 @@ h2 {
 }
 
 @media (max-width: 1439px) {
-  .focus-mode-preview-controls {
-    position: fixed;
-    z-index: 30;
-    top: 20px;
-    right: 20px;
-    padding: 0;
-  }
-
   .app--focus-mode .focus-tab-name {
-    padding-right: 56px;
     padding-left: clamp(0px, calc(588px - 50vw), 108px);
   }
 
@@ -2205,15 +2189,6 @@ h2 {
 }
 
 @media (max-width: 480px) {
-  .focus-mode-preview-controls {
-    top: 12px;
-    right: 12px;
-  }
-
-  .app--focus-mode .focus-tab-name {
-    padding-right: 48px;
-  }
-
   .app {
     padding: 12px;
   }

@@ -11,8 +11,6 @@ defineProps<{
     | 'rotate-ccw'
     | 'trash-x'
     | 'focus'
-    | 'preview'
-    | 'edit'
     | 'help'
     | 'file-output'
     | 'search'
@@ -56,13 +54,6 @@ defineProps<{
     />
     <template v-else-if="name === 'trash-x'">
       <path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6M10 11l4 4M14 11l-4 4" />
-    </template>
-    <template v-else-if="name === 'preview'">
-      <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z" />
-      <circle cx="12" cy="12" r="3" />
-    </template>
-    <template v-else-if="name === 'edit'">
-      <path d="m15 4 5 5M4 20l5-1L21 7a2.8 2.8 0 0 0-4-4L5 15l-1 5Z" />
     </template>
     <template v-else-if="name === 'focus'">
       <path d="M8 3H3v5M16 3h5v5M21 16v5h-5M8 21H3v-5" />

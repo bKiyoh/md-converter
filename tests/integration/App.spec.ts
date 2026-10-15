@@ -1,4 +1,4 @@
-import { flushPromises, mount } from '@vue/test-utils'
+import { flushPromises, mount, type VueWrapper } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   EDITOR_CONTENT_SAVE_DELAY_MS,
@@ -33,6 +33,15 @@ describe('App', () => {
 
   async function completeConversion(): Promise<void> {
     await vi.advanceTimersByTimeAsync(CONVERSION_DEBOUNCE_DELAY_MS)
+  }
+
+  async function pressFocusPreviewShortcut(wrapper: VueWrapper): Promise<void> {
+    const preview = wrapper.find('#focus-mode-preview')
+    const target = preview.exists() && preview.isVisible()
+      ? preview
+      : wrapper.get('#markdown-input')
+    await target.trigger('keydown', { key: 'Enter', ctrlKey: true })
+    await flushPromises()
   }
 
   it('入力を選択中の形式へリアルタイム変換し、文字数を表示する', async () => {
@@ -838,10 +847,9 @@ describe('App', () => {
     input.element.setSelectionRange(2, 5)
     input.element.scrollTop = 81
     input.element.scrollLeft = 3
-    const toggle = wrapper.get('.focus-mode-preview-button')
-    expect(toggle.attributes('aria-pressed')).toBe('false')
-    expect(toggle.attributes('aria-keyshortcuts')).toBe('Control+Enter Meta+Enter')
-    await toggle.trigger('click')
+    expect(wrapper.find('.focus-mode-preview-button').exists()).toBe(false)
+    expect(wrapper.find('.focus-mode-preview-controls').exists()).toBe(false)
+    await pressFocusPreviewShortcut(wrapper)
     await flushPromises()
     const preview = wrapper.get<HTMLElement>('#focus-mode-preview')
     expect(preview.isVisible()).toBe(true)
@@ -849,8 +857,6 @@ describe('App', () => {
     expect(preview.get('h1').text()).toBe('最新見出し')
     expect(preview.get('strong').text()).toBe('本文')
     expect(document.activeElement).toBe(preview.element)
-    expect(toggle.attributes('aria-pressed')).toBe('true')
-    expect(toggle.attributes('aria-label')).toBe('編集に戻る')
     expect(wrapper.get('.focus-tab-name').isVisible()).toBe(true)
     expect(wrapper.get('#markdown-input-count').text()).toContain('本文')
     expect(wrapper.get('.output-panel').isVisible()).toBe(false)
@@ -858,7 +864,7 @@ describe('App', () => {
     expect(wrapper.findAll('#focus-markdown-preview')).toHaveLength(1)
     preview.element.scrollTop = 57
     preview.element.scrollLeft = 9
-    await toggle.trigger('click')
+    await pressFocusPreviewShortcut(wrapper)
     await flushPromises()
     expect(wrapper.get('#markdown-input').element).toBe(input.element)
     expect(input.element.selectionStart).toBe(2)
@@ -866,7 +872,7 @@ describe('App', () => {
     expect(input.element.scrollTop).toBe(81)
     expect(input.element.scrollLeft).toBe(3)
     expect(document.activeElement).toBe(input.element)
-    await toggle.trigger('click')
+    await pressFocusPreviewShortcut(wrapper)
     expect(preview.element.scrollTop).toBe(57)
     expect(preview.element.scrollLeft).toBe(9)
     await wrapper.get('.focus-mode-exit-button').trigger('click')
@@ -919,7 +925,7 @@ describe('App', () => {
     await wrapper.get('#markdown-input').trigger('keydown', { key: 'f', ctrlKey: true })
     await flushPromises()
     await wrapper.get('#markdown-search-input').setValue('対象')
-    await wrapper.get('.focus-mode-preview-button').trigger('click')
+    await pressFocusPreviewShortcut(wrapper)
     expect(wrapper.get('.search-replace-panel').isVisible()).toBe(false)
     await wrapper.get('#focus-mode-preview').trigger('keydown', { key: 'h', ctrlKey: true })
     await flushPromises()
@@ -937,7 +943,7 @@ describe('App', () => {
     await wrapper.get('.focus-mode-button').trigger('click')
     input.element.setSelectionRange(1, 3)
     input.element.scrollTop = 24
-    await wrapper.get('.focus-mode-preview-button').trigger('click')
+    await pressFocusPreviewShortcut(wrapper)
     await wrapper.get('#focus-mode-preview').trigger('keydown', { key: 'Escape' })
     await flushPromises()
     expect(wrapper.get('.app').classes()).not.toContain('app--focus-mode')
@@ -954,12 +960,12 @@ describe('App', () => {
   it('空文書のプレビューを表示し、生HTMLと危険なリンクを実行可能な要素にしない', async () => {
     const wrapper = mount(App, { attachTo: document.body })
     await wrapper.get('.focus-mode-button').trigger('click')
-    await wrapper.get('.focus-mode-preview-button').trigger('click')
+    await pressFocusPreviewShortcut(wrapper)
     expect(wrapper.get('#focus-mode-preview').text()).toContain('Markdownプレビューがここに表示されます')
-    await wrapper.get('.focus-mode-preview-button').trigger('click')
+    await pressFocusPreviewShortcut(wrapper)
     const source = '<script>alert(1)</script>\n\n[危険](javascript:alert%281%29)\n\n**安全**'
     await wrapper.get('#markdown-input').setValue(source)
-    await wrapper.get('.focus-mode-preview-button').trigger('click')
+    await pressFocusPreviewShortcut(wrapper)
     const preview = wrapper.get('#focus-mode-preview')
     expect(preview.find('script').exists()).toBe(false)
     expect(preview.find('[href^="javascript:"]').exists()).toBe(false)
@@ -975,10 +981,10 @@ describe('App', () => {
     await wrapper.get('.focus-mode-button').trigger('click')
     vi.spyOn(markdownParser, 'parseMarkdown').mockImplementation(() => { throw new Error('parse failure') })
     await wrapper.get('#markdown-input').setValue('失敗時の原文')
-    await wrapper.get('.focus-mode-preview-button').trigger('click')
+    await pressFocusPreviewShortcut(wrapper)
     expect(wrapper.get('#focus-mode-preview [role="alert"]').text()).toContain('入力内容は保持されています')
     expect(wrapper.find('#focus-mode-preview h1').exists()).toBe(false)
-    await wrapper.get('.focus-mode-preview-button').trigger('click')
+    await pressFocusPreviewShortcut(wrapper)
     expect(wrapper.get<HTMLTextAreaElement>('#markdown-input').element.value).toBe('失敗時の原文')
     wrapper.unmount()
   })
@@ -1069,7 +1075,11 @@ describe('App', () => {
     expect(helpButton.attributes('aria-expanded')).toBe('true')
     expect(wrapper.find('#focus-mode-help .editor-input-guide').exists()).toBe(true)
     expect(wrapper.get('#focus-mode-help').text()).toContain('Ctrl / Command + B')
-    expect(wrapper.get('#focus-mode-help').text()).toContain('Shift + Tab')
+    expect(wrapper.get('#focus-mode-help').text()).toContain('Ctrl / Command + Enter')
+    expect(wrapper.get('#focus-mode-help').text()).toContain('フォーカスモード中のみ')
+    expect(wrapper.get('#focus-mode-help').findAll('h3').map((heading) => heading.text())).toEqual([
+      'フォーカスモード', '装飾ショートカット', '行の加工',
+    ])
 
     await wrapper.get('.focus-mode-exit-button').trigger('click')
     await wrapper.get('.focus-mode-button').trigger('click')

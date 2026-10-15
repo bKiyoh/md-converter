@@ -433,20 +433,6 @@ onBeforeUnmount(() => {
         @toggle-help="toggleFocusModeHelp"
       />
 
-      <div v-if="isFocusMode" class="focus-mode-preview-controls">
-        <IconButton
-          class="focus-mode-preview-button"
-          :accessible-label="isFocusPreview ? '編集に戻る' : 'プレビューを表示'"
-          :tooltip="`${isFocusPreview ? '編集に戻る' : 'プレビューを表示'}（Ctrl / Command + Enter）`"
-          :aria-pressed="isFocusPreview"
-          aria-controls="focus-mode-preview markdown-input"
-          aria-keyshortcuts="Control+Enter Meta+Enter"
-          @click="toggleFocusPreview"
-        >
-          <AppIcon :name="isFocusPreview ? 'edit' : 'preview'" />
-        </IconButton>
-      </div>
-
       <header v-show="!isFocusMode" class="app-header">
         <div class="brand-heading">
           <IconButton
