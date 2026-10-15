@@ -10,6 +10,7 @@ docs/
 ├─ README.md       # 文書の入口、正本、読む順番
 ├─ specs/          # 現行の製品・機能・変換仕様
 ├─ architecture/   # 現在の技術設計
+├─ designs/        # 未実装の改善案・方式検討
 ├─ plans/          # 初回リリースまでの実装計画
 ├─ post-release/   # リリース後の現行修正・改善計画
 ├─ release/        # リリース判断に使用する確認記録と配布情報
@@ -56,6 +57,32 @@ docs/
 実装計画は作業範囲を定める文書であり、製品仕様の正本ではない。設計文書は実装上の
 判断を記録する資料であり、製品仕様を上書きしない。
 
+### フォーカスモード改善の設計案
+
+以下は2026-10-15の改善依頼をNo.別に整理した検討案であり、未実装である。
+各文書は現状、推奨仕様、実現方法、変更予定ファイル、検証条件、残る判断を記録する。
+現行仕様は引き続き `specs/` を正本とし、採用時に対象仕様と実装計画を先に更新する。
+既存のアクティブなPR-8と保留中マイルストーンの順序は、この設計作成では変更しない。
+
+| No. | 設計書 | 優先度 | 主な検討内容 |
+| --- | --- | --- | --- |
+| 1 | [エディタの横幅調整](designs/focus-mode/no-01-editor-width.md) | 高 | 外側中央領域と本文幅を分け、本文の上限720pxを目標にする |
+| 2 | [フォントの最適化](designs/focus-mode/no-02-font-family.md) | 高 | Noto Sans JPの400を第一候補に、既存書体との比較・自己ホストを検討 |
+| 3 | [フォントサイズの調整](designs/focus-mode/no-03-font-size.md) | 高 | 本文18px相当、ブラウザの文字サイズ設定への追従 |
+| 4 | [行間・文字間隔の調整](designs/focus-mode/no-04-line-and-letter-spacing.md) | 高 | 行高1.8、字間0.02em、検索層との文字組み共有 |
+| 5 | [段落間の余白調整](designs/focus-mode/no-05-paragraph-spacing.md) | 高 | textareaの制約、原文空行による代替案、18px追加は判断待ち |
+| 6 | [タイプライターモード](designs/focus-mode/no-06-typewriter-mode.md) | 中 | カーソル座標計測、IME・検索・手動スクロールとの優先順位 |
+| 7 | [本文文字数カウント](designs/focus-mode/no-07-character-count.md) | 中 | 既存の原文コードポイント数を再利用し下部へ表示 |
+| 8 | [背景デザイン改善](designs/focus-mode/no-08-background-design.md) | 中 | テーマ別の微細なグラデーションと視認性確認 |
+
+採用する場合の推奨検討順はNo.1→2→3→4→5の方式判断→7→8→6。
+本文の文字組みを先に決め、座標計測を伴うNo.6を最後に評価する。
+これは実装開始や複数マイルストーンの同時実施を指示する順序ではない。
+No.7・8は単独でも導入できる。No.5の希望仕様保留は他No.の検討を妨げない。
+
+No.1は現行PR-6の幅拡張方針との関係を整理する必要がある。No.2・4・5で指定された
+参考サイトは本文・CSSを取得できず、サイトの実測値と提示された候補値は区別している。
+
 ## 履歴・記録
 
 | 文書 | 役割 |
@@ -76,6 +103,7 @@ docs/
 | 変換処理の変更 | `specs/conversion-rules.md`、`post-release/maintenance-plan.md` |
 | 文書タブ・保存の変更 | `specs/tab-management-spec.md`、`specs/product-spec.md`、`post-release/maintenance-plan.md` |
 | フォーカスモードの変更 | `specs/focus-mode-spec.md`、`specs/product-spec.md`、`post-release/maintenance-plan.md` |
+| フォーカスモード改善案の検討・採用判断 | 上記の現行仕様・計画と、対象No.の `designs/focus-mode/` 設計書 |
 | 入力置換の変更 | `specs/input-replacement-spec.md`、`specs/product-spec.md`、`post-release/maintenance-plan.md` |
 | 全角Markdown補正の変更 | `specs/full-width-markdown-normalization-spec.md`、`specs/product-spec.md`、`post-release/maintenance-plan.md` |
 | Parser・中間表現の変更 | `architecture/parser-design.md`、関連する現行仕様、`post-release/maintenance-plan.md` |
@@ -87,6 +115,7 @@ docs/
 - リリース後の修正・新機能は `post-release/maintenance-plan.md` に対象範囲、対象外、完了条件を追加してから実装する
 - 変換仕様を変える場合は、`specs/conversion-rules.md` と対応するテストを同じ作業で更新する
 - 実装だけの詳細は仕様書へ重複させず、必要に応じて技術解説へ記録する
+- 未実装の設計案は現行仕様と区別し、採用・保留・見送りの判断と実装後の文書状態を更新する
 - 完了した計画は現行計画へ残し続けず、`archive/` へ移して履歴として保存する
 - 初回リリース前の計画へ、リリース後の修正や改善を追記しない
 - リリース後に公開した変更は `post-release/change-log.md` へ追記する
