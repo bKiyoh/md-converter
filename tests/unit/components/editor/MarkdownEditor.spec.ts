@@ -732,9 +732,12 @@ describe('MarkdownEditor', () => {
     wrapper.unmount()
   })
 
-  it.each(['loadingdone', 'loadingerror'])(
-    'フォーカス中の%sで検索位置を再評価し、選択・本文・フォーカスを維持する',
-    async (eventName) => {
+  it.each([
+    [false, 'loadingdone'], [false, 'loadingerror'],
+    [true, 'loadingdone'], [true, 'loadingerror'],
+  ] as const)(
+    'focusMode=%sの%sで検索位置を再評価し、選択・本文・フォーカスを維持する',
+    async (focusMode, eventName) => {
       const originalFonts = Object.getOwnPropertyDescriptor(document, 'fonts')
       const fonts = new EventTarget()
       Object.defineProperty(document, 'fonts', { configurable: true, value: fonts })
@@ -752,7 +755,7 @@ describe('MarkdownEditor', () => {
           modelValue: '前の行\n検索対象\n後ろの行',
           characterCount: 13,
           editorInternalScroll: true,
-          focusMode: true,
+          focusMode,
         },
         attachTo: document.body,
       })
@@ -789,7 +792,30 @@ describe('MarkdownEditor', () => {
     },
   )
 
-  it('通常モードのフォントイベントは編集位置を動かさず、破棄時に両リスナーを解除する', async () => {
+  it.each(['loadingdone', 'loadingerror'])(
+    '通常の伸長表示は%s後の本文高さへ追従する', async (eventName) => {
+      const originalFonts = Object.getOwnPropertyDescriptor(document, 'fonts')
+      const fonts = new EventTarget()
+      Object.defineProperty(document, 'fonts', { configurable: true, value: fonts })
+      const wrapper = mount(MarkdownEditor, {
+        props: { modelValue: '本文', characterCount: 2, editorInternalScroll: false },
+      })
+      try {
+        const textarea = wrapper.get<HTMLTextAreaElement>('#markdown-input')
+        Object.defineProperty(textarea.element, 'scrollHeight', { value: 860 })
+        fonts.dispatchEvent(new Event(eventName))
+        expect(textarea.element.style.height).toBe('860px')
+        expect(textarea.element.value).toBe('本文')
+        expect(wrapper.emitted('update:modelValue')).toBeUndefined()
+      } finally {
+        wrapper.unmount()
+        if (originalFonts) Object.defineProperty(document, 'fonts', originalFonts)
+        else Reflect.deleteProperty(document, 'fonts')
+      }
+    },
+  )
+
+  it('検索を閉じた通常モードのフォントイベントは編集位置を動かさず、破棄時に両リスナーを解除する', async () => {
     const originalFonts = Object.getOwnPropertyDescriptor(document, 'fonts')
     const fonts = new EventTarget()
     const addListener = vi.spyOn(fonts, 'addEventListener')
@@ -798,8 +824,6 @@ describe('MarkdownEditor', () => {
     const wrapper = mountInteractiveEditor('検索対象')
 
     try {
-      await wrapper.get('.editor-search-button').trigger('click')
-      await wrapper.get<HTMLInputElement>('#markdown-search-input').setValue('検索対象')
       const textarea = wrapper.get<HTMLTextAreaElement>('#markdown-input')
       textarea.element.scrollTop = 123
       for (const name of ['loadingdone', 'loadingerror']) {

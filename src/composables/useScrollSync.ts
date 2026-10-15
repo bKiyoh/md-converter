@@ -255,6 +255,7 @@ export function useScrollSync(options: ScrollSyncOptions): void {
   onMounted(() => {
     window.addEventListener('resize', invalidate)
     document.fonts?.addEventListener('loadingdone', invalidate)
+    document.fonts?.addEventListener('loadingerror', invalidate)
   })
 
   onBeforeUnmount(() => {
@@ -265,5 +266,6 @@ export function useScrollSync(options: ScrollSyncOptions): void {
     expectedPositions.clear()
     window.removeEventListener('resize', invalidate)
     document.fonts?.removeEventListener('loadingdone', invalidate)
+    document.fonts?.removeEventListener('loadingerror', invalidate)
   })
 }

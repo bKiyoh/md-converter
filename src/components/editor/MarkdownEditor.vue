@@ -449,10 +449,6 @@ function resizeTextarea(): void {
 }
 
 function handleFontLoadingFinished(): void {
-  if (!props.focusMode) {
-    return
-  }
-
   // swap後の折り返しで現在一致が画面外へ移るため、選択を変えず位置だけを再評価する。
   resizeTextarea()
   scrollCurrentMatchIntoView()
