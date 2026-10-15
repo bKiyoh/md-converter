@@ -1675,11 +1675,33 @@ h2 {
 }
 
 .app.app--focus-mode {
+  --focus-bg-center: #faf8f2;
+  --focus-bg-base: #f5f2ea;
+  --focus-bg-edge: #eeebe3;
+
+  background-color: var(--focus-bg-base);
+  background-image: radial-gradient(
+    ellipse at 50% 50%,
+    var(--focus-bg-center) 0%,
+    var(--focus-bg-base) 60%,
+    var(--focus-bg-edge) 100%
+  );
   height: 100vh;
   height: 100dvh;
   min-height: 0;
   padding: 0;
   overflow: hidden;
+}
+
+.app.app--focus-mode[data-theme="dark"] {
+  --focus-bg-center: #151d2a;
+  --focus-bg-base: #111722;
+  --focus-bg-edge: #0e131c;
+  --search-current-bg: rgb(251 146 60 / 56%);
+}
+
+.app--focus-mode .text-area::placeholder {
+  opacity: 1;
 }
 
 .app--focus-mode .app-content {
@@ -1796,7 +1818,7 @@ h2 {
   padding: 20px;
   border: 0;
   border-radius: 0;
-  background: var(--page);
+  background: transparent;
   box-shadow: none;
 }
 
@@ -1824,17 +1846,17 @@ h2 {
 .app--focus-mode .text-area {
   min-height: 0;
   border: 0;
-  background: var(--page);
+  background: transparent;
 }
 
 .app--focus-mode .text-area-shell {
   min-height: 0;
-  background: var(--page);
+  background: transparent;
 }
 
 .app--focus-mode .search-highlight-layer {
   border: 0;
-  background: var(--page);
+  background: transparent;
 }
 
 .app--focus-mode .text-area-shell--highlighting .text-area {
@@ -2200,5 +2222,21 @@ h2 {
   .preview-placeholder {
     min-height: 340px;
     padding: 13px;
+  }
+}
+
+@media (forced-colors: active) {
+  .app.app--focus-mode {
+    --text: CanvasText;
+    --muted: CanvasText;
+    --search-match-bg: Mark;
+    --search-current-bg: Mark;
+
+    color: CanvasText;
+    background: Canvas;
+  }
+
+  .app--focus-mode .search-highlight--current {
+    outline: 1px solid Highlight;
   }
 }
