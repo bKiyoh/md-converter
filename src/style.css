@@ -1776,6 +1776,8 @@ h2 {
 }
 
 .app--focus-mode .editor-panel {
+  --focus-editor-column-width: 752px;
+
   height: 100%;
   min-height: 0;
   padding: 20px;
@@ -1783,6 +1785,13 @@ h2 {
   border-radius: 0;
   background: var(--page);
   box-shadow: none;
+}
+
+.app--focus-mode .editor-panel > :is(.focus-tab-name, .search-replace-panel, .text-area-shell) {
+  width: 100%;
+  min-width: 0;
+  max-width: var(--focus-editor-column-width);
+  margin-inline: auto;
 }
 
 .app--focus-mode .panel-footer {
