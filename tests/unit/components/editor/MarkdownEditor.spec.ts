@@ -707,6 +707,92 @@ describe('MarkdownEditor', () => {
     wrapper.unmount()
   })
 
+  it.each(['loadingdone', 'loadingerror'])(
+    'フォーカス中の%sで検索位置を再評価し、選択・本文・フォーカスを維持する',
+    async (eventName) => {
+      const originalFonts = Object.getOwnPropertyDescriptor(document, 'fonts')
+      const fonts = new EventTarget()
+      Object.defineProperty(document, 'fonts', { configurable: true, value: fonts })
+      let matchTop = 900
+      const offsetTopSpy = vi
+        .spyOn(HTMLElement.prototype, 'offsetTop', 'get')
+        .mockImplementation(function (this: HTMLElement) {
+          return this.classList.contains('search-highlight--current') ? matchTop : 0
+        })
+      const offsetHeightSpy = vi
+        .spyOn(HTMLElement.prototype, 'offsetHeight', 'get')
+        .mockReturnValue(24)
+      const wrapper = mount(MarkdownEditor, {
+        props: {
+          modelValue: '前の行\n検索対象\n後ろの行',
+          characterCount: 13,
+          editorInternalScroll: true,
+          focusMode: true,
+        },
+        attachTo: document.body,
+      })
+
+      try {
+        const textarea = wrapper.get<HTMLTextAreaElement>('#markdown-input')
+        Object.defineProperty(textarea.element, 'clientHeight', { value: 200 })
+        await wrapper.vm.openSearch()
+        const search = wrapper.get<HTMLInputElement>('#markdown-search-input')
+        await search.setValue('検索対象')
+        await flushPromises()
+        expect(textarea.element.scrollTop).toBe(812)
+
+        // 再配置後の表示位置を模擬し、現在一致とは別の手動選択も保持させる。
+        textarea.element.setSelectionRange(0, 2)
+        matchTop = 1700
+        fonts.dispatchEvent(new Event(eventName))
+        await flushPromises()
+
+        expect(textarea.element.scrollTop).toBe(1612)
+        expect(wrapper.get<HTMLDivElement>('.search-highlight-layer').element.scrollTop).toBe(1612)
+        expect(textarea.element.value).toBe('前の行\n検索対象\n後ろの行')
+        expect([textarea.element.selectionStart, textarea.element.selectionEnd]).toEqual([0, 2])
+        expect(document.activeElement).toBe(search.element)
+        expect(wrapper.get('.search-result-status').text()).toBe('1 / 1')
+        expect(wrapper.emitted('update:modelValue')).toBeUndefined()
+      } finally {
+        wrapper.unmount()
+        offsetTopSpy.mockRestore()
+        offsetHeightSpy.mockRestore()
+        if (originalFonts) Object.defineProperty(document, 'fonts', originalFonts)
+        else Reflect.deleteProperty(document, 'fonts')
+      }
+    },
+  )
+
+  it('通常モードのフォントイベントは編集位置を動かさず、破棄時に両リスナーを解除する', async () => {
+    const originalFonts = Object.getOwnPropertyDescriptor(document, 'fonts')
+    const fonts = new EventTarget()
+    const addListener = vi.spyOn(fonts, 'addEventListener')
+    const removeListener = vi.spyOn(fonts, 'removeEventListener')
+    Object.defineProperty(document, 'fonts', { configurable: true, value: fonts })
+    const wrapper = mountInteractiveEditor('検索対象')
+
+    try {
+      await wrapper.get('.editor-search-button').trigger('click')
+      await wrapper.get<HTMLInputElement>('#markdown-search-input').setValue('検索対象')
+      const textarea = wrapper.get<HTMLTextAreaElement>('#markdown-input')
+      textarea.element.scrollTop = 123
+      for (const name of ['loadingdone', 'loadingerror']) {
+        fonts.dispatchEvent(new Event(name))
+      }
+      expect(textarea.element.scrollTop).toBe(123)
+    } finally {
+      wrapper.unmount()
+      for (const name of ['loadingdone', 'loadingerror']) {
+        const listener = addListener.mock.calls.find(([event]) => event === name)?.[1]
+        expect(listener).toBeTypeOf('function')
+        expect(removeListener).toHaveBeenCalledWith(name, listener)
+      }
+      if (originalFonts) Object.defineProperty(document, 'fonts', originalFonts)
+      else Reflect.deleteProperty(document, 'fonts')
+    }
+  })
+
   it('表示範囲外の現在一致までtextareaをスクロールする', async () => {
     const offsetTopSpy = vi
       .spyOn(HTMLElement.prototype, 'offsetTop', 'get')

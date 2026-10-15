@@ -59,6 +59,7 @@ const isSearchOpen = ref<boolean>(false)
 const isReplaceExpanded = ref<boolean>(false)
 const source = computed<string>(() => props.modelValue)
 const documentKey = computed<string>(() => props.activeTabId)
+const fontSet: FontFaceSet | undefined = document.fonts
 
 function getMinimalTextEdit(
   currentValue: string,
@@ -447,6 +448,17 @@ function resizeTextarea(): void {
   syncSearchHighlightScroll()
 }
 
+function handleFontLoadingFinished(): void {
+  if (!props.focusMode) {
+    return
+  }
+
+  // swap後の折り返しで現在一致が画面外へ移るため、選択を変えず位置だけを再評価する。
+  resizeTextarea()
+  scrollCurrentMatchIntoView()
+  syncSearchHighlightScroll()
+}
+
 async function updateValue(event: Event): Promise<void> {
   emit('update:modelValue', (event.target as HTMLTextAreaElement).value)
   await nextTick()
@@ -501,11 +513,15 @@ onMounted(() => {
   emit('scroll-element', textarea.value)
   resizeTextarea()
   document.addEventListener('keydown', handleDocumentKeydown)
+  fontSet?.addEventListener('loadingdone', handleFontLoadingFinished)
+  fontSet?.addEventListener('loadingerror', handleFontLoadingFinished)
 })
 
 onBeforeUnmount(() => {
   emit('scroll-element', null)
   document.removeEventListener('keydown', handleDocumentKeydown)
+  fontSet?.removeEventListener('loadingdone', handleFontLoadingFinished)
+  fontSet?.removeEventListener('loadingerror', handleFontLoadingFinished)
 })
 
 defineExpose({ captureViewState, restoreViewState, isConnected, openSearch })

@@ -14,6 +14,14 @@ output, but are listed for repository and build-environment review. Optional pac
 deterministically because their installation varies by platform and environment. This notice covers
 third-party materials only and does not grant a license for the Md Converter project itself.
 
+## Static font assets
+
+Noto Sans JP 400 (derived from version 2.004) is distributed as
+`public/fonts/noto-sans-jp-400.woff2` under the SIL Open Font License 1.1.
+Copyright and the full license are preserved in [OFL-NotoSansJP.txt](public/fonts/OFL-NotoSansJP.txt).
+Source, transformation details, size and SHA-256 are recorded in
+[asset-provenance.md](docs/release/asset-provenance.md#noto-sans-jp-400pr-11).
+
 ## Dependency manifest
 
 | Package | Scope | License | Copyright / author | Full text |

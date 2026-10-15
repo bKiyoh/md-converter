@@ -195,6 +195,37 @@ WebKitの検索フォーカスの問題を今回修正したものとは扱わ�
 製品版Chrome・Edge・Safari、最低対応版、実際の200%ズーム、モバイル実機、IME、
 タッチ・トラックパッド、スクリーンリーダーは未確認。公開済みとは扱わない。
 
+### PR-11 フォーカスモード改善No.2 フォントの最適化（2026-10-15）
+
+macOS 14.5（Darwin 23.5.0 arm64）で、既存の外部Playwright環境からローカルViteを確認した。
+通常モードでフォント要求がなく、フォーカス開始時だけ同一オリジンのWOFF2を1件要求した。
+詳細な比較画像・採用理由・容量と時間の限界は `../designs/focus-mode/no-02-font-family.md` に記録した。
+
+| 環境 | 保留中の入力・削除・検索 | 読込成功／失敗後の現在一致 | 独立Rangeとの最大差 | 往復Undo/Redo |
+| --- | --- | --- | ---: | --- |
+| Chromium 148.0.7778.96 | 可 | 可視範囲を維持 | 約0.02px | 確認済み |
+| Firefox 150.0.2 | 可 | 可視範囲を維持 | 約0.001px未満 | PR-4の既存問題を再現 |
+| Playwright WebKit 26.4 | 可 | 可視範囲を維持 | 約0.89px | 確認済み |
+
+- 320、480、767、768、960、1440、2560pxで本文と検索層の内幅・scrollHeightを比較し、一致した。ページの横はみ出しはなかった
+- フォント応答を保留した状態と、その後の成功／通信失敗をそれぞれ確認した。読込完了で折り返しとscrollTopは変わるが、本文・手動選択・検索結果・フォーカス・同じtextarea DOMを維持し、現在一致を可視範囲へ戻せた
+- 本文を含む外部要求はなく、通常モードへ戻すと元の書体に戻った。ライト・ダークの比較画像を目視確認した
+- 実際の描画書体をChromiumのプローブで取得し、同梱のNotoSansJP-Regularがcustom fontとして使用された。絵文字はApple Color Emojiへフォールバックした
+- キャッシュなし／再訪のローカルResource TimingはChromium 59.7／1.2ms、WebKit 4／1ms、再訪のbody転送は0 bytes。Firefoxは初回13ms、再訪はエントリーなしのため時間・転送量を断定しない。実回線の所要時間は未確認
+- `npm run build -- --base=/font-check/` の本番プレビューで、`/font-check/fonts/noto-sans-jp-400.woff2` と付属ライセンスの200応答・内容を確認した。最後に通常baseでビルドし直した
+- 前回の一時スクリプト `md-focus-history.cjs` を再実行し、HEADの変更前CSSと比較した。Chromium・WebKitはUndo/Redoでき、Firefoxは両方でモード切り替え後Undoできない。PR-4の既存課題のままとする
+
+再現に使用した一時スクリプトは `/private/tmp/md-focus-font-research/compare.cjs`、`verify.cjs`、
+`check-build.cjs`。プロジェクトへPlaywright依存や恒常的なテスト環境は追加していない。
+lint・型チェック・通常base／サブパスbaseのビルド・diffチェックは成功。
+全体テストは520件成功、既存PR-3のハイライト上限テスト1件が5秒でタイムアウト。
+新規3件（読込完了・失敗時の検索と状態保持、通常モード無影響と破棄時の解除）は成功した。
+licenses:checkは既存PR-2のbrace-expansionの版不整合で失敗した。
+
+Windows、iPadOS、製品版Chrome・Edge・Safariと最低対応版、実際の200%ズーム、IME、
+低速な実回線は未確認。これらは実機でプレースホルダー・欠字・選択・検索・モード往復と
+Undo/Redoをライト／ダーク双方で確認する。未確認項目を合格または公開済みとは扱わない。
+
 ### 全体の確認項目
 
 正式リリースの候補ビルドをHTTPSで配信し、対象OSとブラウザの組み合わせごとに次を確認する。

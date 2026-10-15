@@ -1,3 +1,11 @@
+@font-face {
+  font-family: "Noto Sans JP";
+  src: url("/fonts/noto-sans-jp-400.woff2") format("woff2");
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+}
+
 :root {
   font-family:
     Inter,
@@ -1777,6 +1785,8 @@ h2 {
 
 .app--focus-mode .editor-panel {
   --focus-editor-column-width: 752px;
+  --focus-editor-font-family: "Noto Sans JP", "Hiragino Kaku Gothic ProN", "Yu Gothic", Meiryo, sans-serif;
+  --focus-editor-font-weight: 400;
 
   height: 100%;
   min-height: 0;
@@ -1796,6 +1806,11 @@ h2 {
 
 .app--focus-mode .panel-footer {
   display: none;
+}
+
+.app--focus-mode .editor-panel :is(.text-area, .search-highlight-layer) {
+  font-family: var(--focus-editor-font-family);
+  font-weight: var(--focus-editor-font-weight);
 }
 
 .app--focus-mode .text-area {

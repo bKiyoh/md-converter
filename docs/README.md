@@ -51,7 +51,7 @@ docs/
 | [`plans/implementation-plan.md`](plans/implementation-plan.md) | 初回リリース前の最終計画を保存する履歴 |
 | [`architecture/parser-design.md`](architecture/parser-design.md) | Parserの採用理由、中間表現へ保持する情報、制約 |
 | [`release/browser-verification.md`](release/browser-verification.md) | 正式対応ブラウザ、確認済み環境、リリース前の手動確認項目 |
-| [`release/asset-provenance.md`](release/asset-provenance.md) | 画像資産の生成・加工履歴、ハッシュ、公開前の権利確認事項 |
+| [`release/asset-provenance.md`](release/asset-provenance.md) | 画像・フォント資産の出典・加工履歴、ハッシュ、公開前の権利確認事項 |
 | [`../THIRD_PARTY_NOTICES.md`](../THIRD_PARTY_NOTICES.md) | 依存パッケージの版、ライセンス、著作権表示、ライセンス全文 |
 
 実装計画は作業範囲を定める文書であり、製品仕様の正本ではない。設計文書は実装上の
@@ -59,15 +59,15 @@ docs/
 
 ### フォーカスモード改善の設計案
 
-以下は2026-10-15の改善依頼をNo.別に整理した設計書である。No.1はPR-10で幅・配置の実装と検証を完了し、No.2〜8は未実装である。
+以下は2026-10-15の改善依頼をNo.別に整理した設計書である。No.1はPR-10、No.2はPR-11で対象実装と開発環境の検証を完了し、No.3〜8は未実装である。実機確認などの残件は各設計書と確認記録を参照する。
 各文書は現状、推奨仕様、実現方法、変更予定ファイル、検証条件、残る判断を記録する。
 現行仕様は引き続き `specs/` を正本とし、採用時に対象仕様と実装計画を先に更新する。
-今回のNo.1を優先する指示によりPR-8を保留した。現在の作業範囲と状態は実装計画を参照する。
+No.1に続き今回のNo.2を優先する指示によりPR-8の保留を維持した。現在の作業範囲と状態は実装計画を参照する。
 
 | No. | 設計書 | 優先度 | 主な検討内容 |
 | --- | --- | --- | --- |
 | 1 | [エディタの横幅調整](designs/focus-mode/no-01-editor-width.md) | 高 | 実装・幅検証済み。外側中央領域と本文幅を分け、本文の上限720pxを適用 |
-| 2 | [フォントの最適化](designs/focus-mode/no-02-font-family.md) | 高 | Noto Sans JPの400を第一候補に、既存書体との比較・自己ホストを検討 |
+| 2 | [フォントの最適化](designs/focus-mode/no-02-font-family.md) | 高 | 3案比較後、Noto Sans JP 400を自己ホストで実装。開発環境で検証済み、実機確認は残件 |
 | 3 | [フォントサイズの調整](designs/focus-mode/no-03-font-size.md) | 高 | 本文18px相当、ブラウザの文字サイズ設定への追従 |
 | 4 | [行間・文字間隔の調整](designs/focus-mode/no-04-line-and-letter-spacing.md) | 高 | 行高1.8、字間0.02em、検索層との文字組み共有 |
 | 5 | [段落間の余白調整](designs/focus-mode/no-05-paragraph-spacing.md) | 高 | textareaの制約、原文空行による代替案、18px追加は判断待ち |
