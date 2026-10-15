@@ -9,17 +9,6 @@ defineProps<{
     <h2 :id="titleId">入力支援</h2>
 
     <section>
-      <h3>フォーカスモード</h3>
-      <dl>
-        <div>
-          <dt>編集／プレビュー切り替え</dt>
-          <dd>Ctrl / Command + Enter</dd>
-        </div>
-      </dl>
-      <p>フォーカスモード中のみ使用できます。</p>
-    </section>
-
-    <section>
       <h3>装飾ショートカット</h3>
       <dl>
         <div>
@@ -65,6 +54,26 @@ defineProps<{
           <dd>Ctrl + Alt / Command + Option + 1</dd>
         </div>
       </dl>
+    </section>
+
+    <section>
+      <h3>検索</h3>
+      <dl>
+        <div>
+          <dt>検索</dt>
+          <dd>Ctrl / Command + F</dd>
+        </div>
+        <div>
+          <dt>置換</dt>
+          <dd>Ctrl + H / Command + Option + F</dd>
+        </div>
+      </dl>
+    </section>
+
+    <section>
+      <h3>編集／プレビュー切り替え</h3>
+      <p>Ctrl / Command + Enter</p>
+      <p>フォーカスモード中のみ使用できます。</p>
     </section>
   </div>
 </template>

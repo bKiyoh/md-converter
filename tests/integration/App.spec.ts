@@ -1077,8 +1077,13 @@ describe('App', () => {
     expect(wrapper.get('#focus-mode-help').text()).toContain('Ctrl / Command + B')
     expect(wrapper.get('#focus-mode-help').text()).toContain('Ctrl / Command + Enter')
     expect(wrapper.get('#focus-mode-help').text()).toContain('フォーカスモード中のみ')
+    expect(wrapper.get('#focus-mode-help').text()).toContain('Ctrl / Command + F')
+    expect(wrapper.get('#focus-mode-help').text()).toContain('Ctrl + H / Command + Option + F')
+    expect(wrapper.get('#focus-mode-help').findAll('section').at(-1)?.text()).toBe(
+      '編集／プレビュー切り替えCtrl / Command + Enterフォーカスモード中のみ使用できます。',
+    )
     expect(wrapper.get('#focus-mode-help').findAll('h3').map((heading) => heading.text())).toEqual([
-      'フォーカスモード', '装飾ショートカット', '行の加工',
+      '装飾ショートカット', '行の加工', '検索', '編集／プレビュー切り替え',
     ])
 
     await wrapper.get('.focus-mode-exit-button').trigger('click')

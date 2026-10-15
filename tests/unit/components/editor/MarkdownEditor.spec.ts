@@ -1021,8 +1021,13 @@ describe('MarkdownEditor', () => {
     )
     expect(guidePanel.text()).toContain('Ctrl / Command + Enter')
     expect(guidePanel.text()).toContain('フォーカスモード中のみ')
+    expect(guidePanel.text()).toContain('Ctrl / Command + F')
+    expect(guidePanel.text()).toContain('Ctrl + H / Command + Option + F')
+    expect(guidePanel.findAll('section').at(-1)?.text()).toBe(
+      '編集／プレビュー切り替えCtrl / Command + Enterフォーカスモード中のみ使用できます。',
+    )
     expect(guidePanel.findAll('h3').map((heading) => heading.text())).toEqual([
-      'フォーカスモード', '装飾ショートカット', '行の加工',
+      '装飾ショートカット', '行の加工', '検索', '編集／プレビュー切り替え',
     ])
     expect(wrapper.get('.editor-panel').classes()).toContain('editor-panel--guide-open')
 
