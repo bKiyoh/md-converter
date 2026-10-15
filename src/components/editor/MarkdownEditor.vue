@@ -658,7 +658,7 @@ defineExpose({ captureViewState, restoreViewState, isConnected, openSearch })
         class="character-count"
         :aria-live="focusMode ? 'off' : 'polite'"
       >
-        {{ characterCount.toLocaleString('ja-JP') }}文字
+        {{ characterCount.toLocaleString('ja-JP') }}{{ focusMode ? '' : '文字' }}
         <span v-if="focusMode" class="visually-hidden">（Markdown記号・空白・改行を含む入力文字数）</span>
       </p>
     </div>
