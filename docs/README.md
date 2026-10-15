@@ -78,7 +78,7 @@ PR-22で「フォーカスモード」見出しを削除し、共通入力支援
 | 4 | [行間・文字間隔の調整](designs/focus-mode/no-04-line-and-letter-spacing.md) | 高 | 5案比較後に行高1.8・字間0.02emを採用・実装し、検索層との一致を検証済み |
 | 5 | [段落間の余白調整](designs/focus-mode/no-05-paragraph-spacing.md) | 高 | 原文空行＋行間改善を利用者選択で採用・確認済み。18px専用余白は保留 |
 | 6 | [文末の下余白](designs/focus-mode/no-06-typewriter-mode.md) | 中 | 利用者選択で手動方式へ変更。CSSの下余白で最終行を上端へ送れる。対象実装・開発環境検証済み |
-| 7 | [本文文字数カウント](designs/focus-mode/no-07-character-count.md) | 中 | 既存の原文コードポイント数を再利用し下部へ表示、実装・検証済み |
+| 7 | [本文文字数カウント](designs/focus-mode/no-07-character-count.md) | 中 | 既存の原文コードポイント数を再利用し下部へ表示、実装・検証済み。PR-23で表示はラベルなしの「N文字」へ変更 |
 | 8 | [背景デザイン改善](designs/focus-mode/no-08-background-design.md) | 中 | 比較・コントラスト測定後に静的グラデーションを実装。強制色エミュレーション確認済み |
 
 採用する場合の推奨検討順はNo.1→2→3→4→5の方式判断→7→8→6。
