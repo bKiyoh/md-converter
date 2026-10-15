@@ -48,6 +48,31 @@ function mountInteractiveEditor(
 }
 
 describe('MarkdownEditor', () => {
+  it('既存文字数要素をフォーカス中も共有し、説明と読み上げを切り替える', async () => {
+    const wrapper = mount(MarkdownEditor, {
+      props: { modelValue: '日本語😀', characterCount: 4, editorInternalScroll: true },
+      attachTo: document.body,
+    })
+    const count = wrapper.get('#markdown-input-count').element
+    expect(wrapper.get('#markdown-input-count').attributes('aria-live')).toBe('polite')
+    await wrapper.setProps({ focusMode: true })
+    expect(wrapper.get('#markdown-input-count').element).toBe(count)
+    expect(wrapper.findAll('#markdown-input-count')).toHaveLength(1)
+    expect(wrapper.get('#markdown-input-count').text()).toContain('本文 4文字')
+    expect(wrapper.get('#markdown-input-count').text()).toContain('Markdown記号・空白・改行を含む入力文字数')
+    expect(wrapper.get('#markdown-input-count').attributes('aria-live')).toBe('off')
+    expect(wrapper.get('#markdown-input').attributes('aria-describedby')).toBe('markdown-input-count')
+    expect(wrapper.get('.editor-search-button').isVisible()).toBe(false)
+    expect(wrapper.get('.input-guide-button').isVisible()).toBe(false)
+    await wrapper.setProps({ characterCount: 0 })
+    expect(wrapper.get('#markdown-input-count').text()).toContain('本文 0文字')
+    await wrapper.setProps({ focusMode: false })
+    expect(wrapper.get('#markdown-input-count').element).toBe(count)
+    expect(wrapper.get('#markdown-input-count').attributes('aria-live')).toBe('polite')
+    expect(wrapper.get('.editor-search-button').isVisible()).toBe(true)
+    wrapper.unmount()
+  })
+
   const replacementRules: InputReplacementRule[] = [
     { id: 'ai', source: 'ai', replacement: 'AI', enabled: true },
     { id: 'right', source: '右', replacement: '⇨', enabled: true },

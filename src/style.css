@@ -1800,7 +1800,7 @@ h2 {
   box-shadow: none;
 }
 
-.app--focus-mode .editor-panel > :is(.focus-tab-name, .search-replace-panel, .text-area-shell) {
+.app--focus-mode .editor-panel > :is(.focus-tab-name, .search-replace-panel, .text-area-shell, .panel-footer) {
   width: 100%;
   min-width: 0;
   max-width: var(--focus-editor-column-width);
@@ -1808,7 +1808,9 @@ h2 {
 }
 
 .app--focus-mode .panel-footer {
-  display: none;
+  min-height: 24px;
+  padding-block: 0;
+  flex: 0 0 auto;
 }
 
 .app--focus-mode .editor-panel :is(.text-area, .search-highlight-layer) {

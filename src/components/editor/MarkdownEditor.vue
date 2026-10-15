@@ -602,7 +602,7 @@ defineExpose({ captureViewState, restoreViewState, isConnected, openSearch })
           editorInternalScroll ? 'text-area--internal-scroll' : 'text-area--expand'
         "
         :value="modelValue"
-        :aria-describedby="focusMode ? undefined : 'markdown-input-count'"
+        aria-describedby="markdown-input-count"
         placeholder="Markdownを入力してください"
         spellcheck="true"
         @input="updateValue"
@@ -624,8 +624,8 @@ defineExpose({ captureViewState, restoreViewState, isConnected, openSearch })
       <EditorInputGuideContent title-id="markdown-input-guide-title" />
     </section>
 
-    <div v-show="!focusMode" class="panel-footer">
-      <div class="input-guide-root">
+    <div class="panel-footer">
+      <div v-show="!focusMode" class="input-guide-root">
         <button
           v-tooltip="'文章検索（Ctrl / Command + F）'"
           class="editor-search-button"
@@ -648,8 +648,13 @@ defineExpose({ captureViewState, restoreViewState, isConnected, openSearch })
           <AppIcon name="help" />
         </button>
       </div>
-      <p id="markdown-input-count" class="character-count" aria-live="polite">
-        {{ characterCount.toLocaleString('ja-JP') }}文字
+      <p
+        id="markdown-input-count"
+        class="character-count"
+        :aria-live="focusMode ? 'off' : 'polite'"
+      >
+        <span v-if="focusMode">本文 </span>{{ characterCount.toLocaleString('ja-JP') }}文字
+        <span v-if="focusMode" class="visually-hidden">（Markdown記号・空白・改行を含む入力文字数）</span>
       </p>
     </div>
   </section>
