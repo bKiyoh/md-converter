@@ -2226,7 +2226,7 @@ h2 {
 }
 
 @media (forced-colors: active) {
-  .app.app--focus-mode {
+  .app.app--focus-mode[data-theme] {
     --text: CanvasText;
     --muted: CanvasText;
     --search-match-bg: Mark;
