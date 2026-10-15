@@ -12,6 +12,7 @@ import TooltipTarget from './components/common/TooltipTarget.vue'
 import EditorTabs from './components/editor/EditorTabs.vue'
 import EditableTabName from './components/editor/EditableTabName.vue'
 import FocusModeGuide from './components/editor/FocusModeGuide.vue'
+import FocusModePreview from './components/editor/FocusModePreview.vue'
 import MarkdownEditor from './components/editor/MarkdownEditor.vue'
 import OutputFormatSelect from './components/output/OutputFormatSelect.vue'
 import OutputPanel from './components/output/OutputPanel.vue'
@@ -100,15 +101,18 @@ const {
 } = useClipboard()
 const activePanel = ref<WorkspacePanel>('input')
 const markdownEditor = ref<MarkdownEditorController | null>(null)
+const focusPreviewElement = shallowRef<HTMLElement | null>(null)
 const {
   isFocusMode,
+  isFocusPreview,
+  toggleFocusPreview,
   isFocusModeHelpOpen,
   enterFocusMode,
   exitFocusMode,
   toggleFocusModeHelp,
 } = useFocusMode(markdownEditor, () => {
   activePanel.value = 'input'
-})
+}, focusPreviewElement)
 const inputTab = ref<HTMLButtonElement | null>(null)
 const outputTab = ref<HTMLButtonElement | null>(null)
 const infoModal = ref<HTMLElement | null>(null)
@@ -285,7 +289,12 @@ async function copyStorageRecoveryData(): Promise<void> {
   }
 }
 
+watch(isFocusPreview, (visible) => {
+  if (visible) flushPendingConversion()
+}, { flush: 'sync' })
+
 async function openEditorSearch(showReplace = false): Promise<void> {
+  if (isFocusPreview.value) await toggleFocusPreview()
   activePanel.value = 'input'
   await nextTick()
   await markdownEditor.value?.openSearch(showReplace)
@@ -423,6 +432,20 @@ onBeforeUnmount(() => {
         @exit="exitFocusMode"
         @toggle-help="toggleFocusModeHelp"
       />
+
+      <div v-if="isFocusMode" class="focus-mode-preview-controls">
+        <IconButton
+          class="focus-mode-preview-button"
+          :accessible-label="isFocusPreview ? '編集に戻る' : 'プレビューを表示'"
+          :tooltip="`${isFocusPreview ? '編集に戻る' : 'プレビューを表示'}（Ctrl / Command + Enter）`"
+          :aria-pressed="isFocusPreview"
+          aria-controls="focus-mode-preview markdown-input"
+          aria-keyshortcuts="Control+Enter Meta+Enter"
+          @click="toggleFocusPreview"
+        >
+          <AppIcon :name="isFocusPreview ? 'edit' : 'preview'" />
+        </IconButton>
+      </div>
 
       <header v-show="!isFocusMode" class="app-header">
         <div class="brand-heading">
@@ -569,6 +592,7 @@ onBeforeUnmount(() => {
           :character-count="inputCharacterCount"
           :editor-internal-scroll="effectiveEditorInternalScroll"
           :focus-mode="isFocusMode"
+          :preview-mode="isFocusPreview"
           :active-tab-id="activeTabId"
           :shortcuts-enabled="
             !isInfoModalOpen && !isInputReplacementManagerOpen
@@ -579,6 +603,15 @@ onBeforeUnmount(() => {
           @request-search="openEditorSearch"
           @scroll-element="editorScrollElement = $event"
         >
+          <template #focus-preview>
+            <FocusModePreview
+              v-if="isFocusMode"
+              v-show="isFocusPreview"
+              :document="parsedDocument"
+              :conversion-failed="conversionFailed"
+              @scroll-element="focusPreviewElement = $event"
+            />
+          </template>
           <template #document-tabs>
             <EditorTabs
               v-if="!isFocusMode"

@@ -23,6 +23,7 @@ const props = withDefaults(
     characterCount: number
     editorInternalScroll: boolean
     focusMode?: boolean
+    previewMode?: boolean
     activeTabId?: string
     shortcutsEnabled?: boolean
     inputReplacementEnabled?: boolean
@@ -31,6 +32,7 @@ const props = withDefaults(
   }>(),
   {
     focusMode: false,
+    previewMode: false,
     activeTabId: 'default',
     shortcutsEnabled: true,
     inputReplacementEnabled: true,
@@ -377,7 +379,7 @@ function handleDocumentKeydown(event: KeyboardEvent): void {
     return
   }
 
-  if (event.key !== 'Escape') {
+  if (props.previewMode || event.key !== 'Escape' || event.shiftKey || event.altKey || event.ctrlKey || event.metaKey) {
     return
   }
 
@@ -530,13 +532,14 @@ defineExpose({ captureViewState, restoreViewState, isConnected, openSearch })
     :class="{ 'editor-panel--guide-open': isInputGuideOpen && !focusMode }"
     :role="focusMode ? 'region' : 'tabpanel'"
     :aria-labelledby="focusMode ? undefined : 'input-tab'"
-    :aria-label="focusMode ? 'Markdown編集' : undefined"
+    :aria-label="focusMode ? (previewMode ? 'Markdownプレビュー' : 'Markdown編集') : undefined"
     :tabindex="focusMode ? undefined : 0"
   >
     <slot name="document-tabs" />
 
     <SearchReplacePanel
       v-if="isSearchOpen"
+      v-show="!previewMode"
       ref="searchPanel"
       :query="query"
       :replacement="replacement"
@@ -555,59 +558,65 @@ defineExpose({ captureViewState, restoreViewState, isConnected, openSearch })
     />
 
     <label class="visually-hidden" for="markdown-input">変換するMarkdown</label>
-    <div
-      class="text-area-shell"
-      :class="
-        [
-          editorInternalScroll
-            ? 'text-area-shell--internal-scroll'
-            : 'text-area-shell--expand',
-          {
-            'text-area-shell--highlighting':
-              isSearchOpen && matches.length > 0,
-          },
-        ]
-      "
-    >
+    <div class="editor-body">
+      <slot name="focus-preview" />
       <div
-        v-if="isSearchOpen && matches.length > 0"
-        ref="searchHighlightLayer"
-        class="search-highlight-layer"
-        aria-hidden="true"
-      >
-        <template
-          v-for="(segment, index) in searchHighlightSegments"
-          :key="index"
-        >
-          <mark
-            v-if="segment.kind !== 'plain'"
-            class="search-highlight"
-            :class="`search-highlight--${segment.kind}`"
-            v-text="segment.text"
-          />
-          <span v-else v-text="segment.text" />
-        </template>
-        <span v-if="modelValue.endsWith('\n')">&#8203;</span>
-      </div>
-
-      <textarea
-        id="markdown-input"
-        ref="textarea"
-        class="text-area"
+        :style="{ visibility: previewMode ? 'hidden' : undefined }"
+        :inert="previewMode"
+        :aria-hidden="previewMode ? true : undefined"
+        class="text-area-shell"
         :class="
-          editorInternalScroll ? 'text-area--internal-scroll' : 'text-area--expand'
+          [
+            editorInternalScroll
+              ? 'text-area-shell--internal-scroll'
+              : 'text-area-shell--expand',
+            {
+              'text-area-shell--highlighting':
+                isSearchOpen && matches.length > 0,
+            },
+          ]
         "
-        :value="modelValue"
-        aria-describedby="markdown-input-count"
-        placeholder="Markdownを入力してください"
-        spellcheck="true"
-        @input="updateValue"
-        @beforeinput="handleBeforeInput"
-        @compositionstart="handleCompositionStart"
-        @compositionend="handleCompositionEnd"
-        @keydown="handleKeydown"
-        @scroll="syncSearchHighlightScroll"
-      />
+      >
+        <div
+          v-if="isSearchOpen && matches.length > 0"
+          ref="searchHighlightLayer"
+          class="search-highlight-layer"
+          aria-hidden="true"
+        >
+          <template
+            v-for="(segment, index) in searchHighlightSegments"
+            :key="index"
+          >
+            <mark
+              v-if="segment.kind !== 'plain'"
+              class="search-highlight"
+              :class="`search-highlight--${segment.kind}`"
+              v-text="segment.text"
+            />
+            <span v-else v-text="segment.text" />
+          </template>
+          <span v-if="modelValue.endsWith('\n')">&#8203;</span>
+        </div>
+
+        <textarea
+          id="markdown-input"
+          ref="textarea"
+          class="text-area"
+          :class="
+            editorInternalScroll ? 'text-area--internal-scroll' : 'text-area--expand'
+          "
+          :value="modelValue"
+          aria-describedby="markdown-input-count"
+          placeholder="Markdownを入力してください"
+          spellcheck="true"
+          @input="updateValue"
+          @beforeinput="handleBeforeInput"
+          @compositionstart="handleCompositionStart"
+          @compositionend="handleCompositionEnd"
+          @keydown="handleKeydown"
+          @scroll="syncSearchHighlightScroll"
+        />
+      </div>
     </div>
 
     <section

@@ -1013,7 +1013,7 @@ describe('MarkdownEditor', () => {
     const textAreaShell = wrapper.get('.text-area-shell')
     const textarea = wrapper.get<HTMLTextAreaElement>('#markdown-input')
     expect(guidePanel.attributes('role')).toBe('region')
-    expect(textAreaShell.element.nextElementSibling).toBe(guidePanel.element)
+    expect(wrapper.get('.editor-body').element.nextElementSibling).toBe(guidePanel.element)
     expect(textAreaShell.element.contains(textarea.element)).toBe(true)
     expect(guidePanel.element.nextElementSibling?.classList).toContain('panel-footer')
     expect(wrapper.get('.input-guide-panel .editor-input-guide').text()).toContain(

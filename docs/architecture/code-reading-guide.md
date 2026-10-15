@@ -238,7 +238,7 @@ Componentは表示領域で分類される。
 | `useOutputFormatPreference` | 選択中の変換形式 |
 | `useThemePreference` | ライト・ダークテーマ |
 | `useWorkspaceSplitter` | 左右ペイン比率の計算とポインター・キーボード操作 |
-| `useFocusMode` | フォーカスモードと編集位置の維持 |
+| `useFocusMode` | フォーカスモード、編集／プレビュー切り替えと各表示位置の維持 |
 | `useClipboard` | コピー実行と成功・失敗通知 |
 | `useDebouncedLocalStorage` | 単一状態の読み込み、監視、遅延保存 |
 
@@ -331,7 +331,7 @@ Piniaなどのグローバルストアは使用していない。アプリ全体
 | 内部スクロール、左右比率、全角補正、同期 | `useAppSettings` | アプリ全体 | する |
 | 入力置換の設定とルール | `useInputReplacementSettings` | 設定、Editor | する |
 | 検索語、置換語、現在の一致 | `useTextSearch` | MarkdownEditor | しない |
-| フォーカスモード、ヘルプ表示 | `useFocusMode` | アプリ全体 | しない |
+| フォーカスモード、ヘルプ表示、編集／プレビュー選択と表示位置 | `useFocusMode` | アプリ全体 | しない |
 | 右ペイン内の表示タブ | `OutputPanel.vue` | OutputPanel内 | しない |
 | モーダル、ポップオーバー、通知 | 各ComponentまたはComposable | 局所または画面横断 | しない |
 
@@ -367,6 +367,9 @@ Storageへのアクセスや保存に失敗しても、アプリ内の状態更�
 - 変換結果や文字数のような派生値を別の可変状態として保持しない
 - 一時的な表示状態は、共有範囲が広がるまで対象Componentのローカル状態に置く
 - フォーカスモードでも同じ `MarkdownEditor` と本文状態を使用し、編集経路を複製しない
+- `FocusModePreview` は既存の `MarkdownPreview` と解析済みdocumentを再利用する。Appは表示直前に解析のdebounce待ちを確定し、失敗時は古い結果を隠す。通常の右ペインの表示選択とは独立する
+- フォーカスの本文枠はGridの同じセルにtextarea shellとプレビューを配置する。入力はvisibility:hiddenとinertで隠し、FirefoxでUndoが失われるdisplay:noneをtextareaへ適用しない。通常モードの本文枠はdisplay:contentsで既存のフレックス配置を維持する
+- `useFocusMode` は編集位置とプレビューの縦横位置を別々に保持し、切り替え後のフォーカスを移す。連続操作では古いnextTick復元を破棄する。検索・置換ショートカットはAppが編集へ戻してから既存UIを開く
 
 ## 5. テストで保証している範囲
 

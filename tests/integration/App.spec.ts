@@ -15,6 +15,7 @@ import {
 import { COPY_NOTICE_DURATION_MS } from '../../src/composables/useClipboard'
 import { CONVERSION_DEBOUNCE_DELAY_MS } from '../../src/utils/conversionTiming'
 import App from '../../src/App.vue'
+import * as markdownParser from '../../src/parser/parseMarkdown'
 
 describe('App', () => {
   beforeEach(() => {
@@ -825,6 +826,160 @@ describe('App', () => {
     expect(input.element.scrollTop).toBe(53)
     expect(document.activeElement).toBe(textareaElement)
     expect(wrapper.get('.workspace').attributes('data-active-panel')).toBe('input')
+    wrapper.unmount()
+  })
+
+  it('フォーカスプレビューへ最新入力を即時反映し、編集DOMと両表示の位置を保持する', async () => {
+    const wrapper = mount(App, { attachTo: document.body })
+    const input = wrapper.get<HTMLTextAreaElement>('#markdown-input')
+    await wrapper.get('#preview-view-tab').trigger('click')
+    await wrapper.get('.focus-mode-button').trigger('click')
+    await input.setValue('# 最新見出し\n\n**本文**😀')
+    input.element.setSelectionRange(2, 5)
+    input.element.scrollTop = 81
+    input.element.scrollLeft = 3
+    const toggle = wrapper.get('.focus-mode-preview-button')
+    expect(toggle.attributes('aria-pressed')).toBe('false')
+    expect(toggle.attributes('aria-keyshortcuts')).toBe('Control+Enter Meta+Enter')
+    await toggle.trigger('click')
+    await flushPromises()
+    const preview = wrapper.get<HTMLElement>('#focus-mode-preview')
+    expect(preview.isVisible()).toBe(true)
+    expect(input.isVisible()).toBe(false)
+    expect(preview.get('h1').text()).toBe('最新見出し')
+    expect(preview.get('strong').text()).toBe('本文')
+    expect(document.activeElement).toBe(preview.element)
+    expect(toggle.attributes('aria-pressed')).toBe('true')
+    expect(toggle.attributes('aria-label')).toBe('編集に戻る')
+    expect(wrapper.get('.focus-tab-name').isVisible()).toBe(true)
+    expect(wrapper.get('#markdown-input-count').text()).toContain('本文')
+    expect(wrapper.get('.output-panel').isVisible()).toBe(false)
+    expect(wrapper.findAll('#markdown-preview')).toHaveLength(1)
+    expect(wrapper.findAll('#focus-markdown-preview')).toHaveLength(1)
+    preview.element.scrollTop = 57
+    preview.element.scrollLeft = 9
+    await toggle.trigger('click')
+    await flushPromises()
+    expect(wrapper.get('#markdown-input').element).toBe(input.element)
+    expect(input.element.selectionStart).toBe(2)
+    expect(input.element.selectionEnd).toBe(5)
+    expect(input.element.scrollTop).toBe(81)
+    expect(input.element.scrollLeft).toBe(3)
+    expect(document.activeElement).toBe(input.element)
+    await toggle.trigger('click')
+    expect(preview.element.scrollTop).toBe(57)
+    expect(preview.element.scrollLeft).toBe(9)
+    await wrapper.get('.focus-mode-exit-button').trigger('click')
+    expect(wrapper.get('#preview-view-tab').attributes('aria-selected')).toBe('true')
+    expect(wrapper.get('#markdown-preview h1').text()).toBe('最新見出し')
+    wrapper.unmount()
+  })
+
+  it.each([{ ctrlKey: true }, { metaKey: true }])('フォーカス内のみショートカットで切り替える: %j', async (modifier) => {
+    const wrapper = mount(App, { attachTo: document.body })
+    const input = wrapper.get('#markdown-input')
+    await input.trigger('keydown', { key: 'Enter', ...modifier })
+    expect(wrapper.find('#focus-mode-preview').exists()).toBe(false)
+    await wrapper.get('.focus-mode-button').trigger('click')
+    await input.trigger('keydown', { key: 'Enter', ...modifier })
+    await flushPromises()
+    expect(wrapper.get('#focus-mode-preview').isVisible()).toBe(true)
+    await wrapper.get('#focus-mode-preview').trigger('keydown', { key: 'Enter', ...modifier })
+    await flushPromises()
+    expect(input.isVisible()).toBe(true)
+    expect(document.activeElement).toBe(input.element)
+    wrapper.unmount()
+  })
+
+  it('IME・キーリピート・追加修飾キー・処理済みの入力ではプレビューへ切り替えない', async () => {
+    const wrapper = mount(App, { attachTo: document.body })
+    await wrapper.get('.focus-mode-button').trigger('click')
+    const input = wrapper.get('#markdown-input')
+    for (const extra of [
+      { isComposing: true }, { keyCode: 229 }, { repeat: true }, { shiftKey: true },
+      { altKey: true }, { metaKey: true },
+    ]) {
+      await input.trigger('keydown', { key: 'Enter', ctrlKey: true, ...extra })
+      expect(wrapper.get('#focus-mode-preview').isVisible()).toBe(false)
+    }
+    const handled = new KeyboardEvent('keydown', { key: 'Enter', ctrlKey: true, bubbles: true, cancelable: true })
+    handled.preventDefault()
+    input.element.dispatchEvent(handled)
+    await flushPromises()
+    expect(wrapper.get('#focus-mode-preview').isVisible()).toBe(false)
+    await input.trigger('keydown', { key: 'Escape', shiftKey: true })
+    expect(wrapper.get('.app').classes()).toContain('app--focus-mode')
+    wrapper.unmount()
+  })
+
+  it('プレビューから検索・置換を開くと編集へ戻り、既存検索語を保持する', async () => {
+    const wrapper = mount(App, { attachTo: document.body })
+    await wrapper.get('#markdown-input').setValue('対象 本文 対象')
+    await wrapper.get('.focus-mode-button').trigger('click')
+    await wrapper.get('#markdown-input').trigger('keydown', { key: 'f', ctrlKey: true })
+    await flushPromises()
+    await wrapper.get('#markdown-search-input').setValue('対象')
+    await wrapper.get('.focus-mode-preview-button').trigger('click')
+    expect(wrapper.get('.search-replace-panel').isVisible()).toBe(false)
+    await wrapper.get('#focus-mode-preview').trigger('keydown', { key: 'h', ctrlKey: true })
+    await flushPromises()
+    expect(wrapper.get('#markdown-input').isVisible()).toBe(true)
+    expect(wrapper.get<HTMLInputElement>('#markdown-search-input').element.value).toBe('対象')
+    expect(wrapper.get('#markdown-replacement-input').isVisible()).toBe(true)
+    expect(document.activeElement).toBe(wrapper.get('#markdown-replacement-input').element)
+    wrapper.unmount()
+  })
+
+  it('プレビューのEscapeで通常へ戻り、再開始時は編集表示になる', async () => {
+    const wrapper = mount(App, { attachTo: document.body })
+    const input = wrapper.get<HTMLTextAreaElement>('#markdown-input')
+    await input.setValue('保存する本文')
+    await wrapper.get('.focus-mode-button').trigger('click')
+    input.element.setSelectionRange(1, 3)
+    input.element.scrollTop = 24
+    await wrapper.get('.focus-mode-preview-button').trigger('click')
+    await wrapper.get('#focus-mode-preview').trigger('keydown', { key: 'Escape' })
+    await flushPromises()
+    expect(wrapper.get('.app').classes()).not.toContain('app--focus-mode')
+    expect(input.element.selectionStart).toBe(1)
+    expect(input.element.selectionEnd).toBe(3)
+    expect(input.element.scrollTop).toBe(24)
+    expect(document.activeElement).toBe(input.element)
+    await wrapper.get('.focus-mode-button').trigger('click')
+    expect(wrapper.get('#focus-mode-preview').isVisible()).toBe(false)
+    expect(input.isVisible()).toBe(true)
+    wrapper.unmount()
+  })
+
+  it('空文書のプレビューを表示し、生HTMLと危険なリンクを実行可能な要素にしない', async () => {
+    const wrapper = mount(App, { attachTo: document.body })
+    await wrapper.get('.focus-mode-button').trigger('click')
+    await wrapper.get('.focus-mode-preview-button').trigger('click')
+    expect(wrapper.get('#focus-mode-preview').text()).toContain('Markdownプレビューがここに表示されます')
+    await wrapper.get('.focus-mode-preview-button').trigger('click')
+    const source = '<script>alert(1)</script>\n\n[危険](javascript:alert%281%29)\n\n**安全**'
+    await wrapper.get('#markdown-input').setValue(source)
+    await wrapper.get('.focus-mode-preview-button').trigger('click')
+    const preview = wrapper.get('#focus-mode-preview')
+    expect(preview.find('script').exists()).toBe(false)
+    expect(preview.find('[href^="javascript:"]').exists()).toBe(false)
+    expect(preview.get('strong').text()).toBe('安全')
+    expect(wrapper.get<HTMLTextAreaElement>('#markdown-input').element.value).toBe(source)
+    wrapper.unmount()
+  })
+
+  it('解析失敗時に古いプレビューを表示せず、原文を維持する', async () => {
+    const wrapper = mount(App, { attachTo: document.body })
+    await wrapper.get('#markdown-input').setValue('# 古い見出し')
+    await completeConversion()
+    await wrapper.get('.focus-mode-button').trigger('click')
+    vi.spyOn(markdownParser, 'parseMarkdown').mockImplementation(() => { throw new Error('parse failure') })
+    await wrapper.get('#markdown-input').setValue('失敗時の原文')
+    await wrapper.get('.focus-mode-preview-button').trigger('click')
+    expect(wrapper.get('#focus-mode-preview [role="alert"]').text()).toContain('入力内容は保持されています')
+    expect(wrapper.find('#focus-mode-preview h1').exists()).toBe(false)
+    await wrapper.get('.focus-mode-preview-button').trigger('click')
+    expect(wrapper.get<HTMLTextAreaElement>('#markdown-input').element.value).toBe('失敗時の原文')
     wrapper.unmount()
   })
 
