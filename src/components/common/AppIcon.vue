@@ -18,6 +18,7 @@ defineProps<{
     | 'chevron-down'
     | 'replace'
     | 'scroll-sync'
+    | 'scroll-sync-off'
 }>()
 </script>
 
@@ -71,10 +72,11 @@ defineProps<{
     </template>
     <path v-else-if="name === 'chevron-up'" d="m18 15-6-6-6 6" />
     <path v-else-if="name === 'chevron-down'" d="m6 9 6 6 6-6" />
-    <template v-else-if="name === 'scroll-sync'">
+    <template v-else-if="name === 'scroll-sync' || name === 'scroll-sync-off'">
       <rect x="2" y="4" width="6" height="16" rx="1" />
       <rect x="16" y="4" width="6" height="16" rx="1" />
-      <path d="M12 6v12M10 8l2-2 2 2M10 16l2 2 2-2" />
+      <path v-if="name === 'scroll-sync'" d="M12 6v12M10 8l2-2 2 2M10 16l2 2 2-2" />
+      <path v-else d="m3 3 18 18" />
     </template>
     <template v-else-if="name === 'replace'">
       <path d="M4 7h11l-3-3M20 17H9l3 3" />

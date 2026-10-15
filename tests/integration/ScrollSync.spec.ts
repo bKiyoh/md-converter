@@ -126,22 +126,22 @@ describe('Appのスクロール同期', () => {
     }
   }
 
-  it.each(['preview', 'conversion'] as const)('%sとの同期をチェックボックスで即時停止・再開できる', async (view) => {
+  it.each(['preview', 'conversion'] as const)('%sとの同期をアイコントグルで即時停止・再開できる', async (view) => {
     const pane = view === 'preview' ? await mountPreview() : await mountConversion()
     const { app, editor } = pane
     const surface = 'preview' in pane ? pane.preview : pane.output
-    const checkbox = app.get<HTMLInputElement>('#scroll-sync-setting')
-    expect(checkbox.element.checked).toBe(true)
+    const toggle = app.get<HTMLButtonElement>('#scroll-sync-setting')
+    expect(toggle.attributes('aria-pressed')).toBe('true')
     await scroll(editor, 80)
     expect(surface.scrollTop).toBe(view === 'preview' ? 240 : 160)
     editor.scrollTop = 120
     editor.dispatchEvent(new Event('scroll'))
-    await checkbox.setValue(false)
+    await toggle.trigger('click')
     await flushFrames()
     expect(surface.scrollTop).toBe(view === 'preview' ? 240 : 160)
     await scroll(surface, 400)
     expect(editor.scrollTop).toBe(120)
-    await checkbox.setValue(true)
+    await toggle.trigger('click')
     await flushFrames()
     expect(editor.scrollTop).toBe(120)
     expect(surface.scrollTop).toBe(view === 'preview' ? 360 : 240)

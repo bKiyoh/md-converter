@@ -1,30 +1,22 @@
 <script setup lang="ts">
 import AppIcon from './AppIcon.vue'
-import { tooltipDirective as vTooltip } from '../../directives/tooltip'
+import IconButton from './IconButton.vue'
 
 defineProps<{ modelValue: boolean }>()
 const emit = defineEmits<{ 'update:modelValue': [value: boolean] }>()
 
-function updateChecked(event: Event): void {
-  if (event.target instanceof HTMLInputElement) {
-    emit('update:modelValue', event.target.checked)
-  }
-}
 </script>
 
 <template>
-  <label
-    v-tooltip="`スクロール同期：${modelValue ? 'ON' : 'OFF'}`"
+  <IconButton
+    id="scroll-sync-setting"
     class="scroll-sync-toggle"
-    :class="{ 'scroll-sync-toggle--checked': modelValue }"
+    :class="{ 'scroll-sync-toggle--active': modelValue }"
+    accessible-label="スクロール同期"
+    :tooltip="`スクロール同期：${modelValue ? 'ON' : 'OFF'}`"
+    :aria-pressed="modelValue"
+    @click="emit('update:modelValue', !modelValue)"
   >
-    <AppIcon name="scroll-sync" />
-    <input
-      id="scroll-sync-setting"
-      type="checkbox"
-      :checked="modelValue"
-      aria-label="スクロール同期"
-      @change="updateChecked"
-    />
-  </label>
+    <AppIcon :name="modelValue ? 'scroll-sync' : 'scroll-sync-off'" />
+  </IconButton>
 </template>

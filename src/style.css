@@ -219,41 +219,16 @@ h2 {
 }
 
 .scroll-sync-toggle {
-  display: inline-flex;
-  height: 40px;
-  padding: 0 8px;
-  border-radius: 8px;
-  align-items: center;
-  gap: 4px;
-  flex: 0 0 auto;
   color: var(--muted);
-  cursor: pointer;
 }
 
-.scroll-sync-toggle--checked {
+.scroll-sync-toggle--active {
   color: var(--accent);
 }
 
-.scroll-sync-toggle:hover {
-  background: var(--surface-muted);
-}
-
-.scroll-sync-toggle:focus-within {
-  outline: 2px solid var(--accent);
-  outline-offset: 2px;
-}
-
-.scroll-sync-toggle input {
-  width: 16px;
-  height: 16px;
-  margin: 0;
-  accent-color: var(--accent);
-  cursor: pointer;
-}
-
 .scroll-sync-toggle .app-icon {
-  width: 20px;
-  height: 20px;
+  width: 24px;
+  height: 24px;
 }
 
 .modal-backdrop {
@@ -2132,16 +2107,6 @@ h2 {
 
   .header-output-actions {
     gap: 4px;
-  }
-
-  .scroll-sync-toggle {
-    padding: 0 2px;
-    gap: 2px;
-  }
-
-  .scroll-sync-toggle input {
-    width: 14px;
-    height: 14px;
   }
 
   .focus-mode-control-buttons {
