@@ -3,6 +3,7 @@ import type {
   InlineNode,
   ListItemNode,
   MarkdownDocument,
+  SourceLocation,
   TableCellNode,
 } from '../types/markdown'
 import { formatUnsupportedInlineFallback } from './unsupportedMarkdown'
@@ -67,12 +68,19 @@ function renderInlines(nodes: InlineNode[]): string {
   return nodes.map(renderInline).join('')
 }
 
+function renderSourceLine(location: SourceLocation | undefined): string {
+  const line = location?.line
+  return line !== undefined && Number.isInteger(line) && line > 0
+    ? ` data-source-line="${line}"`
+    : ''
+}
+
 function renderListItem(item: ListItemNode): string {
   const checkbox =
     item.checked === null
       ? ''
       : `<input type="checkbox" disabled${item.checked ? ' checked' : ''}> `
-  return `<li>${checkbox}${item.children.map(renderBlock).join('\n')}</li>`
+  return `<li${renderSourceLine(item.location)}>${checkbox}${item.children.map(renderBlock).join('\n')}</li>`
 }
 
 function renderTableCell(cell: TableCellNode, tag: 'th' | 'td'): string {
@@ -80,33 +88,35 @@ function renderTableCell(cell: TableCellNode, tag: 'th' | 'td'): string {
 }
 
 function renderBlock(node: BlockNode): string {
+  const sourceLine = renderSourceLine(node.location)
+
   switch (node.type) {
     case 'heading':
-      return `<h${node.depth}>${renderInlines(node.children)}</h${node.depth}>`
+      return `<h${node.depth}${sourceLine}>${renderInlines(node.children)}</h${node.depth}>`
     case 'paragraph':
-      return `<p>${renderInlines(node.children)}</p>`
+      return `<p${sourceLine}>${renderInlines(node.children)}</p>`
     case 'list': {
       const tag = node.ordered ? 'ol' : 'ul'
       const start = node.ordered && node.start !== null && node.start !== 1 ? ` start="${node.start}"` : ''
-      return `<${tag}${start}>${node.items.map(renderListItem).join('')}</${tag}>`
+      return `<${tag}${start}${sourceLine}>${node.items.map(renderListItem).join('')}</${tag}>`
     }
     case 'quote':
-      return `<blockquote>${node.children.map(renderBlock).join('\n')}</blockquote>`
+      return `<blockquote${sourceLine}>${node.children.map(renderBlock).join('\n')}</blockquote>`
     case 'codeBlock': {
       const language = node.language ? ` class="language-${escapeHtml(node.language)}"` : ''
-      return `<pre><code${language}>${escapeHtml(node.value)}</code></pre>`
+      return `<pre${sourceLine}><code${language}>${escapeHtml(node.value)}</code></pre>`
     }
     case 'table':
-      return `<table><thead><tr>${node.header.cells
+      return `<table${sourceLine}><thead><tr${renderSourceLine(node.header.location)}>${node.header.cells
         .map((cell) => renderTableCell(cell, 'th'))
         .join('')}</tr></thead><tbody>${node.rows
         .map(
           (row) =>
-            `<tr>${row.cells.map((cell) => renderTableCell(cell, 'td')).join('')}</tr>`,
+            `<tr${renderSourceLine(row.location)}>${row.cells.map((cell) => renderTableCell(cell, 'td')).join('')}</tr>`,
         )
         .join('')}</tbody></table>`
     case 'thematicBreak':
-      return '<hr>'
+      return `<hr${sourceLine}>`
     case 'rawHtmlBlock':
       return ''
   }

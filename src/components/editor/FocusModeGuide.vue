@@ -9,7 +9,6 @@ defineProps<{
 
 defineEmits<{
   exit: []
-  search: []
   toggleHelp: []
 }>()
 </script>
@@ -24,14 +23,6 @@ defineEmits<{
         @click="$emit('exit')"
       >
         <AppIcon name="close" />
-      </IconButton>
-      <IconButton
-        class="focus-mode-search-button"
-        accessible-label="文章検索を開く"
-        tooltip="文章検索（Ctrl / Command + F）"
-        @click="$emit('search')"
-      >
-        <AppIcon name="search" />
       </IconButton>
       <IconButton
         class="focus-mode-help-button"

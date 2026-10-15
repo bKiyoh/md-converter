@@ -1,5 +1,7 @@
 import type {
+  ConversionOptions,
   ConversionResult,
+  ConversionSourcePosition,
   ConversionWarning,
   Converter,
 } from '../../types/conversion'
@@ -14,6 +16,7 @@ import type {
 } from '../../types/markdown'
 import { formatUnsupportedInlineFallback } from '../../utils/unsupportedMarkdown'
 import { addRawHtmlWarning } from '../rawHtmlWarning'
+import { renderConvertedBlocks } from '../renderConvertedBlocks'
 import { addUnsupportedInlineWarning } from '../unsupportedInline'
 
 type RenderContext = {
@@ -293,30 +296,27 @@ function getBlockSeparator(previous: BlockNode, current: BlockNode): string {
   return '\n'
 }
 
-function renderBlocks(blocks: BlockNode[], context: RenderContext): string {
-  const renderedBlocks = blocks
-    .map((block) => ({ block, output: renderBlock(block, context) }))
-    .filter(({ output }) => output.length > 0)
-
-  return renderedBlocks
-    .map((current, index) => {
-      const previous = renderedBlocks[index - 1]
-
-      if (!previous) {
-        return current.output
-      }
-
-      return `${getBlockSeparator(previous.block, current.block)}${current.output}`
-    })
-    .join('')
+function renderBlocks(
+  blocks: BlockNode[],
+  context: RenderContext,
+  sourceMap?: ConversionSourcePosition[],
+): string {
+  return renderConvertedBlocks(blocks, (block) => renderBlock(block, context), {
+    separator: getBlockSeparator, omitEmpty: true, sourceMap,
+  })
 }
 
-export function convertToPlainText(document: MarkdownDocument): ConversionResult {
+export function convertToPlainText(
+  document: MarkdownDocument,
+  options?: ConversionOptions,
+): ConversionResult {
   const context: RenderContext = { warnings: [] }
+  const sourceMap: ConversionSourcePosition[] | undefined = options?.includeSourceMap ? [] : undefined
 
   return {
-    output: renderBlocks(document.blocks, context),
+    output: renderBlocks(document.blocks, context, sourceMap),
     warnings: context.warnings,
+    ...(sourceMap ? { sourceMap } : {}),
   }
 }
 

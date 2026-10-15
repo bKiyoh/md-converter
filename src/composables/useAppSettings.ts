@@ -13,6 +13,7 @@ export type AppSettings = {
   editorInternalScroll: boolean
   workspaceSplitRatio: number
   normalizeFullWidthMarkdown: boolean
+  scrollSync: boolean
 }
 
 export type UseAppSettingsResult = {
@@ -22,12 +23,14 @@ export type UseAppSettingsResult = {
   editorInternalScroll: WritableComputedRef<boolean>
   workspaceSplitRatio: WritableComputedRef<number>
   normalizeFullWidthMarkdown: WritableComputedRef<boolean>
+  scrollSync: WritableComputedRef<boolean>
 }
 
 const DEFAULT_APP_SETTINGS: AppSettings = {
   editorInternalScroll: true,
   workspaceSplitRatio: DEFAULT_WORKSPACE_SPLIT_RATIO,
   normalizeFullWidthMarkdown: false,
+  scrollSync: true,
 }
 
 function createDefaultSettings(): AppSettings {
@@ -69,6 +72,7 @@ function deserializeSettings(storedValue: string | null): AppSettings {
     editorInternalScroll: parsed.editorInternalScroll,
     workspaceSplitRatio,
     normalizeFullWidthMarkdown,
+    scrollSync: 'scrollSync' in parsed && typeof parsed.scrollSync === 'boolean' ? parsed.scrollSync : true,
   }
 }
 
@@ -110,6 +114,15 @@ export function useAppSettings(
       }
     },
   })
+  const scrollSync = computed<boolean>({
+    get: () => settings.value.scrollSync,
+    set: (value) => {
+      settings.value = {
+        ...settings.value,
+        scrollSync: value,
+      }
+    },
+  })
 
   return {
     settings,
@@ -118,5 +131,6 @@ export function useAppSettings(
     editorInternalScroll,
     workspaceSplitRatio,
     normalizeFullWidthMarkdown,
+    scrollSync,
   }
 }

@@ -33,6 +33,7 @@ function mountSettings(storage: LocalStorageAccess | null): VueWrapper {
           v-model="normalizeFullWidthMarkdown"
           type="checkbox"
         />
+        <input data-testid="scroll-sync" v-model="scrollSync" type="checkbox" />
         <output data-testid="save-error">{{ saveError }}</output>
         <button data-testid="retry-save" @click="retrySave">retry</button>
       `,
@@ -41,6 +42,54 @@ function mountSettings(storage: LocalStorageAccess | null): VueWrapper {
 }
 
 describe('useAppSettings', () => {
+  it.each([undefined, null, 'false', 0])('同期設定が欠損または不正値 %s の場合はONへ補完する', (scrollSync) => {
+    const storage = {
+      getItem: vi.fn(() => JSON.stringify({ editorInternalScroll: false, workspaceSplitRatio: 0.65, scrollSync })),
+      setItem: vi.fn(),
+    }
+    const wrapper = mountSettings(storage)
+    expect(wrapper.get<HTMLInputElement>('[data-testid="scroll-sync"]').element.checked).toBe(true)
+    expect(wrapper.get<HTMLInputElement>('[data-testid="editor-scroll"]').element.checked).toBe(false)
+    expect(wrapper.get<HTMLInputElement>('[data-testid="workspace-split-ratio"]').element.value).toBe('0.65')
+    wrapper.unmount()
+  })
+
+  it('同期設定を即時保存・復元し、他の設定を維持する', async () => {
+    let storedValue: string | null = null
+    const storage = {
+      getItem: vi.fn(() => storedValue),
+      setItem: vi.fn((_key: string, value: string) => { storedValue = value }),
+    }
+    const wrapper = mountSettings(storage)
+    const checkbox = wrapper.get<HTMLInputElement>('[data-testid="scroll-sync"]')
+    expect(checkbox.element.checked).toBe(true)
+    await checkbox.setValue(false)
+    expect(JSON.parse(storedValue!)).toEqual({
+      editorInternalScroll: true, workspaceSplitRatio: 0.5, normalizeFullWidthMarkdown: false, scrollSync: false,
+    })
+    wrapper.unmount()
+    const reloaded = mountSettings(storage)
+    expect(reloaded.get<HTMLInputElement>('[data-testid="scroll-sync"]').element.checked).toBe(false)
+    await reloaded.get<HTMLInputElement>('[data-testid="scroll-sync"]').setValue(true)
+    expect(JSON.parse(storedValue!).scrollSync).toBe(true)
+    reloaded.unmount()
+  })
+
+  it('同期設定の保存に失敗しても切り替えを継続し、再試行できる', async () => {
+    const storage = {
+      getItem: vi.fn(() => null),
+      setItem: vi.fn<() => void>(() => { throw new DOMException('quota exceeded') }),
+    }
+    const wrapper = mountSettings(storage)
+    await wrapper.get<HTMLInputElement>('[data-testid="scroll-sync"]').setValue(false)
+    expect(wrapper.get<HTMLInputElement>('[data-testid="scroll-sync"]').element.checked).toBe(false)
+    expect(wrapper.get('[data-testid="save-error"]').text()).not.toBe('')
+    storage.setItem.mockImplementation(() => undefined)
+    await wrapper.get('[data-testid="retry-save"]').trigger('click')
+    expect(wrapper.get('[data-testid="save-error"]').text()).toBe('')
+    wrapper.unmount()
+  })
+
   it('保存値がない場合はエディター内部スクロールをONにする', () => {
     const storage = {
       getItem: vi.fn(() => null),
@@ -79,6 +128,7 @@ describe('useAppSettings', () => {
         editorInternalScroll: false,
         workspaceSplitRatio: 0.5,
         normalizeFullWidthMarkdown: false,
+        scrollSync: true,
       } satisfies AppSettings),
     )
 
@@ -109,6 +159,7 @@ describe('useAppSettings', () => {
         editorInternalScroll: true,
         workspaceSplitRatio: 0.65,
         normalizeFullWidthMarkdown: false,
+        scrollSync: true,
       } satisfies AppSettings),
     )
 
@@ -155,6 +206,7 @@ describe('useAppSettings', () => {
         editorInternalScroll: true,
         workspaceSplitRatio: 0.5,
         normalizeFullWidthMarkdown: true,
+        scrollSync: true,
       } satisfies AppSettings),
     )
 

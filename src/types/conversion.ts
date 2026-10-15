@@ -26,12 +26,22 @@ export type ConversionWarning = {
   location?: SourceLocation
 }
 
+export type ConversionSourcePosition = {
+  sourceLine: number
+  outputLine: number
+}
+
+export type ConversionOptions = {
+  includeSourceMap?: boolean
+}
+
 export type ConversionResult = {
   output: string
   warnings: ConversionWarning[]
+  sourceMap?: ConversionSourcePosition[]
 }
 
 export interface Converter {
   readonly format: OutputFormat
-  convert(document: MarkdownDocument): ConversionResult
+  convert(document: MarkdownDocument, options?: ConversionOptions): ConversionResult
 }

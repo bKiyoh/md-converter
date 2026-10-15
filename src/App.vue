@@ -6,6 +6,7 @@ import AppTitleButton from './components/common/AppTitleButton.vue'
 import AppTitleIcon from './components/common/AppTitleIcon.vue'
 import IconButton from './components/common/IconButton.vue'
 import SettingsPopover from './components/common/SettingsPopover.vue'
+import ScrollSyncToggle from './components/common/ScrollSyncToggle.vue'
 import InputReplacementManager from './components/common/InputReplacementManager.vue'
 import TooltipTarget from './components/common/TooltipTarget.vue'
 import EditorTabs from './components/editor/EditorTabs.vue'
@@ -22,6 +23,7 @@ import { useInputReplacementSettings } from './composables/useInputReplacementSe
 import { useOutputFormatPreference } from './composables/useOutputFormatPreference'
 import { useThemePreference } from './composables/useThemePreference'
 import { useWorkspaceSplitter } from './composables/useWorkspaceSplitter'
+import { useScrollSync } from './composables/useScrollSync'
 import { converterRegistry, outputFormatOptions } from './converters/converterRegistry'
 import { tooltipDirective as vTooltip } from './directives/tooltip'
 import { parseMarkdown } from './parser/parseMarkdown'
@@ -64,6 +66,7 @@ const {
   editorInternalScroll,
   workspaceSplitRatio,
   normalizeFullWidthMarkdown,
+  scrollSync,
   saveError: appSettingsSaveError,
   retrySave: retryAppSettingsSave,
 } = useAppSettings()
@@ -144,7 +147,7 @@ const conversionResult = computed<ConversionResult>(() => {
   }
 
   try {
-    return converterRegistry[selectedFormat.value].convert(parsedDocument.value)
+    return converterRegistry[selectedFormat.value].convert(parsedDocument.value, { includeSourceMap: true })
   } catch {
     return {
       output: '',
@@ -218,6 +221,20 @@ const copySucceeded = computed<boolean>(() => notice.value?.kind === 'success')
 const effectiveEditorInternalScroll = computed<boolean>(
   () => isFocusMode.value || editorInternalScroll.value,
 )
+const editorScrollElement = shallowRef<HTMLTextAreaElement | null>(null)
+const outputScrollElement = shallowRef<HTMLElement | null>(null)
+useScrollSync({
+  editor: editorScrollElement,
+  output: outputScrollElement,
+  enabled: computed<boolean>(() =>
+    scrollSync.value && editorInternalScroll.value && !isFocusMode.value &&
+    !conversionPending.value && !conversionFailed.value,
+  ),
+  source: markdown,
+  documentKey: activeTabId,
+  document: parsedDocument,
+  sourceMap: computed(() => conversionResult.value.sourceMap ?? []),
+})
 const storageSaveError = computed<string | null>(
   () =>
     editorSaveError.value ??
@@ -404,10 +421,8 @@ onBeforeUnmount(() => {
         v-if="isFocusMode"
         :help-open="isFocusModeHelpOpen"
         @exit="exitFocusMode"
-        @search="openEditorSearch"
         @toggle-help="toggleFocusModeHelp"
       />
-      <div v-if="isFocusMode" class="focus-mode-spacer" aria-hidden="true" />
 
       <header v-show="!isFocusMode" class="app-header">
         <div class="brand-heading">
@@ -426,6 +441,7 @@ onBeforeUnmount(() => {
         </div>
         <div class="app-header-actions">
           <div class="header-output-actions">
+            <ScrollSyncToggle v-model="scrollSync" />
             <SettingsPopover
               :dark-mode="theme === 'dark'"
               :editor-internal-scroll="editorInternalScroll"
@@ -561,6 +577,7 @@ onBeforeUnmount(() => {
           :input-replacement-rules="inputReplacementSettings.rules"
           :normalize-full-width-markdown="normalizeFullWidthMarkdown"
           @request-search="openEditorSearch"
+          @scroll-element="editorScrollElement = $event"
         >
           <template #document-tabs>
             <EditorTabs
@@ -615,6 +632,7 @@ onBeforeUnmount(() => {
           :character-count="outputCharacterCount"
           :warnings="conversionResult.warnings"
           :editor-internal-scroll="editorInternalScroll"
+          @scroll-element="outputScrollElement = $event"
         />
       </main>
     </div>

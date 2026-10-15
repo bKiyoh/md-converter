@@ -180,7 +180,7 @@ describe('App', () => {
     await previewTab.trigger('click')
 
     expect(previewTab.attributes('aria-selected')).toBe('true')
-    expect(wrapper.get('#markdown-preview').html()).toContain('<h1>プレビュー</h1>')
+    expect(wrapper.get('#markdown-preview h1').text()).toBe('プレビュー')
     expect(wrapper.get('#markdown-preview').classes()).toContain(
       'preview-surface--internal-scroll',
     )
@@ -577,6 +577,30 @@ describe('App', () => {
     wrapper.unmount()
   })
 
+  it('設定のすぐ左に文字ラベルのない同期アイコントグルを表示し、保存・復元する', async () => {
+    const wrapper = mount(App, { attachTo: document.body })
+    const control = wrapper.get('.scroll-sync-toggle')
+    const button = control
+    expect(control.element.nextElementSibling).toBe(wrapper.get('.settings-root').element)
+    expect(control.text()).toBe('')
+    expect(control.find('[data-icon="scroll-sync"]').exists()).toBe(true)
+    expect(button.attributes('aria-label')).toBe('スクロール同期')
+    expect(button.attributes('aria-pressed')).toBe('true')
+    expect(control.find('input').exists()).toBe(false)
+    expect(control.attributes('data-tooltip')).toBe('スクロール同期：ON')
+    await button.trigger('click')
+    expect(control.attributes('data-tooltip')).toBe('スクロール同期：OFF')
+    expect(button.attributes('aria-pressed')).toBe('false')
+    expect(control.classes()).not.toContain('scroll-sync-toggle--active')
+    expect(control.find('[data-icon="scroll-sync-off"]').exists()).toBe(true)
+    expect(JSON.parse(localStorage.getItem(APP_SETTINGS_STORAGE_KEY)!).scrollSync).toBe(false)
+    wrapper.unmount()
+    const reloaded = mount(App)
+    expect(reloaded.get('#scroll-sync-setting').attributes('aria-pressed')).toBe('false')
+    expect(reloaded.find('[data-icon="scroll-sync-off"]').exists()).toBe(true)
+    reloaded.unmount()
+  })
+
   it('空の変換結果ではコピーボタンを無効にする', async () => {
     const wrapper = mount(App)
     const copyButton = wrapper.get<HTMLButtonElement>('.copy-button')
@@ -773,11 +797,10 @@ describe('App', () => {
       wrapper.get('.focus-mode-exit-button').element,
     )
     expect(wrapper.get('.focus-mode-exit-button').element.nextElementSibling).toBe(
-      wrapper.get('.focus-mode-search-button').element,
-    )
-    expect(wrapper.get('.focus-mode-search-button').element.nextElementSibling).toBe(
       wrapper.get('.focus-mode-help-button').element,
     )
+    expect(wrapper.find('.focus-mode-search-button').exists()).toBe(false)
+    expect(wrapper.find('.focus-mode-search-controls').exists()).toBe(false)
     expect(wrapper.get('.workspace-tabs').isVisible()).toBe(false)
     expect(wrapper.get('.workspace-splitter').isVisible()).toBe(false)
     expect(wrapper.get('.output-panel').isVisible()).toBe(false)
@@ -803,16 +826,21 @@ describe('App', () => {
     wrapper.unmount()
   })
 
-  it('フォーカスモードの検索ボタンから検索でき、Escapeは検索UIだけを閉じる', async () => {
+  it('フォーカスモードで検索ショートカットが使え、Escapeは検索UIだけを閉じる', async () => {
     const wrapper = mount(App, { attachTo: document.body })
     const input = wrapper.get<HTMLTextAreaElement>('#markdown-input')
     await input.setValue('focus focus')
     await wrapper.get('.focus-mode-button').trigger('click')
 
-    const searchButton = wrapper.get<HTMLButtonElement>('.focus-mode-search-button')
-    expect(searchButton.attributes('aria-label')).toBe('文章検索を開く')
-    expect(searchButton.find('[data-icon="search"]').exists()).toBe(true)
-    await searchButton.trigger('click')
+    input.element.dispatchEvent(
+      new KeyboardEvent('keydown', {
+        key: 'f',
+        ctrlKey: true,
+        bubbles: true,
+        cancelable: true,
+      }),
+    )
+    await flushPromises()
 
     const searchInput = wrapper.get<HTMLInputElement>('#markdown-search-input')
     expect(document.activeElement).toBe(searchInput.element)
@@ -1235,6 +1263,7 @@ describe('App', () => {
         editorInternalScroll: false,
         workspaceSplitRatio: 0.5,
         normalizeFullWidthMarkdown: false,
+        scrollSync: true,
       }),
     )
 

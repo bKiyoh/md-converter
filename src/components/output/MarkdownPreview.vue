@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import type { MarkdownDocument } from '../../types/markdown'
 import { renderMarkdownPreview } from '../../utils/renderMarkdownPreview'
 
@@ -7,6 +7,13 @@ const props = defineProps<{
   document: MarkdownDocument
   editorInternalScroll: boolean
 }>()
+
+const emit = defineEmits<{
+  'scroll-element': [element: HTMLElement | null]
+}>()
+const surface = ref<HTMLElement | null>(null)
+watch(surface, (element) => emit('scroll-element', element), { flush: 'post' })
+onBeforeUnmount(() => emit('scroll-element', null))
 
 const previewHtml = computed<string>(() => {
   try {
@@ -20,6 +27,7 @@ const previewHtml = computed<string>(() => {
 <template>
   <div
     v-if="previewHtml"
+    ref="surface"
     id="markdown-preview"
     class="markdown-preview"
     :class="
@@ -30,6 +38,7 @@ const previewHtml = computed<string>(() => {
   />
   <p
     v-else
+    ref="surface"
     id="markdown-preview"
     class="preview-placeholder"
     :class="
