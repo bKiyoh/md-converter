@@ -1788,6 +1788,8 @@ h2 {
   --focus-editor-font-family: "Noto Sans JP", "Hiragino Kaku Gothic ProN", "Yu Gothic", Meiryo, sans-serif;
   --focus-editor-font-weight: 400;
   --focus-editor-font-size: 1.125rem;
+  --focus-editor-line-height: 1.8;
+  --focus-editor-letter-spacing: 0.02em;
 
   height: 100%;
   min-height: 0;
@@ -1813,6 +1815,8 @@ h2 {
   font-family: var(--focus-editor-font-family);
   font-weight: var(--focus-editor-font-weight);
   font-size: var(--focus-editor-font-size);
+  line-height: var(--focus-editor-line-height);
+  letter-spacing: var(--focus-editor-letter-spacing);
 }
 
 .app--focus-mode .text-area {
