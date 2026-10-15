@@ -797,11 +797,10 @@ describe('App', () => {
       wrapper.get('.focus-mode-exit-button').element,
     )
     expect(wrapper.get('.focus-mode-exit-button').element.nextElementSibling).toBe(
-      wrapper.get('.focus-mode-search-button').element,
-    )
-    expect(wrapper.get('.focus-mode-search-button').element.nextElementSibling).toBe(
       wrapper.get('.focus-mode-help-button').element,
     )
+    expect(wrapper.find('.focus-mode-search-button').exists()).toBe(false)
+    expect(wrapper.find('.focus-mode-search-controls').exists()).toBe(false)
     expect(wrapper.get('.workspace-tabs').isVisible()).toBe(false)
     expect(wrapper.get('.workspace-splitter').isVisible()).toBe(false)
     expect(wrapper.get('.output-panel').isVisible()).toBe(false)
@@ -827,16 +826,21 @@ describe('App', () => {
     wrapper.unmount()
   })
 
-  it('フォーカスモードの検索ボタンから検索でき、Escapeは検索UIだけを閉じる', async () => {
+  it('フォーカスモードで検索ショートカットが使え、Escapeは検索UIだけを閉じる', async () => {
     const wrapper = mount(App, { attachTo: document.body })
     const input = wrapper.get<HTMLTextAreaElement>('#markdown-input')
     await input.setValue('focus focus')
     await wrapper.get('.focus-mode-button').trigger('click')
 
-    const searchButton = wrapper.get<HTMLButtonElement>('.focus-mode-search-button')
-    expect(searchButton.attributes('aria-label')).toBe('文章検索を開く')
-    expect(searchButton.find('[data-icon="search"]').exists()).toBe(true)
-    await searchButton.trigger('click')
+    input.element.dispatchEvent(
+      new KeyboardEvent('keydown', {
+        key: 'f',
+        ctrlKey: true,
+        bubbles: true,
+        cancelable: true,
+      }),
+    )
+    await flushPromises()
 
     const searchInput = wrapper.get<HTMLInputElement>('#markdown-search-input')
     expect(document.activeElement).toBe(searchInput.element)

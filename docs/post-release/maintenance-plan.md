@@ -9,6 +9,10 @@
 - アクティブなマイルストーン：PR-8 エディターと右ペインの双方向スクロール同期
 - 次のマイルストーン：PR-8完了後にPR-7、続いてPR-6を再開する
 
+PR-9は配置変更後の追加依頼で検索アイコンを撤去し、対象範囲の実装・検証を完了した。
+計画と最終結果は `../archive/implementation-plan-completed.md` のPR-9に保存し、PR-8を再開する。
+全体テストの既存タイムアウト1件（PR-3）は未解消とする。
+
 この計画はリリース後の調査で確認した項目を起点とする。初回リリース前の計画と
 完了済み作業は、それぞれ `../plans/implementation-plan.md` と
 `../archive/implementation-plan-completed.md` を参照する。

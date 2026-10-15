@@ -1765,12 +1765,6 @@ h2 {
   line-height: 1.5;
 }
 
-.focus-mode-spacer {
-  min-width: 0;
-  grid-column: 3;
-  grid-row: 1;
-}
-
 .workspace--focus-mode {
   display: block;
   width: 100%;
@@ -1890,7 +1884,7 @@ h2 {
 
 @media (max-width: 1439px) {
   .app--focus-mode .focus-tab-name {
-    padding-left: clamp(0px, calc(632px - 50vw), 152px);
+    padding-left: clamp(0px, calc(588px - 50vw), 108px);
   }
 
   .focus-mode-controls {
@@ -2077,10 +2071,6 @@ h2 {
   .app--focus-mode .focus-tab-name {
     min-height: 52px;
   }
-
-  .focus-mode-spacer {
-    display: none;
-  }
 }
 
 @media (max-width: 580px) {
@@ -2115,7 +2105,7 @@ h2 {
   }
 
   .app--focus-mode .focus-tab-name {
-    padding-left: 140px;
+    padding-left: 96px;
   }
 
   .toast-notice {

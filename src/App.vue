@@ -421,10 +421,8 @@ onBeforeUnmount(() => {
         v-if="isFocusMode"
         :help-open="isFocusModeHelpOpen"
         @exit="exitFocusMode"
-        @search="openEditorSearch"
         @toggle-help="toggleFocusModeHelp"
       />
-      <div v-if="isFocusMode" class="focus-mode-spacer" aria-hidden="true" />
 
       <header v-show="!isFocusMode" class="app-header">
         <div class="brand-heading">
