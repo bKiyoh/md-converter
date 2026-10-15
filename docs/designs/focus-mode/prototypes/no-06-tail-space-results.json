@@ -1,0 +1,848 @@
+[
+  {
+    "engine": "chromium",
+    "version": "148.0.7778.96",
+    "viewportWidths": [
+      320,
+      768,
+      1440,
+      2560
+    ],
+    "cases": 28,
+    "maxLastLineOffsetPx": 0.5125000000007276,
+    "maxSearchLastLineOffsetPx": 0.5125000000007276,
+    "wheel": {
+      "width": 752,
+      "height": 753,
+      "shellHeight": 753,
+      "topPadding": 16,
+      "bottomPadding": 704.6,
+      "lineHeight": 32.4,
+      "scrollHeight": 15653,
+      "scrollTop": 14900,
+      "mirrorHeight": 15652.671875,
+      "lastLineTop": 14915.4875,
+      "topAtEnd": 15.487499999999272,
+      "delta": -0.5125000000007276,
+      "overflow": 0,
+      "containerType": "size"
+    },
+    "undoMatches": true,
+    "redoMatches": true,
+    "returned": {
+      "same": true,
+      "padding": "16px",
+      "font": "15.2px / 25.08px \"Noto Sans JP\", \"Hiragino Kaku Gothic ProN\", \"Yu Gothic\", Meiryo, sans-serif",
+      "start": 8,
+      "end": 16,
+      "focused": true,
+      "container": "normal"
+    },
+    "searchAndResize": [
+      {
+        "width": 296,
+        "height": 591,
+        "enlarged": false,
+        "shellHeight": 591,
+        "topPadding": 13,
+        "bottomPadding": 545.6,
+        "lineHeight": 32.4,
+        "scrollHeight": 18082,
+        "scrollTop": 17491,
+        "mirrorHeight": 18081.921875,
+        "lastLineTop": 17503.7375,
+        "topAtEnd": 12.737499999999272,
+        "delta": -0.2625000000007276,
+        "overflow": 0,
+        "containerType": "size",
+        "layers": {
+          "a": {
+            "padding": "13px 13px 545.6px",
+            "font": "18px / 32.4px \"Noto Sans JP\", \"Hiragino Kaku Gothic ProN\", \"Yu Gothic\", Meiryo, sans-serif",
+            "lineHeight": "32.4px",
+            "spacing": "0.36px",
+            "width": 296,
+            "height": 591,
+            "scrollHeight": 18082,
+            "top": 17491
+          },
+          "b": {
+            "padding": "13px 13px 545.6px",
+            "font": "18px / 32.4px \"Noto Sans JP\", \"Hiragino Kaku Gothic ProN\", \"Yu Gothic\", Meiryo, sans-serif",
+            "lineHeight": "32.4px",
+            "spacing": "0.36px",
+            "width": 296,
+            "height": 591,
+            "scrollHeight": 18082,
+            "top": 17491
+          }
+        },
+        "viewportWidth": 320
+      },
+      {
+        "width": 728,
+        "height": 647,
+        "enlarged": false,
+        "shellHeight": 647,
+        "topPadding": 16,
+        "bottomPadding": 598.6,
+        "lineHeight": 32.4,
+        "scrollHeight": 15547,
+        "scrollTop": 14900,
+        "mirrorHeight": 15546.671875,
+        "lastLineTop": 14915.4875,
+        "topAtEnd": 15.487499999999272,
+        "delta": -0.5125000000007276,
+        "overflow": 0,
+        "containerType": "size",
+        "layers": {
+          "a": {
+            "padding": "16px 16px 598.6px",
+            "font": "18px / 32.4px \"Noto Sans JP\", \"Hiragino Kaku Gothic ProN\", \"Yu Gothic\", Meiryo, sans-serif",
+            "lineHeight": "32.4px",
+            "spacing": "0.36px",
+            "width": 728,
+            "height": 647,
+            "scrollHeight": 15547,
+            "top": 14900
+          },
+          "b": {
+            "padding": "16px 16px 598.6px",
+            "font": "18px / 32.4px \"Noto Sans JP\", \"Hiragino Kaku Gothic ProN\", \"Yu Gothic\", Meiryo, sans-serif",
+            "lineHeight": "32.4px",
+            "spacing": "0.36px",
+            "width": 728,
+            "height": 647,
+            "scrollHeight": 15547,
+            "top": 14900
+          }
+        },
+        "viewportWidth": 768
+      },
+      {
+        "width": 752,
+        "height": 647,
+        "enlarged": false,
+        "shellHeight": 647,
+        "topPadding": 16,
+        "bottomPadding": 598.6,
+        "lineHeight": 32.4,
+        "scrollHeight": 15547,
+        "scrollTop": 14900,
+        "mirrorHeight": 15546.671875,
+        "lastLineTop": 14915.4875,
+        "topAtEnd": 15.487499999999272,
+        "delta": -0.5125000000007276,
+        "overflow": 0,
+        "containerType": "size",
+        "layers": {
+          "a": {
+            "padding": "16px 16px 598.6px",
+            "font": "18px / 32.4px \"Noto Sans JP\", \"Hiragino Kaku Gothic ProN\", \"Yu Gothic\", Meiryo, sans-serif",
+            "lineHeight": "32.4px",
+            "spacing": "0.36px",
+            "width": 752,
+            "height": 647,
+            "scrollHeight": 15547,
+            "top": 14900
+          },
+          "b": {
+            "padding": "16px 16px 598.6px",
+            "font": "18px / 32.4px \"Noto Sans JP\", \"Hiragino Kaku Gothic ProN\", \"Yu Gothic\", Meiryo, sans-serif",
+            "lineHeight": "32.4px",
+            "spacing": "0.36px",
+            "width": 752,
+            "height": 647,
+            "scrollHeight": 15547,
+            "top": 14900
+          }
+        },
+        "viewportWidth": 1440
+      },
+      {
+        "width": 752,
+        "height": 347,
+        "enlarged": false,
+        "shellHeight": 347,
+        "topPadding": 16,
+        "bottomPadding": 298.6,
+        "lineHeight": 32.4,
+        "scrollHeight": 15247,
+        "scrollTop": 14900,
+        "mirrorHeight": 15246.671875,
+        "lastLineTop": 14915.4875,
+        "topAtEnd": 15.487499999999272,
+        "delta": -0.5125000000007276,
+        "overflow": 0,
+        "containerType": "size",
+        "layers": {
+          "a": {
+            "padding": "16px 16px 298.6px",
+            "font": "18px / 32.4px \"Noto Sans JP\", \"Hiragino Kaku Gothic ProN\", \"Yu Gothic\", Meiryo, sans-serif",
+            "lineHeight": "32.4px",
+            "spacing": "0.36px",
+            "width": 752,
+            "height": 347,
+            "scrollHeight": 15247,
+            "top": 14900
+          },
+          "b": {
+            "padding": "16px 16px 298.6px",
+            "font": "18px / 32.4px \"Noto Sans JP\", \"Hiragino Kaku Gothic ProN\", \"Yu Gothic\", Meiryo, sans-serif",
+            "lineHeight": "32.4px",
+            "spacing": "0.36px",
+            "width": 752,
+            "height": 347,
+            "scrollHeight": 15247,
+            "top": 14900
+          }
+        },
+        "viewportWidth": 1440
+      },
+      {
+        "width": 696,
+        "height": 219,
+        "enlarged": false,
+        "shellHeight": 219,
+        "topPadding": 16,
+        "bottomPadding": 170.6,
+        "lineHeight": 32.4,
+        "scrollHeight": 15119,
+        "scrollTop": 14900,
+        "mirrorHeight": 15118.671875,
+        "lastLineTop": 14915.4875,
+        "topAtEnd": 15.487499999999272,
+        "delta": -0.5125000000007276,
+        "overflow": 0,
+        "containerType": "size",
+        "layers": {
+          "a": {
+            "padding": "16px 16px 170.6px",
+            "font": "18px / 32.4px \"Noto Sans JP\", \"Hiragino Kaku Gothic ProN\", \"Yu Gothic\", Meiryo, sans-serif",
+            "lineHeight": "32.4px",
+            "spacing": "0.36px",
+            "width": 696,
+            "height": 219,
+            "scrollHeight": 15119,
+            "top": 14900
+          },
+          "b": {
+            "padding": "16px 16px 170.6px",
+            "font": "18px / 32.4px \"Noto Sans JP\", \"Hiragino Kaku Gothic ProN\", \"Yu Gothic\", Meiryo, sans-serif",
+            "lineHeight": "32.4px",
+            "spacing": "0.36px",
+            "width": 696,
+            "height": 219,
+            "scrollHeight": 15119,
+            "top": 14900
+          }
+        },
+        "viewportWidth": 720
+      },
+      {
+        "width": 366,
+        "height": 624,
+        "enlarged": true,
+        "shellHeight": 624,
+        "topPadding": 13,
+        "bottomPadding": 570.5,
+        "lineHeight": 40.5,
+        "scrollHeight": 22494,
+        "scrollTop": 21870,
+        "mirrorHeight": 22494,
+        "lastLineTop": 21882.75,
+        "topAtEnd": 12.75,
+        "delta": -0.25,
+        "overflow": 0,
+        "containerType": "size",
+        "layers": {
+          "a": {
+            "padding": "13px 13px 570.5px",
+            "font": "22.5px / 40.5px \"Noto Sans JP\", \"Hiragino Kaku Gothic ProN\", \"Yu Gothic\", Meiryo, sans-serif",
+            "lineHeight": "40.5px",
+            "spacing": "0.45px",
+            "width": 366,
+            "height": 624,
+            "scrollHeight": 22494,
+            "top": 21870
+          },
+          "b": {
+            "padding": "13px 13px 570.5px",
+            "font": "22.5px / 40.5px \"Noto Sans JP\", \"Hiragino Kaku Gothic ProN\", \"Yu Gothic\", Meiryo, sans-serif",
+            "lineHeight": "40.5px",
+            "spacing": "0.45px",
+            "width": 366,
+            "height": 624,
+            "scrollHeight": 22494,
+            "top": 21870
+          }
+        },
+        "viewportWidth": 390
+      }
+    ]
+  },
+  {
+    "engine": "firefox",
+    "version": "150.0.2",
+    "viewportWidths": [
+      320,
+      768,
+      1440,
+      2560
+    ],
+    "cases": 28,
+    "maxLastLineOffsetPx": 0.40000610351562216,
+    "maxSearchLastLineOffsetPx": 0.0007812500007275958,
+    "wheel": {
+      "width": 752,
+      "height": 753,
+      "shellHeight": 753,
+      "topPadding": 16,
+      "bottomPadding": 704.6,
+      "lineHeight": 32.4,
+      "scrollHeight": 15657,
+      "scrollTop": 14904,
+      "mirrorHeight": 15657,
+      "lastLineTop": 14920.0001953125,
+      "topAtEnd": 16.000195312499272,
+      "delta": 0.00019531249927240424,
+      "overflow": 0,
+      "containerType": "size"
+    },
+    "undoMatches": true,
+    "redoMatches": true,
+    "returned": {
+      "same": true,
+      "padding": "16px",
+      "font": "15.2px / 25.0833px \"Noto Sans JP\", \"Hiragino Kaku Gothic ProN\", \"Yu Gothic\", Meiryo, sans-serif",
+      "start": 8,
+      "end": 16,
+      "focused": true,
+      "container": "normal"
+    },
+    "searchAndResize": [
+      {
+        "width": 296,
+        "height": 591,
+        "enlarged": false,
+        "shellHeight": 591,
+        "topPadding": 13,
+        "bottomPadding": 545.6,
+        "lineHeight": 32.4,
+        "scrollHeight": 18087,
+        "scrollTop": 17496,
+        "mirrorHeight": 18087,
+        "lastLineTop": 17508.99921875,
+        "topAtEnd": 12.999218749999272,
+        "delta": -0.0007812500007275958,
+        "overflow": 0,
+        "containerType": "size",
+        "layers": {
+          "a": {
+            "padding": "13px 13px 545.6px",
+            "font": "18px / 32.4px \"Noto Sans JP\", \"Hiragino Kaku Gothic ProN\", \"Yu Gothic\", Meiryo, sans-serif",
+            "lineHeight": "32.4px",
+            "spacing": "0.36px",
+            "width": 296,
+            "height": 591,
+            "scrollHeight": 18087,
+            "top": 17496
+          },
+          "b": {
+            "padding": "13px 13px 545.6px",
+            "font": "18px / 32.4px \"Noto Sans JP\", \"Hiragino Kaku Gothic ProN\", \"Yu Gothic\", Meiryo, sans-serif",
+            "lineHeight": "32.4px",
+            "spacing": "0.36px",
+            "width": 296,
+            "height": 591,
+            "scrollHeight": 18087,
+            "top": 17496
+          }
+        },
+        "viewportWidth": 320
+      },
+      {
+        "width": 728,
+        "height": 647,
+        "enlarged": false,
+        "shellHeight": 647,
+        "topPadding": 16,
+        "bottomPadding": 598.6,
+        "lineHeight": 32.4,
+        "scrollHeight": 15551,
+        "scrollTop": 14904,
+        "mirrorHeight": 15551,
+        "lastLineTop": 14920.0001953125,
+        "topAtEnd": 16.000195312499272,
+        "delta": 0.00019531249927240424,
+        "overflow": 0,
+        "containerType": "size",
+        "layers": {
+          "a": {
+            "padding": "16px 16px 598.6px",
+            "font": "18px / 32.4px \"Noto Sans JP\", \"Hiragino Kaku Gothic ProN\", \"Yu Gothic\", Meiryo, sans-serif",
+            "lineHeight": "32.4px",
+            "spacing": "0.36px",
+            "width": 728,
+            "height": 647,
+            "scrollHeight": 15551,
+            "top": 14904
+          },
+          "b": {
+            "padding": "16px 16px 598.6px",
+            "font": "18px / 32.4px \"Noto Sans JP\", \"Hiragino Kaku Gothic ProN\", \"Yu Gothic\", Meiryo, sans-serif",
+            "lineHeight": "32.4px",
+            "spacing": "0.36px",
+            "width": 728,
+            "height": 647,
+            "scrollHeight": 15551,
+            "top": 14904
+          }
+        },
+        "viewportWidth": 768
+      },
+      {
+        "width": 752,
+        "height": 647,
+        "enlarged": false,
+        "shellHeight": 647,
+        "topPadding": 16,
+        "bottomPadding": 598.6,
+        "lineHeight": 32.4,
+        "scrollHeight": 15551,
+        "scrollTop": 14904,
+        "mirrorHeight": 15551,
+        "lastLineTop": 14920.0001953125,
+        "topAtEnd": 16.000195312499272,
+        "delta": 0.00019531249927240424,
+        "overflow": 0,
+        "containerType": "size",
+        "layers": {
+          "a": {
+            "padding": "16px 16px 598.6px",
+            "font": "18px / 32.4px \"Noto Sans JP\", \"Hiragino Kaku Gothic ProN\", \"Yu Gothic\", Meiryo, sans-serif",
+            "lineHeight": "32.4px",
+            "spacing": "0.36px",
+            "width": 752,
+            "height": 647,
+            "scrollHeight": 15551,
+            "top": 14904
+          },
+          "b": {
+            "padding": "16px 16px 598.6px",
+            "font": "18px / 32.4px \"Noto Sans JP\", \"Hiragino Kaku Gothic ProN\", \"Yu Gothic\", Meiryo, sans-serif",
+            "lineHeight": "32.4px",
+            "spacing": "0.36px",
+            "width": 752,
+            "height": 647,
+            "scrollHeight": 15551,
+            "top": 14904
+          }
+        },
+        "viewportWidth": 1440
+      },
+      {
+        "width": 752,
+        "height": 347,
+        "enlarged": false,
+        "shellHeight": 347,
+        "topPadding": 16,
+        "bottomPadding": 298.6,
+        "lineHeight": 32.4,
+        "scrollHeight": 15251,
+        "scrollTop": 14904,
+        "mirrorHeight": 15251,
+        "lastLineTop": 14920.0001953125,
+        "topAtEnd": 16.000195312499272,
+        "delta": 0.00019531249927240424,
+        "overflow": 0,
+        "containerType": "size",
+        "layers": {
+          "a": {
+            "padding": "16px 16px 298.6px",
+            "font": "18px / 32.4px \"Noto Sans JP\", \"Hiragino Kaku Gothic ProN\", \"Yu Gothic\", Meiryo, sans-serif",
+            "lineHeight": "32.4px",
+            "spacing": "0.36px",
+            "width": 752,
+            "height": 347,
+            "scrollHeight": 15251,
+            "top": 14904
+          },
+          "b": {
+            "padding": "16px 16px 298.6px",
+            "font": "18px / 32.4px \"Noto Sans JP\", \"Hiragino Kaku Gothic ProN\", \"Yu Gothic\", Meiryo, sans-serif",
+            "lineHeight": "32.4px",
+            "spacing": "0.36px",
+            "width": 752,
+            "height": 347,
+            "scrollHeight": 15251,
+            "top": 14904
+          }
+        },
+        "viewportWidth": 1440
+      },
+      {
+        "width": 696,
+        "height": 219,
+        "enlarged": false,
+        "shellHeight": 219,
+        "topPadding": 16,
+        "bottomPadding": 170.6,
+        "lineHeight": 32.4,
+        "scrollHeight": 15123,
+        "scrollTop": 14904,
+        "mirrorHeight": 15123,
+        "lastLineTop": 14920.0001953125,
+        "topAtEnd": 16.000195312499272,
+        "delta": 0.00019531249927240424,
+        "overflow": 0,
+        "containerType": "size",
+        "layers": {
+          "a": {
+            "padding": "16px 16px 170.6px",
+            "font": "18px / 32.4px \"Noto Sans JP\", \"Hiragino Kaku Gothic ProN\", \"Yu Gothic\", Meiryo, sans-serif",
+            "lineHeight": "32.4px",
+            "spacing": "0.36px",
+            "width": 696,
+            "height": 219,
+            "scrollHeight": 15123,
+            "top": 14904
+          },
+          "b": {
+            "padding": "16px 16px 170.6px",
+            "font": "18px / 32.4px \"Noto Sans JP\", \"Hiragino Kaku Gothic ProN\", \"Yu Gothic\", Meiryo, sans-serif",
+            "lineHeight": "32.4px",
+            "spacing": "0.36px",
+            "width": 696,
+            "height": 219,
+            "scrollHeight": 15123,
+            "top": 14904
+          }
+        },
+        "viewportWidth": 720
+      },
+      {
+        "width": 366,
+        "height": 621,
+        "enlarged": true,
+        "shellHeight": 621,
+        "topPadding": 13,
+        "bottomPadding": 567.5,
+        "lineHeight": 40.5,
+        "scrollHeight": 22491,
+        "scrollTop": 21870,
+        "mirrorHeight": 22491,
+        "lastLineTop": 21883,
+        "topAtEnd": 13,
+        "delta": 0,
+        "overflow": 0,
+        "containerType": "size",
+        "layers": {
+          "a": {
+            "padding": "13px 13px 567.5px",
+            "font": "22.5px / 40.5px \"Noto Sans JP\", \"Hiragino Kaku Gothic ProN\", \"Yu Gothic\", Meiryo, sans-serif",
+            "lineHeight": "40.5px",
+            "spacing": "0.45px",
+            "width": 366,
+            "height": 621,
+            "scrollHeight": 22491,
+            "top": 21870
+          },
+          "b": {
+            "padding": "13px 13px 567.5px",
+            "font": "22.5px / 40.5px \"Noto Sans JP\", \"Hiragino Kaku Gothic ProN\", \"Yu Gothic\", Meiryo, sans-serif",
+            "lineHeight": "40.5px",
+            "spacing": "0.45px",
+            "width": 366,
+            "height": 621,
+            "scrollHeight": 22491,
+            "top": 21870
+          }
+        },
+        "viewportWidth": 390
+      }
+    ]
+  },
+  {
+    "engine": "webkit",
+    "version": "26.4",
+    "viewportWidths": [
+      320,
+      768,
+      1440,
+      2560
+    ],
+    "cases": 28,
+    "maxLastLineOffsetPx": 0.2000010000047041,
+    "maxSearchLastLineOffsetPx": 0.25,
+    "wheel": {
+      "width": 752,
+      "height": 753,
+      "shellHeight": 753,
+      "topPadding": 16,
+      "bottomPadding": 704.599976,
+      "lineHeight": 32.400002,
+      "scrollHeight": 15473,
+      "scrollTop": 14720,
+      "mirrorHeight": 15472.59375,
+      "lastLineTop": 14735.799999,
+      "topAtEnd": 15.799999000000753,
+      "delta": -0.20000099999924714,
+      "overflow": 0,
+      "containerType": "size"
+    },
+    "undoMatches": true,
+    "redoMatches": true,
+    "returned": {
+      "same": true,
+      "padding": "16px",
+      "font": "15.2px / 25.08px \"Noto Sans JP\", \"Hiragino Kaku Gothic ProN\", \"Yu Gothic\", Meiryo, sans-serif",
+      "start": 8,
+      "end": 16,
+      "focused": true,
+      "container": "normal"
+    },
+    "searchAndResize": [
+      {
+        "width": 296,
+        "height": 589,
+        "enlarged": false,
+        "shellHeight": 589,
+        "topPadding": 13,
+        "bottomPadding": 543.599976,
+        "lineHeight": 32.400002,
+        "scrollHeight": 17869,
+        "scrollTop": 17280,
+        "mirrorHeight": 17868.59375,
+        "lastLineTop": 17292.799999,
+        "topAtEnd": 12.799998999998934,
+        "delta": -0.20000100000106613,
+        "overflow": 0,
+        "containerType": "size",
+        "layers": {
+          "a": {
+            "padding": "13px 13px 543.599976px",
+            "font": "18px / 32.400002px \"Noto Sans JP\", \"Hiragino Kaku Gothic ProN\", \"Yu Gothic\", Meiryo, sans-serif",
+            "lineHeight": "32.400002px",
+            "spacing": "0.36px",
+            "width": 296,
+            "height": 589,
+            "scrollHeight": 17869,
+            "top": 17280
+          },
+          "b": {
+            "padding": "13px 13px 543.599976px",
+            "font": "18px / 32.400002px \"Noto Sans JP\", \"Hiragino Kaku Gothic ProN\", \"Yu Gothic\", Meiryo, sans-serif",
+            "lineHeight": "32.400002px",
+            "spacing": "0.36px",
+            "width": 296,
+            "height": 589,
+            "scrollHeight": 17869,
+            "top": 17280
+          }
+        },
+        "viewportWidth": 320
+      },
+      {
+        "width": 728,
+        "height": 645,
+        "enlarged": false,
+        "shellHeight": 645,
+        "topPadding": 16,
+        "bottomPadding": 596.599976,
+        "lineHeight": 32.400002,
+        "scrollHeight": 15365,
+        "scrollTop": 14720,
+        "mirrorHeight": 15364.59375,
+        "lastLineTop": 14735.799999,
+        "topAtEnd": 15.799999000000753,
+        "delta": -0.20000099999924714,
+        "overflow": 0,
+        "containerType": "size",
+        "layers": {
+          "a": {
+            "padding": "16px 16px 596.599976px",
+            "font": "18px / 32.400002px \"Noto Sans JP\", \"Hiragino Kaku Gothic ProN\", \"Yu Gothic\", Meiryo, sans-serif",
+            "lineHeight": "32.400002px",
+            "spacing": "0.36px",
+            "width": 728,
+            "height": 645,
+            "scrollHeight": 15365,
+            "top": 14720
+          },
+          "b": {
+            "padding": "16px 16px 596.599976px",
+            "font": "18px / 32.400002px \"Noto Sans JP\", \"Hiragino Kaku Gothic ProN\", \"Yu Gothic\", Meiryo, sans-serif",
+            "lineHeight": "32.400002px",
+            "spacing": "0.36px",
+            "width": 728,
+            "height": 645,
+            "scrollHeight": 15365,
+            "top": 14720
+          }
+        },
+        "viewportWidth": 768
+      },
+      {
+        "width": 752,
+        "height": 645,
+        "enlarged": false,
+        "shellHeight": 645,
+        "topPadding": 16,
+        "bottomPadding": 596.599976,
+        "lineHeight": 32.400002,
+        "scrollHeight": 15365,
+        "scrollTop": 14720,
+        "mirrorHeight": 15364.59375,
+        "lastLineTop": 14735.799999,
+        "topAtEnd": 15.799999000000753,
+        "delta": -0.20000099999924714,
+        "overflow": 0,
+        "containerType": "size",
+        "layers": {
+          "a": {
+            "padding": "16px 16px 596.599976px",
+            "font": "18px / 32.400002px \"Noto Sans JP\", \"Hiragino Kaku Gothic ProN\", \"Yu Gothic\", Meiryo, sans-serif",
+            "lineHeight": "32.400002px",
+            "spacing": "0.36px",
+            "width": 752,
+            "height": 645,
+            "scrollHeight": 15365,
+            "top": 14720
+          },
+          "b": {
+            "padding": "16px 16px 596.599976px",
+            "font": "18px / 32.400002px \"Noto Sans JP\", \"Hiragino Kaku Gothic ProN\", \"Yu Gothic\", Meiryo, sans-serif",
+            "lineHeight": "32.400002px",
+            "spacing": "0.36px",
+            "width": 752,
+            "height": 645,
+            "scrollHeight": 15365,
+            "top": 14720
+          }
+        },
+        "viewportWidth": 1440
+      },
+      {
+        "width": 752,
+        "height": 345,
+        "enlarged": false,
+        "shellHeight": 345,
+        "topPadding": 16,
+        "bottomPadding": 296.600006,
+        "lineHeight": 32.400002,
+        "scrollHeight": 15065,
+        "scrollTop": 14720,
+        "mirrorHeight": 15064.59375,
+        "lastLineTop": 14735.799999,
+        "topAtEnd": 15.799999000000753,
+        "delta": -0.20000099999924714,
+        "overflow": 0,
+        "containerType": "size",
+        "layers": {
+          "a": {
+            "padding": "16px 16px 296.600006px",
+            "font": "18px / 32.400002px \"Noto Sans JP\", \"Hiragino Kaku Gothic ProN\", \"Yu Gothic\", Meiryo, sans-serif",
+            "lineHeight": "32.400002px",
+            "spacing": "0.36px",
+            "width": 752,
+            "height": 345,
+            "scrollHeight": 15065,
+            "top": 14720
+          },
+          "b": {
+            "padding": "16px 16px 296.600006px",
+            "font": "18px / 32.400002px \"Noto Sans JP\", \"Hiragino Kaku Gothic ProN\", \"Yu Gothic\", Meiryo, sans-serif",
+            "lineHeight": "32.400002px",
+            "spacing": "0.36px",
+            "width": 752,
+            "height": 345,
+            "scrollHeight": 15065,
+            "top": 14720
+          }
+        },
+        "viewportWidth": 1440
+      },
+      {
+        "width": 696,
+        "height": 217,
+        "enlarged": false,
+        "shellHeight": 217,
+        "topPadding": 16,
+        "bottomPadding": 168.600006,
+        "lineHeight": 32.400002,
+        "scrollHeight": 14937,
+        "scrollTop": 14720,
+        "mirrorHeight": 14936.59375,
+        "lastLineTop": 14735.799999,
+        "topAtEnd": 15.799999000000753,
+        "delta": -0.20000099999924714,
+        "overflow": 0,
+        "containerType": "size",
+        "layers": {
+          "a": {
+            "padding": "16px 16px 168.600006px",
+            "font": "18px / 32.400002px \"Noto Sans JP\", \"Hiragino Kaku Gothic ProN\", \"Yu Gothic\", Meiryo, sans-serif",
+            "lineHeight": "32.400002px",
+            "spacing": "0.36px",
+            "width": 696,
+            "height": 217,
+            "scrollHeight": 14937,
+            "top": 14720
+          },
+          "b": {
+            "padding": "16px 16px 168.600006px",
+            "font": "18px / 32.400002px \"Noto Sans JP\", \"Hiragino Kaku Gothic ProN\", \"Yu Gothic\", Meiryo, sans-serif",
+            "lineHeight": "32.400002px",
+            "spacing": "0.36px",
+            "width": 696,
+            "height": 217,
+            "scrollHeight": 14937,
+            "top": 14720
+          }
+        },
+        "viewportWidth": 720
+      },
+      {
+        "width": 366,
+        "height": 625,
+        "enlarged": true,
+        "shellHeight": 625,
+        "topPadding": 13,
+        "bottomPadding": 571.5,
+        "lineHeight": 40.5,
+        "scrollHeight": 22225,
+        "scrollTop": 21600,
+        "mirrorHeight": 22224.5,
+        "lastLineTop": 21612.75,
+        "topAtEnd": 12.75,
+        "delta": -0.25,
+        "overflow": 0,
+        "containerType": "size",
+        "layers": {
+          "a": {
+            "padding": "13px 13px 571.5px",
+            "font": "22.5px / 40.5px \"Noto Sans JP\", \"Hiragino Kaku Gothic ProN\", \"Yu Gothic\", Meiryo, sans-serif",
+            "lineHeight": "40.5px",
+            "spacing": "0.45px",
+            "width": 366,
+            "height": 625,
+            "scrollHeight": 22225,
+            "top": 21600
+          },
+          "b": {
+            "padding": "13px 13px 571.5px",
+            "font": "22.5px / 40.5px \"Noto Sans JP\", \"Hiragino Kaku Gothic ProN\", \"Yu Gothic\", Meiryo, sans-serif",
+            "lineHeight": "40.5px",
+            "spacing": "0.45px",
+            "width": 366,
+            "height": 625,
+            "scrollHeight": 22225,
+            "top": 21600
+          }
+        },
+        "viewportWidth": 390
+      }
+    ]
+  }
+]

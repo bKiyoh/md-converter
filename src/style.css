@@ -1807,6 +1807,7 @@ h2 {
   --focus-editor-font-size: 1.125rem;
   --focus-editor-line-height: 1.8;
   --focus-editor-letter-spacing: 0.02em;
+  --focus-editor-padding: 16px;
 
   height: 100%;
   min-height: 0;
@@ -1834,6 +1835,11 @@ h2 {
   font-size: var(--focus-editor-font-size);
   line-height: var(--focus-editor-line-height);
   letter-spacing: var(--focus-editor-letter-spacing);
+  padding-top: var(--focus-editor-padding);
+  padding-bottom: max(
+    var(--focus-editor-padding),
+    calc(100cqh - var(--focus-editor-padding) - var(--focus-editor-font-size) * var(--focus-editor-line-height))
+  );
 }
 
 .app--focus-mode .text-area {
@@ -1843,6 +1849,8 @@ h2 {
 }
 
 .app--focus-mode .text-area-shell {
+  /* タブ名・検索・フッターを除いた本文の表示高を下余白の基準にする。 */
+  container-type: size;
   min-height: 0;
   background: transparent;
 }
@@ -2203,6 +2211,10 @@ h2 {
   .text-area-shell,
   .text-area {
     min-height: 340px;
+  }
+
+  .app--focus-mode .editor-panel {
+    --focus-editor-padding: 13px;
   }
 
   .text-area,
