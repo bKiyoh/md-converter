@@ -1127,6 +1127,11 @@ h2 {
   overflow-wrap: anywhere;
 }
 
+.markdown-preview {
+  /* 斜体などを持たない書体でもMarkdownの文字装飾を描画する。 */
+  font-synthesis: weight style;
+}
+
 .preview-placeholder {
   color: var(--muted);
 }
@@ -1945,8 +1950,6 @@ h2 {
   min-height: 0;
   overflow: auto;
   font-family: var(--editor-font-family);
-  /* 配信する400・normalの書体でもMarkdownの太字・斜体を描画する。 */
-  font-synthesis: weight style;
   font-size: var(--focus-editor-font-size);
   line-height: var(--focus-editor-line-height);
   letter-spacing: var(--focus-editor-letter-spacing);
