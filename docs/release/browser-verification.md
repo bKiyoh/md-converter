@@ -508,3 +508,36 @@ npm run lint・npm run type-check・npm run build・git diff --check成功。
 実機・実IME・実200%ズーム・実文字サイズ設定・支援技術は未確認。手動では両テーマの
 アイコンの見つけやすさ、モバイルの回転とタッチ操作、フォーカス表示を確認する。
 機能実装の持ち越しはなく、PR-3・PR-4の既存課題とPR-8・7・6の保留を維持する。公開完了ではない。
+
+
+### PR-30 フォーカスプレビューの太字・斜体（2026-10-16）
+
+GitHub PR #20のレビュー指摘1を修正した。Noto Sans JP 400・normalのみの配信と
+ルートのフォント合成無効の組み合わせにより、プレビューの太字・斜体が通常文字と
+同じ字形になる問題に対し、フォーカスプレビュー内でweight・styleの合成を許可した。
+製品仕様・変換仕様、フォント資産・依存は変更していない。
+
+`tests/browser/focus-preview-typography.mjs` を追加し、次を実ブラウザで確認した。
+
+- フォント読込後、太字・斜体・両者の組み合わせが装飾を解除した字形と異なる
+- Chromium 148.0.7778.96・Firefox 150.0.2・Playwright WebKit 26.4でライト・ダークの計18比較が成功
+- 編集欄のfont-synthesisはnoneのままで、原文と通常プレビューの文字組みを維持する
+- 修正前のCSSでは太字と通常文字の画像が同一として回帰テストが失敗する
+
+実行には別ターミナルの開発サーバーと、Playwrightまたはplaywright-coreおよび
+3ブラウザをインストール済みの外部環境を使用する。既存のVitestテストとは別に実行し、
+リポジトリに依存を追加していない。
+
+```bash
+npm run dev -- --host 127.0.0.1
+PLAYWRIGHT_MODULE=/absolute/path/to/playwright-core/index.mjs \
+  FOCUS_BASE_URL=http://127.0.0.1:5173 \
+  node tests/browser/focus-preview-typography.mjs
+```
+
+npm run lint・npm run type-check・npm run build・git diff --check成功。
+npm run test -- --maxWorkers=2は573件成功、既知PR-3のハイライト上限テスト1件が
+5秒でタイムアウトした。npm/Nodeの既存対応版警告も残る。
+実機での目視確認は未実施。手動では`**太字**`・`*斜体*`・`***両方***`を入力し、
+フォーカス中にCtrl / Command + Enterで切り替えて、両テーマで装飾を確認する。
+レビュー指摘2のFirefox編集位置復元は未対応。既存の保留順とPR-3・PR-4は維持する。
