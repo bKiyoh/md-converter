@@ -48,6 +48,30 @@ function mountInteractiveEditor(
 }
 
 describe('MarkdownEditor', () => {
+  it('文字サイズ変更で本文・選択・手動位置を維持し、検索層のスクロールを合わせる', async () => {
+    const wrapper = mount(MarkdownEditor, {
+      props: { modelValue: '日本語の本文\n検索する本文', characterCount: 14, editorInternalScroll: true, focusMode: true },
+      attachTo: document.body,
+    })
+    await wrapper.vm.openSearch()
+    await wrapper.get('#markdown-search-input').setValue('本文')
+    const input = wrapper.get<HTMLTextAreaElement>('#markdown-input')
+    input.element.setSelectionRange(1, 3)
+    input.element.scrollTop = 82
+    input.element.scrollLeft = 5
+    const status = wrapper.get('.search-result-status').text()
+    await wrapper.setProps({ focusEditorFontSize: 24 })
+    await flushPromises()
+    const layer = wrapper.get<HTMLElement>('.search-highlight-layer')
+    expect(wrapper.get('#markdown-input').element).toBe(input.element)
+    expect(input.element.value).toBe('日本語の本文\n検索する本文')
+    expect([input.element.selectionStart, input.element.selectionEnd, input.element.scrollTop, input.element.scrollLeft]).toEqual([1, 3, 82, 5])
+    expect([layer.element.scrollTop, layer.element.scrollLeft]).toEqual([82, 5])
+    expect(wrapper.get('.search-result-status').text()).toBe(status)
+    expect(wrapper.emitted('update:modelValue')).toBeUndefined()
+    wrapper.unmount()
+  })
+
   it('既存文字数要素をフォーカス中も共有し、説明と読み上げを切り替える', async () => {
     const wrapper = mount(MarkdownEditor, {
       props: { modelValue: '日本語😀', characterCount: 4, editorInternalScroll: true },

@@ -34,6 +34,9 @@ function mountSettings(storage: LocalStorageAccess | null): VueWrapper {
           type="checkbox"
         />
         <input data-testid="scroll-sync" v-model="scrollSync" type="checkbox" />
+        <select data-testid="focus-size" v-model.number="focusEditorFontSize">
+          <option v-for="size in [8, 10, 12, 14, 16, 18, 20, 22, 24]" :key="size" :value="size">{{ size }}</option>
+        </select>
         <output data-testid="save-error">{{ saveError }}</output>
         <button data-testid="retry-save" @click="retrySave">retry</button>
       `,
@@ -42,6 +45,54 @@ function mountSettings(storage: LocalStorageAccess | null): VueWrapper {
 }
 
 describe('useAppSettings', () => {
+  it.each([8, 10, 12, 14, 16, 18, 20, 22, 24])('文字サイズ%sを保存して復元し、他設定も維持する', async (size) => {
+    let saved = JSON.stringify({ editorInternalScroll: false, workspaceSplitRatio: 0.65, scrollSync: false })
+    const storage = {
+      getItem: vi.fn(() => saved),
+      setItem: vi.fn((_key: string, value: string) => { saved = value }),
+    }
+    const wrapper = mountSettings(storage)
+    expect(wrapper.get<HTMLSelectElement>('[data-testid="focus-size"]').element.value).toBe('18')
+    await wrapper.get('[data-testid="focus-size"]').setValue(String(size))
+    // 標準値の再選択では値が変わらないため、先に別の値へ変更する。
+    if (size === 18) {
+      await wrapper.get('[data-testid="focus-size"]').setValue('16')
+      await wrapper.get('[data-testid="focus-size"]').setValue('18')
+    }
+    expect(JSON.parse(saved)).toMatchObject({ focusEditorFontSize: size, editorInternalScroll: false, workspaceSplitRatio: 0.65, scrollSync: false })
+    wrapper.unmount()
+    const reloaded = mountSettings(storage)
+    expect(reloaded.get<HTMLSelectElement>('[data-testid="focus-size"]').element.value).toBe(String(size))
+    reloaded.unmount()
+  })
+
+  it.each([undefined, null, '20', 0, 9, 17, 25, {}, true])('欠損・不正な文字サイズ%jは18へ補完する', (focusEditorFontSize) => {
+    const wrapper = mountSettings({
+      getItem: () => JSON.stringify({ editorInternalScroll: false, workspaceSplitRatio: 0.65, focusEditorFontSize }),
+      setItem: vi.fn(),
+    })
+    expect(wrapper.get<HTMLSelectElement>('[data-testid="focus-size"]').element.value).toBe('18')
+    expect(wrapper.get<HTMLInputElement>('[data-testid="editor-scroll"]').element.checked).toBe(false)
+    expect(wrapper.get<HTMLInputElement>('[data-testid="workspace-split-ratio"]').element.value).toBe('0.65')
+    wrapper.unmount()
+  })
+
+  it('文字サイズの保存失敗でも変更を継続し、再試行で最新値を保存する', async () => {
+    const storage = {
+      getItem: () => null,
+      setItem: vi.fn<(_key: string, _value: string) => void>(() => { throw new DOMException('quota') }),
+    }
+    const wrapper = mountSettings(storage)
+    await wrapper.get('[data-testid="focus-size"]').setValue('24')
+    expect(wrapper.get<HTMLSelectElement>('[data-testid="focus-size"]').element.value).toBe('24')
+    expect(wrapper.get('[data-testid="save-error"]').text()).not.toBe('')
+    storage.setItem.mockImplementation(() => undefined)
+    await wrapper.get('[data-testid="retry-save"]').trigger('click')
+    expect(JSON.parse(storage.setItem.mock.lastCall![1]).focusEditorFontSize).toBe(24)
+    expect(wrapper.get('[data-testid="save-error"]').text()).toBe('')
+    wrapper.unmount()
+  })
+
   it.each([undefined, null, 'false', 0])('同期設定が欠損または不正値 %s の場合はONへ補完する', (scrollSync) => {
     const storage = {
       getItem: vi.fn(() => JSON.stringify({ editorInternalScroll: false, workspaceSplitRatio: 0.65, scrollSync })),
@@ -65,7 +116,7 @@ describe('useAppSettings', () => {
     expect(checkbox.element.checked).toBe(true)
     await checkbox.setValue(false)
     expect(JSON.parse(storedValue!)).toEqual({
-      editorInternalScroll: true, workspaceSplitRatio: 0.5, normalizeFullWidthMarkdown: false, scrollSync: false,
+      editorInternalScroll: true, workspaceSplitRatio: 0.5, normalizeFullWidthMarkdown: false, scrollSync: false, focusEditorFontSize: 18,
     })
     wrapper.unmount()
     const reloaded = mountSettings(storage)
@@ -129,6 +180,7 @@ describe('useAppSettings', () => {
         workspaceSplitRatio: 0.5,
         normalizeFullWidthMarkdown: false,
         scrollSync: true,
+        focusEditorFontSize: 18,
       } satisfies AppSettings),
     )
 
@@ -160,6 +212,7 @@ describe('useAppSettings', () => {
         workspaceSplitRatio: 0.65,
         normalizeFullWidthMarkdown: false,
         scrollSync: true,
+        focusEditorFontSize: 18,
       } satisfies AppSettings),
     )
 
@@ -207,6 +260,7 @@ describe('useAppSettings', () => {
         workspaceSplitRatio: 0.5,
         normalizeFullWidthMarkdown: true,
         scrollSync: true,
+        focusEditorFontSize: 18,
       } satisfies AppSettings),
     )
 

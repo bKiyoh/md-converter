@@ -1,5 +1,10 @@
 import { computed, type Ref, type WritableComputedRef } from 'vue'
 import {
+  DEFAULT_FOCUS_EDITOR_FONT_SIZE,
+  isFocusEditorFontSize,
+  type FocusEditorFontSize,
+} from '../utils/focusEditorFontSize'
+import {
   useDebouncedLocalStorage,
   type LocalStorageAccess,
 } from './useDebouncedLocalStorage'
@@ -14,6 +19,7 @@ export type AppSettings = {
   workspaceSplitRatio: number
   normalizeFullWidthMarkdown: boolean
   scrollSync: boolean
+  focusEditorFontSize: FocusEditorFontSize
 }
 
 export type UseAppSettingsResult = {
@@ -24,6 +30,7 @@ export type UseAppSettingsResult = {
   workspaceSplitRatio: WritableComputedRef<number>
   normalizeFullWidthMarkdown: WritableComputedRef<boolean>
   scrollSync: WritableComputedRef<boolean>
+  focusEditorFontSize: WritableComputedRef<FocusEditorFontSize>
 }
 
 const DEFAULT_APP_SETTINGS: AppSettings = {
@@ -31,6 +38,7 @@ const DEFAULT_APP_SETTINGS: AppSettings = {
   workspaceSplitRatio: DEFAULT_WORKSPACE_SPLIT_RATIO,
   normalizeFullWidthMarkdown: false,
   scrollSync: true,
+  focusEditorFontSize: DEFAULT_FOCUS_EDITOR_FONT_SIZE,
 }
 
 function createDefaultSettings(): AppSettings {
@@ -73,6 +81,9 @@ function deserializeSettings(storedValue: string | null): AppSettings {
     workspaceSplitRatio,
     normalizeFullWidthMarkdown,
     scrollSync: 'scrollSync' in parsed && typeof parsed.scrollSync === 'boolean' ? parsed.scrollSync : true,
+    focusEditorFontSize: 'focusEditorFontSize' in parsed && isFocusEditorFontSize(parsed.focusEditorFontSize)
+      ? parsed.focusEditorFontSize
+      : DEFAULT_FOCUS_EDITOR_FONT_SIZE,
   }
 }
 
@@ -124,6 +135,13 @@ export function useAppSettings(
     },
   })
 
+  const focusEditorFontSize = computed<FocusEditorFontSize>({
+    get: () => settings.value.focusEditorFontSize,
+    set: (value) => {
+      settings.value = { ...settings.value, focusEditorFontSize: value }
+    },
+  })
+
   return {
     settings,
     saveError,
@@ -132,5 +150,6 @@ export function useAppSettings(
     workspaceSplitRatio,
     normalizeFullWidthMarkdown,
     scrollSync,
+    focusEditorFontSize,
   }
 }

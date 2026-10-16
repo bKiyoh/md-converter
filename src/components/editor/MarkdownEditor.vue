@@ -11,6 +11,11 @@ import type { MarkdownEditorViewState } from '../../types/editorView'
 import type { InputReplacementRule } from '../../types/inputReplacement'
 import type { TextEditResult } from '../../utils/markdownEditor'
 import {
+  DEFAULT_FOCUS_EDITOR_FONT_SIZE,
+  focusEditorFontSizeRem,
+  type FocusEditorFontSize,
+} from '../../utils/focusEditorFontSize'
+import {
   selectTextMatchesForHighlight,
   type TextMatch,
 } from '../../utils/textSearch'
@@ -23,6 +28,7 @@ const props = withDefaults(
     characterCount: number
     editorInternalScroll: boolean
     focusMode?: boolean
+    focusEditorFontSize?: FocusEditorFontSize
     previewMode?: boolean
     activeTabId?: string
     shortcutsEnabled?: boolean
@@ -32,6 +38,7 @@ const props = withDefaults(
   }>(),
   {
     focusMode: false,
+    focusEditorFontSize: DEFAULT_FOCUS_EDITOR_FONT_SIZE,
     previewMode: false,
     activeTabId: 'default',
     shortcutsEnabled: true,
@@ -493,6 +500,17 @@ watch(
   },
 )
 
+watch(() => props.focusEditorFontSize, async () => {
+  const element = textarea.value
+  if (!props.focusMode || !element) return
+  const { scrollTop, scrollLeft } = element
+  await nextTick()
+  // 折り返し変更によるブラウザの位置調整後、利用者の手動スクロールを可能な範囲で保つ。
+  element.scrollTop = scrollTop
+  element.scrollLeft = scrollLeft
+  syncSearchHighlightScroll()
+})
+
 watch(currentMatch, (match) => {
   if (match) {
     void selectTextMatch(match)
@@ -529,6 +547,10 @@ defineExpose({ captureViewState, restoreViewState, isConnected, openSearch })
   <section
     id="input-panel"
     class="editor-panel panel"
+    :style="focusMode ? {
+      '--focus-editor-font-size': focusEditorFontSizeRem(focusEditorFontSize),
+      '--focus-editor-font-scale': focusEditorFontSize / DEFAULT_FOCUS_EDITOR_FONT_SIZE,
+    } : undefined"
     :class="{ 'editor-panel--guide-open': isInputGuideOpen && !focusMode }"
     :role="focusMode ? 'region' : 'tabpanel'"
     :aria-labelledby="focusMode ? undefined : 'input-tab'"

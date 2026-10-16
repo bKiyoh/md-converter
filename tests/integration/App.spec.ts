@@ -44,6 +44,117 @@ describe('App', () => {
     await flushPromises()
   }
 
+  async function changeFocusFontSize(wrapper: VueWrapper, size: number): Promise<HTMLSelectElement> {
+    const select = wrapper.get<HTMLSelectElement>('#focus-font-size-select')
+    await select.setValue(String(size))
+    return select.element
+  }
+
+  it('フォーカスの9段階サイズを即時保存し、本文・選択・位置と解析結果を維持する', async () => {
+    const wrapper = mount(App, { attachTo: document.body })
+    const input = wrapper.get<HTMLTextAreaElement>('#markdown-input')
+    await input.setValue('日本語 **本文**\n\n検索用の本文')
+    await completeConversion()
+    await wrapper.get('.focus-mode-button').trigger('click')
+    input.element.setSelectionRange(2, 6)
+    input.element.scrollTop = 37
+    input.element.scrollLeft = 4
+    const parse = vi.spyOn(markdownParser, 'parseMarkdown')
+    const button = wrapper.get('.focus-font-size-button')
+    expect(button.attributes('aria-label')).toBe('文字サイズ')
+    await button.trigger('click')
+    const select = wrapper.get<HTMLSelectElement>('#focus-font-size-select')
+    expect(document.activeElement).toBe(select.element)
+    expect(select.element.value).toBe('18')
+    expect(select.findAll('option').map((option) => option.attributes('value'))).toEqual(['8', '10', '12', '14', '16', '18', '20', '22', '24'])
+    expect(select.findAll('option').map((option) => option.text())).toEqual(['8px', '10px', '12px', '14px', '16px', '18px', '20px', '22px', '24px'])
+    expect(wrapper.find('#focus-font-size-description').exists()).toBe(false)
+    expect(select.attributes('aria-describedby')).toBeUndefined()
+    expect(wrapper.find('.focus-font-size-stepper').exists()).toBe(false)
+    for (const size of [8, 10, 12, 14, 16, 18, 20, 22, 24, 18]) {
+      const control = await changeFocusFontSize(wrapper, size)
+      await flushPromises()
+      expect(wrapper.get('#markdown-input').element).toBe(input.element)
+      expect(input.element.value).toBe('日本語 **本文**\n\n検索用の本文')
+      expect([input.element.selectionStart, input.element.selectionEnd, input.element.scrollTop, input.element.scrollLeft]).toEqual([2, 6, 37, 4])
+      expect(wrapper.get<HTMLElement>('#input-panel').element.style.getPropertyValue('--focus-editor-font-size')).toBe(`${size / 16}rem`)
+      expect(JSON.parse(localStorage.getItem(APP_SETTINGS_STORAGE_KEY)!).focusEditorFontSize).toBe(size)
+      expect(select.element.value).toBe(String(size))
+      expect(document.activeElement).toBe(control)
+    }
+    expect(parse).not.toHaveBeenCalled()
+    await wrapper.get('#focus-font-size-select').trigger('keydown', { key: 'Escape' })
+    await flushPromises()
+    expect(wrapper.find('#focus-font-size-panel').exists()).toBe(false)
+    expect(wrapper.get('.app').classes()).toContain('app--focus-mode')
+    expect(document.activeElement).toBe(button.element)
+    await wrapper.get('.focus-mode-exit-button').trigger('click')
+    expect(wrapper.get<HTMLElement>('#input-panel').element.style.getPropertyValue('--focus-editor-font-size')).toBe('')
+    wrapper.unmount()
+    const reloaded = mount(App)
+    await reloaded.get('.focus-mode-button').trigger('click')
+    await reloaded.get('.focus-font-size-button').trigger('click')
+    expect(reloaded.get<HTMLSelectElement>('#focus-font-size-select').element.value).toBe('18')
+    reloaded.unmount()
+  })
+
+  it('文字サイズと解説を排他で開き、外側クリック・フォーカス移動・再開始で閉じる', async () => {
+    const wrapper = mount(App, { attachTo: document.body })
+    await wrapper.get('.focus-mode-button').trigger('click')
+    await wrapper.get('.focus-mode-help-button').trigger('click')
+    await wrapper.get('.focus-font-size-button').trigger('click')
+    expect(wrapper.find('#focus-mode-help').exists()).toBe(false)
+    await wrapper.get('.focus-mode-help-button').trigger('click')
+    expect(wrapper.find('#focus-font-size-panel').exists()).toBe(false)
+    expect(wrapper.find('#focus-mode-help').exists()).toBe(true)
+    await wrapper.get('.focus-font-size-button').trigger('click')
+    await wrapper.get('#focus-font-size-select').trigger('keydown', { key: 'Enter', ctrlKey: true })
+    await flushPromises()
+    expect(wrapper.get('#focus-mode-preview').isVisible()).toBe(false)
+    await wrapper.get('#markdown-input').trigger('click')
+    expect(wrapper.find('#focus-font-size-panel').exists()).toBe(false)
+    await wrapper.get('.focus-font-size-button').trigger('click')
+    wrapper.get<HTMLTextAreaElement>('#markdown-input').element.focus()
+    await flushPromises()
+    expect(wrapper.find('#focus-font-size-panel').exists()).toBe(false)
+    await wrapper.get('.focus-font-size-button').trigger('click')
+    await wrapper.get('.focus-mode-exit-button').trigger('click')
+    await wrapper.get('.focus-mode-button').trigger('click')
+    expect(wrapper.find('#focus-font-size-panel').exists()).toBe(false)
+    wrapper.unmount()
+  })
+
+  it.each([8, 10, 12, 14, 24])('プレビュー中のサイズ%sへの変更も編集位置を保持し、モード往復・再読み込みへ引き継ぐ', async (size) => {
+    const wrapper = mount(App, { attachTo: document.body })
+    const input = wrapper.get<HTMLTextAreaElement>('#markdown-input')
+    await input.setValue('# 見出し\n\n本文')
+    await wrapper.get('.focus-mode-button').trigger('click')
+    input.element.setSelectionRange(2, 4)
+    input.element.scrollTop = 35
+    await pressFocusPreviewShortcut(wrapper)
+    const preview = wrapper.get<HTMLElement>('#focus-mode-preview')
+    preview.element.scrollTop = 46
+    await wrapper.get('.focus-font-size-button').trigger('click')
+    await changeFocusFontSize(wrapper, size)
+    expect(preview.isVisible()).toBe(true)
+    expect(preview.element.scrollTop).toBe(46)
+    await preview.trigger('click')
+    await pressFocusPreviewShortcut(wrapper)
+    expect(input.element.selectionStart).toBe(2)
+    expect(input.element.selectionEnd).toBe(4)
+    expect(input.element.scrollTop).toBe(35)
+    await wrapper.get('.focus-mode-exit-button').trigger('click')
+    await wrapper.get('.focus-mode-button').trigger('click')
+    expect(wrapper.get<HTMLElement>('#input-panel').element.style.getPropertyValue('--focus-editor-font-size')).toBe(`${size / 16}rem`)
+    wrapper.unmount()
+    const reloaded = mount(App)
+    expect(reloaded.get('.app').classes()).not.toContain('app--focus-mode')
+    await reloaded.get('.focus-mode-button').trigger('click')
+    await reloaded.get('.focus-font-size-button').trigger('click')
+    expect(reloaded.get<HTMLSelectElement>('#focus-font-size-select').element.value).toBe(String(size))
+    reloaded.unmount()
+  })
+
   it('入力を選択中の形式へリアルタイム変換し、文字数を表示する', async () => {
     const wrapper = mount(App)
     const input = wrapper.get<HTMLTextAreaElement>('#markdown-input')
@@ -809,6 +920,10 @@ describe('App', () => {
     expect(wrapper.get('.focus-mode-exit-button').element.nextElementSibling).toBe(
       wrapper.get('.focus-mode-help-button').element,
     )
+    expect(wrapper.get('.focus-mode-control-buttons').findAll('button')).toHaveLength(2)
+    expect(wrapper.get('.focus-mode-controls').find('.focus-font-size-button').exists()).toBe(false)
+    expect(wrapper.get('.focus-mode-font-controls').attributes('aria-label')).toBe('文字サイズ設定')
+    expect(wrapper.get('.focus-mode-font-controls').find('.focus-font-size-button').exists()).toBe(true)
     expect(wrapper.find('.focus-mode-search-button').exists()).toBe(false)
     expect(wrapper.find('.focus-mode-search-controls').exists()).toBe(false)
     expect(wrapper.get('.workspace-tabs').isVisible()).toBe(false)
@@ -1469,6 +1584,7 @@ describe('App', () => {
         workspaceSplitRatio: 0.5,
         normalizeFullWidthMarkdown: false,
         scrollSync: true,
+        focusEditorFontSize: 18,
       }),
     )
 

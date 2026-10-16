@@ -32,6 +32,7 @@ import type { ConversionResult } from './types/conversion'
 import type { MarkdownDocument } from './types/markdown'
 import { countCharacters } from './utils/countCharacters'
 import { CONVERSION_DEBOUNCE_DELAY_MS } from './utils/conversionTiming'
+import type { FocusEditorFontSize } from './utils/focusEditorFontSize'
 
 const {
   tabs,
@@ -68,6 +69,7 @@ const {
   workspaceSplitRatio,
   normalizeFullWidthMarkdown,
   scrollSync,
+  focusEditorFontSize,
   saveError: appSettingsSaveError,
   retrySave: retryAppSettingsSave,
 } = useAppSettings()
@@ -300,6 +302,18 @@ async function openEditorSearch(showReplace = false): Promise<void> {
   await markdownEditor.value?.openSearch(showReplace)
 }
 
+async function updateFocusEditorFontSize(value: FocusEditorFontSize): Promise<void> {
+  const preview = focusPreviewElement.value
+  const scrollTop = preview?.scrollTop ?? 0
+  const scrollLeft = preview?.scrollLeft ?? 0
+  focusEditorFontSize.value = value
+  await nextTick()
+  if (preview) {
+    preview.scrollTop = scrollTop
+    preview.scrollLeft = scrollLeft
+  }
+}
+
 function showTabNotice(nextNotice: TabNotice): void {
   tabNotice.value = nextNotice
 
@@ -429,6 +443,8 @@ onBeforeUnmount(() => {
       <FocusModeGuide
         v-if="isFocusMode"
         :help-open="isFocusModeHelpOpen"
+        :font-size="focusEditorFontSize"
+        @update:font-size="updateFocusEditorFontSize"
         @exit="exitFocusMode"
         @toggle-help="toggleFocusModeHelp"
       />
@@ -578,6 +594,7 @@ onBeforeUnmount(() => {
           :character-count="inputCharacterCount"
           :editor-internal-scroll="effectiveEditorInternalScroll"
           :focus-mode="isFocusMode"
+          :focus-editor-font-size="focusEditorFontSize"
           :preview-mode="isFocusPreview"
           :active-tab-id="activeTabId"
           :shortcuts-enabled="

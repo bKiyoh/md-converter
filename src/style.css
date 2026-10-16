@@ -65,6 +65,7 @@ select:focus-visible {
   --border: #d7deea;
   --text: #172033;
   --muted: #5d687c;
+  --focus-icon-color: #7a8492;
   --accent: #3759c7;
   --accent-contrast: #ffffff;
   --focus: #6f8cff;
@@ -149,6 +150,7 @@ select:focus-visible {
   --border: #344054;
   --text: #eef3fb;
   --muted: #aeb9ca;
+  --focus-icon-color: #69778c;
   --accent: #8da6ff;
   --accent-contrast: #10182b;
   --focus: #9aafff;
@@ -1724,11 +1726,65 @@ h2 {
 }
 
 .focus-mode-control-buttons {
+  position: relative;
   display: flex;
   flex: 0 0 auto;
   align-items: flex-start;
   flex-direction: row;
   gap: 8px;
+}
+
+.focus-mode-font-controls {
+  position: fixed;
+  z-index: 30;
+  top: 12px;
+  right: 12px;
+}
+
+.focus-font-size-root {
+  position: relative;
+}
+
+.app--focus-mode :is(.icon-button, .search-replace-leading-icon) {
+  color: var(--focus-icon-color);
+}
+
+.app--focus-mode .icon-button:is(:hover, :focus-visible, [aria-expanded="true"]):not(:disabled) {
+  color: var(--muted);
+}
+
+.focus-font-size-panel {
+  position: absolute;
+  z-index: 3;
+  top: calc(100% + 8px);
+  right: 0;
+  display: grid;
+  width: min(280px, calc(100vw - 40px));
+  max-height: calc(100dvh - 88px);
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow-y: auto;
+  gap: 12px;
+  color: var(--text);
+  background: var(--surface);
+  box-shadow: 0 12px 32px rgb(31 45 72 / 10%);
+  pointer-events: auto;
+}
+
+.focus-font-size-panel label {
+  font-weight: 700;
+}
+
+.focus-font-size-panel select {
+  width: 100%;
+  min-height: 40px;
+  min-width: 0;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text);
+  background: var(--surface-muted);
 }
 
 .focus-mode-help {
@@ -1911,6 +1967,14 @@ h2 {
   outline-offset: -2px;
 }
 
+.focus-mode-preview h1 {
+  font-size: calc(clamp(1.75rem, 3vw, 2.5rem) * var(--focus-editor-font-scale));
+}
+
+.focus-mode-preview h2 {
+  font-size: calc(1.2rem * var(--focus-editor-font-scale));
+}
+
 .focus-tab-name {
   display: flex;
   min-width: 0;
@@ -1983,6 +2047,12 @@ h2 {
 @media (max-width: 1439px) {
   .app--focus-mode .focus-tab-name {
     padding-left: clamp(0px, calc(588px - 50vw), 108px);
+    padding-right: clamp(0px, calc(540px - 50vw), 60px);
+  }
+
+  .focus-mode-font-controls {
+    top: 20px;
+    right: 20px;
   }
 
   .focus-mode-controls {
@@ -2202,8 +2272,18 @@ h2 {
     left: 12px;
   }
 
+  .focus-mode-font-controls {
+    top: 12px;
+    right: 12px;
+  }
+
   .app--focus-mode .focus-tab-name {
     padding-left: 96px;
+    padding-right: 52px;
+  }
+
+  .focus-mode-preview h1 {
+    font-size: calc(1.65rem * var(--focus-editor-font-scale));
   }
 
   .toast-notice {
@@ -2282,6 +2362,7 @@ h2 {
     --surface-muted: Canvas;
     --text: CanvasText;
     --muted: CanvasText;
+    --focus-icon-color: CanvasText;
     --search-match-bg: Mark;
     --search-current-bg: Mark;
 
