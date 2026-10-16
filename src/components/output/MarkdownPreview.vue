@@ -3,10 +3,11 @@ import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import type { MarkdownDocument } from '../../types/markdown'
 import { renderMarkdownPreview } from '../../utils/renderMarkdownPreview'
 
-const props = defineProps<{
+const props = withDefaults(defineProps<{
   document: MarkdownDocument
   editorInternalScroll: boolean
-}>()
+  previewId?: string
+}>(), { previewId: 'markdown-preview' })
 
 const emit = defineEmits<{
   'scroll-element': [element: HTMLElement | null]
@@ -28,7 +29,7 @@ const previewHtml = computed<string>(() => {
   <div
     v-if="previewHtml"
     ref="surface"
-    id="markdown-preview"
+    :id="previewId"
     class="markdown-preview"
     :class="
       editorInternalScroll ? 'preview-surface--internal-scroll' : 'preview-surface--expand'
@@ -39,7 +40,7 @@ const previewHtml = computed<string>(() => {
   <p
     v-else
     ref="surface"
-    id="markdown-preview"
+    :id="previewId"
     class="preview-placeholder"
     :class="
       editorInternalScroll ? 'preview-surface--internal-scroll' : 'preview-surface--expand'

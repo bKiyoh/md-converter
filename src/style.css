@@ -1,3 +1,11 @@
+@font-face {
+  font-family: "Noto Sans JP";
+  src: url("/fonts/noto-sans-jp-400.woff2") format("woff2");
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+}
+
 :root {
   font-family:
     Inter,
@@ -8,7 +16,7 @@
     "Segoe UI",
     sans-serif;
   color: #172033;
-  background: #eef2f7;
+  background: #f5f2ea;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
 }
@@ -49,12 +57,15 @@ select:focus-visible {
 }
 
 .app {
-  --page: #eef2f7;
+  --page: #f5f2ea;
+  --page-center: #faf8f2;
+  --page-edge: #eeebe3;
   --surface: #ffffff;
-  --surface-muted: #f6f8fb;
+  --surface-muted: var(--page-center);
   --border: #d7deea;
   --text: #172033;
   --muted: #5d687c;
+  --focus-icon-color: #7a8492;
   --accent: #3759c7;
   --accent-contrast: #ffffff;
   --focus: #6f8cff;
@@ -74,7 +85,13 @@ select:focus-visible {
   min-height: 100dvh;
   padding: 12px;
   color: var(--text);
-  background: var(--page);
+  background-color: var(--page);
+  background-image: radial-gradient(
+    ellipse at 50% 50%,
+    var(--page-center) 0%,
+    var(--page) 60%,
+    var(--page-edge) 100%
+  );
 }
 
 .app--internal-scroll {
@@ -126,11 +143,14 @@ select:focus-visible {
 
 .app[data-theme="dark"] {
   --page: #111722;
+  --page-center: #151d2a;
+  --page-edge: #0e131c;
   --surface: #1a2230;
-  --surface-muted: #141c28;
+  --surface-muted: var(--page-center);
   --border: #344054;
   --text: #eef3fb;
   --muted: #aeb9ca;
+  --focus-icon-color: #69778c;
   --accent: #8da6ff;
   --accent-contrast: #10182b;
   --focus: #9aafff;
@@ -144,7 +164,7 @@ select:focus-visible {
   --error-border: #914f4f;
   --error-text: #ffc0c0;
   --search-match-bg: rgb(250 204 72 / 38%);
-  --search-current-bg: rgb(251 146 60 / 66%);
+  --search-current-bg: rgb(251 146 60 / 56%);
 }
 
 .app-header {
@@ -1107,6 +1127,11 @@ h2 {
   overflow-wrap: anywhere;
 }
 
+.markdown-preview {
+  /* 斜体などを持たない書体でもMarkdownの文字装飾を描画する。 */
+  font-synthesis: weight style;
+}
+
 .preview-placeholder {
   color: var(--muted);
 }
@@ -1261,6 +1286,15 @@ h2 {
   white-space: pre-wrap;
 }
 
+.editor-panel {
+  --editor-font-family: "Noto Sans JP", "Hiragino Kaku Gothic ProN", "Yu Gothic", Meiryo, sans-serif;
+}
+
+.editor-panel :is(.text-area, .search-highlight-layer) {
+  font-family: var(--editor-font-family);
+  font-weight: 400;
+}
+
 .text-area-shell--highlighting .text-area {
   background: transparent;
 }
@@ -1318,7 +1352,7 @@ h2 {
 
 .text-area::placeholder {
   color: var(--muted);
-  opacity: 0.75;
+  opacity: 1;
 }
 
 .output-area {
@@ -1697,11 +1731,65 @@ h2 {
 }
 
 .focus-mode-control-buttons {
+  position: relative;
   display: flex;
   flex: 0 0 auto;
   align-items: flex-start;
   flex-direction: row;
   gap: 8px;
+}
+
+.focus-mode-font-controls {
+  position: fixed;
+  z-index: 30;
+  top: 12px;
+  right: 12px;
+}
+
+.focus-font-size-root {
+  position: relative;
+}
+
+.app--focus-mode :is(.icon-button, .search-replace-leading-icon) {
+  color: var(--focus-icon-color);
+}
+
+.app--focus-mode .icon-button:is(:hover, :focus-visible, [aria-expanded="true"]):not(:disabled) {
+  color: var(--muted);
+}
+
+.focus-font-size-panel {
+  position: absolute;
+  z-index: 3;
+  top: calc(100% + 8px);
+  right: 0;
+  display: grid;
+  width: min(280px, calc(100vw - 40px));
+  max-height: calc(100dvh - 88px);
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow-y: auto;
+  gap: 12px;
+  color: var(--text);
+  background: var(--surface);
+  box-shadow: 0 12px 32px rgb(31 45 72 / 10%);
+  pointer-events: auto;
+}
+
+.focus-font-size-panel label {
+  font-weight: 700;
+}
+
+.focus-font-size-panel select {
+  width: 100%;
+  min-height: 40px;
+  min-width: 0;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text);
+  background: var(--surface-muted);
 }
 
 .focus-mode-help {
@@ -1776,33 +1864,61 @@ h2 {
 }
 
 .app--focus-mode .editor-panel {
+  --focus-editor-column-width: 752px;
+  --focus-editor-font-size: 1.125rem;
+  --focus-editor-line-height: 1.8;
+  --focus-editor-letter-spacing: 0.02em;
+  --focus-editor-padding: 16px;
+
   height: 100%;
   min-height: 0;
   padding: 20px;
   border: 0;
   border-radius: 0;
-  background: var(--page);
+  background: transparent;
   box-shadow: none;
 }
 
+.app--focus-mode .editor-panel > :is(.focus-tab-name, .search-replace-panel, .editor-body, .panel-footer) {
+  width: 100%;
+  min-width: 0;
+  max-width: var(--focus-editor-column-width);
+  margin-inline: auto;
+}
+
 .app--focus-mode .panel-footer {
-  display: none;
+  min-height: 24px;
+  padding-block: 0;
+  flex: 0 0 auto;
+}
+
+.app--focus-mode .editor-panel :is(.text-area, .search-highlight-layer) {
+  font-size: var(--focus-editor-font-size);
+  line-height: var(--focus-editor-line-height);
+  letter-spacing: var(--focus-editor-letter-spacing);
+  padding-top: var(--focus-editor-padding);
+  padding-bottom: max(
+    var(--focus-editor-padding),
+    calc(100cqh - var(--focus-editor-padding) - var(--focus-editor-font-size) * var(--focus-editor-line-height))
+  );
 }
 
 .app--focus-mode .text-area {
   min-height: 0;
   border: 0;
-  background: var(--page);
+  background: transparent;
 }
 
 .app--focus-mode .text-area-shell {
+  /* タブ名・検索・フッターを除いた本文の表示高を下余白の基準にする。 */
+  container-type: size;
   min-height: 0;
-  background: var(--page);
+  background: transparent;
 }
 
 .app--focus-mode .search-highlight-layer {
   border: 0;
-  background: var(--page);
+  background: transparent;
 }
 
 .app--focus-mode .text-area-shell--highlighting .text-area {
@@ -1811,6 +1927,57 @@ h2 {
 
 .app--focus-mode .text-area:focus-visible {
   outline: none;
+}
+
+.editor-body {
+  display: contents;
+}
+
+.app--focus-mode .editor-body {
+  display: grid;
+  min-height: 0;
+  flex: 1;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr);
+}
+
+.app--focus-mode .editor-body > * {
+  grid-area: 1 / 1;
+}
+
+.focus-mode-preview {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  font-family: var(--editor-font-family);
+  font-size: var(--focus-editor-font-size);
+  line-height: var(--focus-editor-line-height);
+  letter-spacing: var(--focus-editor-letter-spacing);
+}
+
+.app--focus-mode .focus-mode-preview > :is(.markdown-preview, .preview-placeholder) {
+  min-height: 0;
+  padding: var(--focus-editor-padding);
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  font-family: inherit;
+  font-size: inherit;
+  line-height: inherit;
+  letter-spacing: inherit;
+}
+
+.focus-mode-preview:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
+.focus-mode-preview h1 {
+  font-size: calc(clamp(1.75rem, 3vw, 2.5rem) * var(--focus-editor-font-scale));
+}
+
+.focus-mode-preview h2 {
+  font-size: calc(1.2rem * var(--focus-editor-font-scale));
 }
 
 .focus-tab-name {
@@ -1885,6 +2052,12 @@ h2 {
 @media (max-width: 1439px) {
   .app--focus-mode .focus-tab-name {
     padding-left: clamp(0px, calc(588px - 50vw), 108px);
+    padding-right: clamp(0px, calc(540px - 50vw), 60px);
+  }
+
+  .focus-mode-font-controls {
+    top: 20px;
+    right: 20px;
   }
 
   .focus-mode-controls {
@@ -2104,8 +2277,18 @@ h2 {
     left: 12px;
   }
 
+  .focus-mode-font-controls {
+    top: 12px;
+    right: 12px;
+  }
+
   .app--focus-mode .focus-tab-name {
     padding-left: 96px;
+    padding-right: 52px;
+  }
+
+  .focus-mode-preview h1 {
+    font-size: calc(1.65rem * var(--focus-editor-font-scale));
   }
 
   .toast-notice {
@@ -2158,6 +2341,10 @@ h2 {
     min-height: 340px;
   }
 
+  .app--focus-mode .editor-panel {
+    --focus-editor-padding: 13px;
+  }
+
   .text-area,
   .search-highlight-layer {
     padding: 13px;
@@ -2168,5 +2355,27 @@ h2 {
   .preview-placeholder {
     min-height: 340px;
     padding: 13px;
+  }
+}
+
+@media (forced-colors: active) {
+  .app[data-theme] {
+    --page: Canvas;
+    --page-center: Canvas;
+    --page-edge: Canvas;
+    --surface: Canvas;
+    --surface-muted: Canvas;
+    --text: CanvasText;
+    --muted: CanvasText;
+    --focus-icon-color: CanvasText;
+    --search-match-bg: Mark;
+    --search-current-bg: Mark;
+
+    color: CanvasText;
+    background: Canvas;
+  }
+
+  .search-highlight--current {
+    outline: 1px solid Highlight;
   }
 }

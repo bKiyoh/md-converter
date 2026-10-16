@@ -371,6 +371,34 @@ describe('useScrollSync', () => {
     expect(document.querySelector('.scroll-sync-measure')).toBeNull()
   })
 
+  it.each(['loadingdone', 'loadingerror'])(
+    'フォントの%s後は原文位置から再計測・同期し、破棄時に監視を解除する', async (eventName) => {
+      const originalFonts = Object.getOwnPropertyDescriptor(document, 'fonts')
+      const fonts = new EventTarget()
+      const removeListener = vi.spyOn(fonts, 'removeEventListener')
+      Object.defineProperty(document, 'fonts', { configurable: true, value: fonts })
+      try {
+        const { editor, output, layout } = await createHarness()
+        scroll(editor, 100)
+        await flushSync()
+        expect(output.scrollTop).toBe(200)
+        layout.editorLines = [0, 40, 200, 240, 400]
+        fonts.dispatchEvent(new Event(eventName))
+        await flushSync()
+        expect(editor.scrollTop).toBe(100)
+        expect(output.scrollTop).toBe(100)
+        wrapper!.unmount()
+        wrapper = null
+        expect(removeListener).toHaveBeenCalledWith(eventName, expect.any(Function))
+        fonts.dispatchEvent(new Event(eventName))
+        expect(frames.size).toBe(0)
+      } finally {
+        if (originalFonts) Object.defineProperty(document, 'fonts', originalFonts)
+        else Reflect.deleteProperty(document, 'fonts')
+      }
+    },
+  )
+
   it('空のプレビューに対応点がない場合は位置を動かさない', async () => {
     const { editor, output, parsedDocument } = await createHarness()
     output.replaceChildren()

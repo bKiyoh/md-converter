@@ -1,0 +1,1294 @@
+[
+  {
+    "engine": "chromium",
+    "version": "148.0.7778.96",
+    "precision": [
+      {
+        "width": 320,
+        "sourceLength": 0,
+        "lineHeight": 32.4,
+        "maxHeightDelta": 0,
+        "maxYDelta": 0,
+        "missingRange": 1,
+        "differences": []
+      },
+      {
+        "width": 320,
+        "sourceLength": 101,
+        "lineHeight": 32.4,
+        "maxHeightDelta": 0,
+        "maxYDelta": 0,
+        "missingRange": 1,
+        "differences": []
+      },
+      {
+        "width": 320,
+        "sourceLength": 256,
+        "lineHeight": 32.4,
+        "maxHeightDelta": 0,
+        "maxYDelta": 0,
+        "missingRange": 2,
+        "differences": []
+      },
+      {
+        "width": 320,
+        "sourceLength": 54,
+        "lineHeight": 32.4,
+        "maxHeightDelta": 0,
+        "maxYDelta": 0,
+        "missingRange": 1,
+        "differences": []
+      },
+      {
+        "width": 768,
+        "sourceLength": 0,
+        "lineHeight": 32.4,
+        "maxHeightDelta": 0,
+        "maxYDelta": 0,
+        "missingRange": 1,
+        "differences": []
+      },
+      {
+        "width": 768,
+        "sourceLength": 101,
+        "lineHeight": 32.4,
+        "maxHeightDelta": 0,
+        "maxYDelta": 0,
+        "missingRange": 1,
+        "differences": []
+      },
+      {
+        "width": 768,
+        "sourceLength": 256,
+        "lineHeight": 32.4,
+        "maxHeightDelta": 0,
+        "maxYDelta": 0,
+        "missingRange": 2,
+        "differences": []
+      },
+      {
+        "width": 768,
+        "sourceLength": 54,
+        "lineHeight": 32.4,
+        "maxHeightDelta": 0,
+        "maxYDelta": 0,
+        "missingRange": 1,
+        "differences": []
+      },
+      {
+        "width": 1440,
+        "sourceLength": 0,
+        "lineHeight": 32.4,
+        "maxHeightDelta": 0,
+        "maxYDelta": 0,
+        "missingRange": 1,
+        "differences": []
+      },
+      {
+        "width": 1440,
+        "sourceLength": 101,
+        "lineHeight": 32.4,
+        "maxHeightDelta": 0,
+        "maxYDelta": 0,
+        "missingRange": 1,
+        "differences": []
+      },
+      {
+        "width": 1440,
+        "sourceLength": 256,
+        "lineHeight": 32.4,
+        "maxHeightDelta": 0,
+        "maxYDelta": 0,
+        "missingRange": 2,
+        "differences": []
+      },
+      {
+        "width": 1440,
+        "sourceLength": 54,
+        "lineHeight": 32.4,
+        "maxHeightDelta": 0,
+        "maxYDelta": 0,
+        "missingRange": 1,
+        "differences": []
+      }
+    ],
+    "performance": [
+      {
+        "length": 10000,
+        "minMs": 2.6000001430511475,
+        "medianMs": 2.799999952316284,
+        "maxMs": 3,
+        "times": [
+          2.6000001430511475,
+          2.6999998092651367,
+          2.6999998092651367,
+          2.700000047683716,
+          2.700000047683716,
+          2.700000047683716,
+          2.700000047683716,
+          2.700000047683716,
+          2.700000047683716,
+          2.799999952316284,
+          2.799999952316284,
+          2.799999952316284,
+          2.799999952316284,
+          2.8000001907348633,
+          2.8000001907348633,
+          2.8999998569488525,
+          2.9000000953674316,
+          2.9000000953674316,
+          3,
+          3
+        ]
+      },
+      {
+        "length": 50000,
+        "minMs": 13.299999952316284,
+        "medianMs": 13.600000143051147,
+        "maxMs": 22.199999809265137,
+        "times": [
+          13.299999952316284,
+          13.299999952316284,
+          13.299999952316284,
+          13.299999952316284,
+          13.399999856948853,
+          13.399999856948853,
+          13.5,
+          13.5,
+          13.599999904632568,
+          13.600000143051147,
+          13.600000143051147,
+          13.700000047683716,
+          13.700000047683716,
+          13.700000047683716,
+          13.800000190734863,
+          13.899999856948853,
+          13.899999856948853,
+          14.300000190734863,
+          14.900000095367432,
+          22.199999809265137
+        ]
+      }
+    ],
+    "padding": [
+      {
+        "sourceLength": 0,
+        "height": 753,
+        "padding": 360.3,
+        "desired": -360.5,
+        "scrollTop": 0,
+        "maxScroll": 0,
+        "centerError": 360.5,
+        "lineHeight": 32.4
+      },
+      {
+        "sourceLength": 8,
+        "height": 753,
+        "padding": 360.3,
+        "desired": -312.09375,
+        "scrollTop": 0,
+        "maxScroll": 0,
+        "centerError": 312.09375,
+        "lineHeight": 32.4
+      },
+      {
+        "sourceLength": 1500,
+        "height": 753,
+        "padding": 360.3,
+        "desired": 2880.125,
+        "scrollTop": 2880,
+        "maxScroll": 2896,
+        "centerError": 0.125,
+        "lineHeight": 32.4
+      },
+      {
+        "sourceLength": 305,
+        "height": 753,
+        "padding": 360.3,
+        "desired": 2912.53125,
+        "scrollTop": 2913,
+        "maxScroll": 2929,
+        "centerError": 0.46875,
+        "lineHeight": 32.4
+      }
+    ],
+    "affinity": [
+      {
+        "name": "end-of-first",
+        "x": 1079,
+        "y": 126.2,
+        "start": 39,
+        "end": 39,
+        "direction": "none",
+        "scrollTop": 0
+      },
+      {
+        "name": "start-of-second",
+        "x": 361,
+        "y": 158.6,
+        "start": 39,
+        "end": 39,
+        "direction": "none",
+        "scrollTop": 0
+      }
+    ]
+  },
+  {
+    "engine": "firefox",
+    "version": "150.0.2",
+    "precision": [
+      {
+        "width": 320,
+        "sourceLength": 0,
+        "lineHeight": 32.4,
+        "maxHeightDelta": 0,
+        "maxYDelta": 0,
+        "missingRange": 1,
+        "differences": []
+      },
+      {
+        "width": 320,
+        "sourceLength": 101,
+        "lineHeight": 32.4,
+        "maxHeightDelta": 0,
+        "maxYDelta": 29.70001220703125,
+        "missingRange": 0,
+        "differences": [
+          {
+            "offset": 101,
+            "markedTop": 272.20001220703125,
+            "markedHeight": 285.20001220703125,
+            "plainHeight": 285.20001220703125,
+            "rangeTop": 242.5,
+            "markerCenter": 272.20001220703125,
+            "plainCenter": 256,
+            "durationMs": 0,
+            "lineHeight": 32.4,
+            "heightDelta": 0,
+            "yDelta": 29.70001220703125
+          }
+        ]
+      },
+      {
+        "width": 320,
+        "sourceLength": 256,
+        "lineHeight": 32.4,
+        "maxHeightDelta": 0,
+        "maxYDelta": 32.399993896484375,
+        "missingRange": 0,
+        "differences": [
+          {
+            "offset": 30,
+            "markedTop": 80.5,
+            "markedHeight": 414.79998779296875,
+            "plainHeight": 414.79998779296875,
+            "rangeTop": 48.100006103515625,
+            "markerCenter": 94,
+            "plainCenter": 61.600006103515625,
+            "durationMs": 0,
+            "lineHeight": 32.4,
+            "heightDelta": 0,
+            "yDelta": 32.399993896484375
+          },
+          {
+            "offset": 31,
+            "markedTop": 112.89999389648438,
+            "markedHeight": 414.79998779296875,
+            "plainHeight": 414.79998779296875,
+            "rangeTop": 80.5,
+            "markerCenter": 126.39999389648438,
+            "plainCenter": 94,
+            "durationMs": 0,
+            "lineHeight": 32.4,
+            "heightDelta": 0,
+            "yDelta": 32.399993896484375
+          },
+          {
+            "offset": 256,
+            "markedTop": 401.79998779296875,
+            "markedHeight": 414.79998779296875,
+            "plainHeight": 414.79998779296875,
+            "rangeTop": 372.1000061035156,
+            "markerCenter": 401.79998779296875,
+            "plainCenter": 385.6000061035156,
+            "durationMs": 0,
+            "lineHeight": 32.4,
+            "heightDelta": 0,
+            "yDelta": 29.699981689453125
+          }
+        ]
+      },
+      {
+        "width": 320,
+        "sourceLength": 54,
+        "lineHeight": 32.4,
+        "maxHeightDelta": 0,
+        "maxYDelta": 32.399993896484375,
+        "missingRange": 0,
+        "differences": [
+          {
+            "offset": 42,
+            "markedTop": 80.5,
+            "markedHeight": 123.19999694824219,
+            "plainHeight": 123.19999694824219,
+            "rangeTop": 48.100006103515625,
+            "markerCenter": 94,
+            "plainCenter": 61.600006103515625,
+            "durationMs": 0,
+            "lineHeight": 32.4,
+            "heightDelta": 0,
+            "yDelta": 32.399993896484375
+          },
+          {
+            "offset": 54,
+            "markedTop": 110.19999694824219,
+            "markedHeight": 123.19999694824219,
+            "plainHeight": 123.19999694824219,
+            "rangeTop": 80.5,
+            "markerCenter": 110.19999694824219,
+            "plainCenter": 94,
+            "durationMs": 0,
+            "lineHeight": 32.4,
+            "heightDelta": 0,
+            "yDelta": 29.699996948242188
+          }
+        ]
+      },
+      {
+        "width": 768,
+        "sourceLength": 0,
+        "lineHeight": 32.4,
+        "maxHeightDelta": 0,
+        "maxYDelta": 0,
+        "missingRange": 1,
+        "differences": []
+      },
+      {
+        "width": 768,
+        "sourceLength": 101,
+        "lineHeight": 32.4,
+        "maxHeightDelta": 0,
+        "maxYDelta": 29.699996948242188,
+        "missingRange": 0,
+        "differences": [
+          {
+            "offset": 101,
+            "markedTop": 113.19999694824219,
+            "markedHeight": 129.1999969482422,
+            "plainHeight": 129.1999969482422,
+            "rangeTop": 83.5,
+            "markerCenter": 113.19999694824219,
+            "plainCenter": 97,
+            "durationMs": 0,
+            "lineHeight": 32.4,
+            "heightDelta": 0,
+            "yDelta": 29.699996948242188
+          }
+        ]
+      },
+      {
+        "width": 768,
+        "sourceLength": 256,
+        "lineHeight": 32.4,
+        "maxHeightDelta": 0,
+        "maxYDelta": 32.40000915527344,
+        "missingRange": 0,
+        "differences": [
+          {
+            "offset": 30,
+            "markedTop": 51.100006103515625,
+            "markedHeight": 258.79998779296875,
+            "plainHeight": 258.79998779296875,
+            "rangeTop": 18.699996948242188,
+            "markerCenter": 64.60000610351562,
+            "plainCenter": 32.19999694824219,
+            "durationMs": 0,
+            "lineHeight": 32.4,
+            "heightDelta": 0,
+            "yDelta": 32.40000915527344
+          },
+          {
+            "offset": 31,
+            "markedTop": 83.5,
+            "markedHeight": 258.79998779296875,
+            "plainHeight": 258.79998779296875,
+            "rangeTop": 51.100006103515625,
+            "markerCenter": 97,
+            "plainCenter": 64.60000610351562,
+            "durationMs": 0,
+            "lineHeight": 32.4,
+            "heightDelta": 0,
+            "yDelta": 32.399993896484375
+          },
+          {
+            "offset": 256,
+            "markedTop": 242.8000030517578,
+            "markedHeight": 258.79998779296875,
+            "plainHeight": 258.79998779296875,
+            "rangeTop": 213.10000610351562,
+            "markerCenter": 242.8000030517578,
+            "plainCenter": 226.60000610351562,
+            "durationMs": 0,
+            "lineHeight": 32.4,
+            "heightDelta": 0,
+            "yDelta": 29.699996948242188
+          }
+        ]
+      },
+      {
+        "width": 768,
+        "sourceLength": 54,
+        "lineHeight": 32.4,
+        "maxHeightDelta": 0,
+        "maxYDelta": 32.40000915527344,
+        "missingRange": 0,
+        "differences": [
+          {
+            "offset": 42,
+            "markedTop": 51.100006103515625,
+            "markedHeight": 96.80000305175781,
+            "plainHeight": 96.80000305175781,
+            "rangeTop": 18.699996948242188,
+            "markerCenter": 64.60000610351562,
+            "plainCenter": 32.19999694824219,
+            "durationMs": 0,
+            "lineHeight": 32.4,
+            "heightDelta": 0,
+            "yDelta": 32.40000915527344
+          },
+          {
+            "offset": 54,
+            "markedTop": 80.80000305175781,
+            "markedHeight": 96.80000305175781,
+            "plainHeight": 96.80000305175781,
+            "rangeTop": 51.100006103515625,
+            "markerCenter": 80.80000305175781,
+            "plainCenter": 64.60000610351562,
+            "durationMs": 0,
+            "lineHeight": 32.4,
+            "heightDelta": 0,
+            "yDelta": 29.699996948242188
+          }
+        ]
+      },
+      {
+        "width": 1440,
+        "sourceLength": 0,
+        "lineHeight": 32.4,
+        "maxHeightDelta": 0,
+        "maxYDelta": 0,
+        "missingRange": 1,
+        "differences": []
+      },
+      {
+        "width": 1440,
+        "sourceLength": 101,
+        "lineHeight": 32.4,
+        "maxHeightDelta": 0,
+        "maxYDelta": 29.699996948242188,
+        "missingRange": 0,
+        "differences": [
+          {
+            "offset": 101,
+            "markedTop": 113.19999694824219,
+            "markedHeight": 129.1999969482422,
+            "plainHeight": 129.1999969482422,
+            "rangeTop": 83.5,
+            "markerCenter": 113.19999694824219,
+            "plainCenter": 97,
+            "durationMs": 0,
+            "lineHeight": 32.4,
+            "heightDelta": 0,
+            "yDelta": 29.699996948242188
+          }
+        ]
+      },
+      {
+        "width": 1440,
+        "sourceLength": 256,
+        "lineHeight": 32.4,
+        "maxHeightDelta": 0,
+        "maxYDelta": 32.40000915527344,
+        "missingRange": 0,
+        "differences": [
+          {
+            "offset": 30,
+            "markedTop": 51.100006103515625,
+            "markedHeight": 226.39999389648438,
+            "plainHeight": 226.39999389648438,
+            "rangeTop": 18.699996948242188,
+            "markerCenter": 64.60000610351562,
+            "plainCenter": 32.19999694824219,
+            "durationMs": 0,
+            "lineHeight": 32.4,
+            "heightDelta": 0,
+            "yDelta": 32.40000915527344
+          },
+          {
+            "offset": 31,
+            "markedTop": 83.5,
+            "markedHeight": 226.39999389648438,
+            "plainHeight": 226.39999389648438,
+            "rangeTop": 51.100006103515625,
+            "markerCenter": 97,
+            "plainCenter": 64.60000610351562,
+            "durationMs": 0,
+            "lineHeight": 32.4,
+            "heightDelta": 0,
+            "yDelta": 32.399993896484375
+          },
+          {
+            "offset": 256,
+            "markedTop": 210.39999389648438,
+            "markedHeight": 226.39999389648438,
+            "plainHeight": 226.39999389648438,
+            "rangeTop": 180.6999969482422,
+            "markerCenter": 210.39999389648438,
+            "plainCenter": 194.1999969482422,
+            "durationMs": 0,
+            "lineHeight": 32.4,
+            "heightDelta": 0,
+            "yDelta": 29.699996948242188
+          }
+        ]
+      },
+      {
+        "width": 1440,
+        "sourceLength": 54,
+        "lineHeight": 32.4,
+        "maxHeightDelta": 0,
+        "maxYDelta": 32.40000915527344,
+        "missingRange": 0,
+        "differences": [
+          {
+            "offset": 42,
+            "markedTop": 51.100006103515625,
+            "markedHeight": 96.80000305175781,
+            "plainHeight": 96.80000305175781,
+            "rangeTop": 18.699996948242188,
+            "markerCenter": 64.60000610351562,
+            "plainCenter": 32.19999694824219,
+            "durationMs": 0,
+            "lineHeight": 32.4,
+            "heightDelta": 0,
+            "yDelta": 32.40000915527344
+          },
+          {
+            "offset": 54,
+            "markedTop": 80.80000305175781,
+            "markedHeight": 96.80000305175781,
+            "plainHeight": 96.80000305175781,
+            "rangeTop": 51.100006103515625,
+            "markerCenter": 80.80000305175781,
+            "plainCenter": 64.60000610351562,
+            "durationMs": 0,
+            "lineHeight": 32.4,
+            "heightDelta": 0,
+            "yDelta": 29.699996948242188
+          }
+        ]
+      }
+    ],
+    "performance": [
+      {
+        "length": 10000,
+        "minMs": 1,
+        "medianMs": 2,
+        "maxMs": 3,
+        "times": [
+          1,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          3,
+          3,
+          3,
+          3,
+          3
+        ]
+      },
+      {
+        "length": 50000,
+        "minMs": 10,
+        "medianMs": 11,
+        "maxMs": 12,
+        "times": [
+          10,
+          10,
+          10,
+          10,
+          10,
+          11,
+          11,
+          11,
+          11,
+          11,
+          11,
+          11,
+          11,
+          11,
+          11,
+          11,
+          11,
+          11,
+          12,
+          12
+        ]
+      }
+    ],
+    "padding": [
+      {
+        "sourceLength": 0,
+        "height": 753,
+        "padding": 360.3,
+        "desired": -360.5,
+        "scrollTop": 0,
+        "maxScroll": 0,
+        "centerError": 360.5,
+        "lineHeight": 32.4
+      },
+      {
+        "sourceLength": 8,
+        "height": 753,
+        "padding": 360.3,
+        "desired": -311.8999938964844,
+        "scrollTop": 0,
+        "maxScroll": 0,
+        "centerError": 311.8999938964844,
+        "lineHeight": 32.4
+      },
+      {
+        "sourceLength": 1500,
+        "height": 753,
+        "padding": 360.3,
+        "desired": 2879.5,
+        "scrollTop": 2879,
+        "maxScroll": 2896,
+        "centerError": 0.5,
+        "lineHeight": 32.4
+      },
+      {
+        "sourceLength": 305,
+        "height": 753,
+        "padding": 360.3,
+        "desired": 2911.89990234375,
+        "scrollTop": 2912,
+        "maxScroll": 2928,
+        "centerError": 0.10009765625,
+        "lineHeight": 32.4
+      }
+    ],
+    "affinity": [
+      {
+        "name": "end-of-first",
+        "x": 1079,
+        "y": 126.2,
+        "start": 39,
+        "end": 39,
+        "direction": "forward",
+        "scrollTop": 0
+      },
+      {
+        "name": "start-of-second",
+        "x": 361,
+        "y": 158.6,
+        "start": 39,
+        "end": 39,
+        "direction": "forward",
+        "scrollTop": 0
+      }
+    ]
+  },
+  {
+    "engine": "webkit",
+    "version": "26.4",
+    "precision": [
+      {
+        "width": 320,
+        "sourceLength": 0,
+        "lineHeight": 32.400002,
+        "maxHeightDelta": 0,
+        "maxYDelta": 0,
+        "missingRange": 1,
+        "differences": []
+      },
+      {
+        "width": 320,
+        "sourceLength": 101,
+        "lineHeight": 32.400002,
+        "maxHeightDelta": 0,
+        "maxYDelta": 32,
+        "missingRange": 0,
+        "differences": [
+          {
+            "offset": 14,
+            "markedTop": 16,
+            "markedHeight": 282,
+            "plainHeight": 282,
+            "rangeTop": 48,
+            "markerCenter": 29,
+            "plainCenter": 61,
+            "durationMs": 1,
+            "lineHeight": 32.400002,
+            "heightDelta": 0,
+            "yDelta": -32
+          },
+          {
+            "offset": 28,
+            "markedTop": 48,
+            "markedHeight": 282,
+            "plainHeight": 282,
+            "rangeTop": 80,
+            "markerCenter": 61,
+            "plainCenter": 93,
+            "durationMs": 0,
+            "lineHeight": 32.400002,
+            "heightDelta": 0,
+            "yDelta": -32
+          },
+          {
+            "offset": 42,
+            "markedTop": 80,
+            "markedHeight": 282,
+            "plainHeight": 282,
+            "rangeTop": 112,
+            "markerCenter": 93,
+            "plainCenter": 125,
+            "durationMs": 0,
+            "lineHeight": 32.400002,
+            "heightDelta": 0,
+            "yDelta": -32
+          },
+          {
+            "offset": 56,
+            "markedTop": 112,
+            "markedHeight": 282,
+            "plainHeight": 282,
+            "rangeTop": 144,
+            "markerCenter": 125,
+            "plainCenter": 157,
+            "durationMs": 0,
+            "lineHeight": 32.400002,
+            "heightDelta": 0,
+            "yDelta": -32
+          }
+        ]
+      },
+      {
+        "width": 320,
+        "sourceLength": 256,
+        "lineHeight": 32.400002,
+        "maxHeightDelta": 0,
+        "maxYDelta": 32,
+        "missingRange": 0,
+        "differences": [
+          {
+            "offset": 15,
+            "markedTop": 16,
+            "markedHeight": 410,
+            "plainHeight": 410,
+            "rangeTop": 48,
+            "markerCenter": 29,
+            "plainCenter": 61,
+            "durationMs": 2,
+            "lineHeight": 32.400002,
+            "heightDelta": 0,
+            "yDelta": -32
+          },
+          {
+            "offset": 60,
+            "markedTop": 112,
+            "markedHeight": 410,
+            "plainHeight": 410,
+            "rangeTop": 144,
+            "markerCenter": 125,
+            "plainCenter": 157,
+            "durationMs": 0,
+            "lineHeight": 32.400002,
+            "heightDelta": 0,
+            "yDelta": -32
+          },
+          {
+            "offset": 85,
+            "markedTop": 144,
+            "markedHeight": 410,
+            "plainHeight": 410,
+            "rangeTop": 176,
+            "markerCenter": 157,
+            "plainCenter": 189,
+            "durationMs": 0,
+            "lineHeight": 32.400002,
+            "heightDelta": 0,
+            "yDelta": -32
+          },
+          {
+            "offset": 110,
+            "markedTop": 176,
+            "markedHeight": 410,
+            "plainHeight": 410,
+            "rangeTop": 208,
+            "markerCenter": 189,
+            "plainCenter": 221,
+            "durationMs": 0,
+            "lineHeight": 32.400002,
+            "heightDelta": 0,
+            "yDelta": -32
+          }
+        ]
+      },
+      {
+        "width": 320,
+        "sourceLength": 54,
+        "lineHeight": 32.400002,
+        "maxHeightDelta": 0,
+        "maxYDelta": 32,
+        "missingRange": 0,
+        "differences": [
+          {
+            "offset": 30,
+            "markedTop": 16,
+            "markedHeight": 122,
+            "plainHeight": 122,
+            "rangeTop": 48,
+            "markerCenter": 29,
+            "plainCenter": 61,
+            "durationMs": 0,
+            "lineHeight": 32.400002,
+            "heightDelta": 0,
+            "yDelta": -32
+          },
+          {
+            "offset": 54,
+            "markedTop": 109,
+            "markedHeight": 122,
+            "plainHeight": 122,
+            "rangeTop": 80,
+            "markerCenter": 109,
+            "plainCenter": 93,
+            "durationMs": 0,
+            "lineHeight": 32.400002,
+            "heightDelta": 0,
+            "yDelta": 29
+          }
+        ]
+      },
+      {
+        "width": 768,
+        "sourceLength": 0,
+        "lineHeight": 32.400002,
+        "maxHeightDelta": 0,
+        "maxYDelta": 0,
+        "missingRange": 1,
+        "differences": []
+      },
+      {
+        "width": 768,
+        "sourceLength": 101,
+        "lineHeight": 32.400002,
+        "maxHeightDelta": 0,
+        "maxYDelta": 32,
+        "missingRange": 0,
+        "differences": [
+          {
+            "offset": 37,
+            "markedTop": 19,
+            "markedHeight": 128,
+            "plainHeight": 128,
+            "rangeTop": 51,
+            "markerCenter": 32,
+            "plainCenter": 64,
+            "durationMs": 0,
+            "lineHeight": 32.400002,
+            "heightDelta": 0,
+            "yDelta": -32
+          },
+          {
+            "offset": 74,
+            "markedTop": 51,
+            "markedHeight": 128,
+            "plainHeight": 128,
+            "rangeTop": 83,
+            "markerCenter": 64,
+            "plainCenter": 96,
+            "durationMs": 0.9999999999997726,
+            "lineHeight": 32.400002,
+            "heightDelta": 0,
+            "yDelta": -32
+          },
+          {
+            "offset": 101,
+            "markedTop": 112,
+            "markedHeight": 128,
+            "plainHeight": 128,
+            "rangeTop": 83,
+            "markerCenter": 112,
+            "plainCenter": 96,
+            "durationMs": 0,
+            "lineHeight": 32.400002,
+            "heightDelta": 0,
+            "yDelta": 29
+          }
+        ]
+      },
+      {
+        "width": 768,
+        "sourceLength": 256,
+        "lineHeight": 32.400002,
+        "maxHeightDelta": 0,
+        "maxYDelta": 32,
+        "missingRange": 0,
+        "differences": [
+          {
+            "offset": 101,
+            "markedTop": 83,
+            "markedHeight": 224,
+            "plainHeight": 224,
+            "rangeTop": 115,
+            "markerCenter": 96,
+            "plainCenter": 128,
+            "durationMs": 0,
+            "lineHeight": 32.400002,
+            "heightDelta": 0,
+            "yDelta": -32
+          },
+          {
+            "offset": 167,
+            "markedTop": 115,
+            "markedHeight": 224,
+            "plainHeight": 224,
+            "rangeTop": 147,
+            "markerCenter": 128,
+            "plainCenter": 160,
+            "durationMs": 1,
+            "lineHeight": 32.400002,
+            "heightDelta": 0,
+            "yDelta": -32
+          },
+          {
+            "offset": 233,
+            "markedTop": 147,
+            "markedHeight": 224,
+            "plainHeight": 224,
+            "rangeTop": 179,
+            "markerCenter": 160,
+            "plainCenter": 192,
+            "durationMs": 2,
+            "lineHeight": 32.400002,
+            "heightDelta": 0,
+            "yDelta": -32
+          },
+          {
+            "offset": 256,
+            "markedTop": 208,
+            "markedHeight": 224,
+            "plainHeight": 224,
+            "rangeTop": 179,
+            "markerCenter": 208,
+            "plainCenter": 192,
+            "durationMs": 1.9999999999995453,
+            "lineHeight": 32.400002,
+            "heightDelta": 0,
+            "yDelta": 29
+          }
+        ]
+      },
+      {
+        "width": 768,
+        "sourceLength": 54,
+        "lineHeight": 32.400002,
+        "maxHeightDelta": 0,
+        "maxYDelta": 29,
+        "missingRange": 0,
+        "differences": [
+          {
+            "offset": 54,
+            "markedTop": 80,
+            "markedHeight": 96,
+            "plainHeight": 96,
+            "rangeTop": 51,
+            "markerCenter": 80,
+            "plainCenter": 64,
+            "durationMs": 0,
+            "lineHeight": 32.400002,
+            "heightDelta": 0,
+            "yDelta": 29
+          }
+        ]
+      },
+      {
+        "width": 1440,
+        "sourceLength": 0,
+        "lineHeight": 32.400002,
+        "maxHeightDelta": 0,
+        "maxYDelta": 0,
+        "missingRange": 1,
+        "differences": []
+      },
+      {
+        "width": 1440,
+        "sourceLength": 101,
+        "lineHeight": 32.400002,
+        "maxHeightDelta": 0,
+        "maxYDelta": 32,
+        "missingRange": 0,
+        "differences": [
+          {
+            "offset": 39,
+            "markedTop": 19,
+            "markedHeight": 128,
+            "plainHeight": 128,
+            "rangeTop": 51,
+            "markerCenter": 32,
+            "plainCenter": 64,
+            "durationMs": 0,
+            "lineHeight": 32.400002,
+            "heightDelta": 0,
+            "yDelta": -32
+          },
+          {
+            "offset": 78,
+            "markedTop": 51,
+            "markedHeight": 128,
+            "plainHeight": 128,
+            "rangeTop": 83,
+            "markerCenter": 64,
+            "plainCenter": 96,
+            "durationMs": 0,
+            "lineHeight": 32.400002,
+            "heightDelta": 0,
+            "yDelta": -32
+          },
+          {
+            "offset": 101,
+            "markedTop": 112,
+            "markedHeight": 128,
+            "plainHeight": 128,
+            "rangeTop": 83,
+            "markerCenter": 112,
+            "plainCenter": 96,
+            "durationMs": 0,
+            "lineHeight": 32.400002,
+            "heightDelta": 0,
+            "yDelta": 29
+          }
+        ]
+      },
+      {
+        "width": 1440,
+        "sourceLength": 256,
+        "lineHeight": 32.400002,
+        "maxHeightDelta": 0,
+        "maxYDelta": 32,
+        "missingRange": 0,
+        "differences": [
+          {
+            "offset": 103,
+            "markedTop": 83,
+            "markedHeight": 224,
+            "plainHeight": 224,
+            "rangeTop": 115,
+            "markerCenter": 96,
+            "plainCenter": 128,
+            "durationMs": 0,
+            "lineHeight": 32.400002,
+            "heightDelta": 0,
+            "yDelta": -32
+          },
+          {
+            "offset": 171,
+            "markedTop": 115,
+            "markedHeight": 224,
+            "plainHeight": 224,
+            "rangeTop": 147,
+            "markerCenter": 128,
+            "plainCenter": 160,
+            "durationMs": 1,
+            "lineHeight": 32.400002,
+            "heightDelta": 0,
+            "yDelta": -32
+          },
+          {
+            "offset": 239,
+            "markedTop": 147,
+            "markedHeight": 224,
+            "plainHeight": 224,
+            "rangeTop": 179,
+            "markerCenter": 160,
+            "plainCenter": 192,
+            "durationMs": 2.0000000000004547,
+            "lineHeight": 32.400002,
+            "heightDelta": 0,
+            "yDelta": -32
+          },
+          {
+            "offset": 256,
+            "markedTop": 208,
+            "markedHeight": 224,
+            "plainHeight": 224,
+            "rangeTop": 179,
+            "markerCenter": 208,
+            "plainCenter": 192,
+            "durationMs": 2,
+            "lineHeight": 32.400002,
+            "heightDelta": 0,
+            "yDelta": 29
+          }
+        ]
+      },
+      {
+        "width": 1440,
+        "sourceLength": 54,
+        "lineHeight": 32.400002,
+        "maxHeightDelta": 0,
+        "maxYDelta": 29,
+        "missingRange": 0,
+        "differences": [
+          {
+            "offset": 54,
+            "markedTop": 80,
+            "markedHeight": 96,
+            "plainHeight": 96,
+            "rangeTop": 51,
+            "markerCenter": 80,
+            "plainCenter": 64,
+            "durationMs": 0,
+            "lineHeight": 32.400002,
+            "heightDelta": 0,
+            "yDelta": 29
+          }
+        ]
+      }
+    ],
+    "performance": [
+      {
+        "length": 10000,
+        "minMs": 11.00000000000091,
+        "medianMs": 12,
+        "maxMs": 13,
+        "times": [
+          11.00000000000091,
+          11.99999999999909,
+          11.99999999999909,
+          12,
+          12,
+          12,
+          12,
+          12,
+          12,
+          12,
+          12,
+          12,
+          12,
+          12,
+          12,
+          12,
+          12,
+          12.00000000000091,
+          12.00000000000091,
+          13
+        ]
+      },
+      {
+        "length": 50000,
+        "minMs": 58,
+        "medianMs": 59,
+        "maxMs": 62,
+        "times": [
+          58,
+          58,
+          58.99999999999636,
+          59,
+          59,
+          59,
+          59,
+          59,
+          59,
+          59,
+          59,
+          59,
+          59,
+          59,
+          59,
+          59,
+          59,
+          59.00000000000364,
+          59.99999999999636,
+          62
+        ]
+      }
+    ],
+    "padding": [
+      {
+        "sourceLength": 0,
+        "height": 753,
+        "padding": 360.299999,
+        "desired": -360.5,
+        "scrollTop": 0,
+        "maxScroll": 0,
+        "centerError": 360.5,
+        "lineHeight": 32.400002
+      },
+      {
+        "sourceLength": 8,
+        "height": 753,
+        "padding": 360.299999,
+        "desired": -312.5,
+        "scrollTop": 0,
+        "maxScroll": 0,
+        "centerError": 312.5,
+        "lineHeight": 32.400002
+      },
+      {
+        "sourceLength": 1500,
+        "height": 753,
+        "padding": 360.299999,
+        "desired": 2839.5,
+        "scrollTop": 2839,
+        "maxScroll": 2855,
+        "centerError": 0.5,
+        "lineHeight": 32.400002
+      },
+      {
+        "sourceLength": 305,
+        "height": 753,
+        "padding": 360.299999,
+        "desired": 2871.5,
+        "scrollTop": 2871,
+        "maxScroll": 2887,
+        "centerError": 0.5,
+        "lineHeight": 32.400002
+      }
+    ],
+    "affinity": [
+      {
+        "name": "end-of-first",
+        "x": 1079,
+        "y": 126.200001,
+        "start": 39,
+        "end": 39,
+        "direction": "none",
+        "scrollTop": 0
+      },
+      {
+        "name": "start-of-second",
+        "x": 361,
+        "y": 158.60000300000002,
+        "start": 39,
+        "end": 39,
+        "direction": "none",
+        "scrollTop": 0
+      }
+    ]
+  }
+]

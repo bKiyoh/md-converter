@@ -1,6 +1,6 @@
-# 画像資産の由来と権利確認
+# 配布資産の由来と権利確認
 
-> 文書区分：リリース確認記録。この文書はリポジトリと画像メタデータから確認できた事実を
+> 文書区分：リリース確認記録。この文書はリポジトリ、配布物と画像メタデータから確認できた事実を
 > 記録するものであり、法的助言または権利の保証ではない。
 
 ## 現在の配布資産
@@ -62,3 +62,36 @@ OpenAIと利用者の間では、適用法令の範囲で利用者が出力を�
 - 画像をアプリの識別標識として使用することについて、必要な商標調査または法務判断を完了している
 
 現時点の権利確認状態は「未確認」であり、この状態を「公開承認済み」と読み替えない。
+
+## Noto Sans JP 400（PR-11）
+
+確認日：2026-10-15。画像資産とは独立して、公式配布物と付属ライセンスを確認した。
+
+- 出典：[Google Fonts公式リポジトリの固定コミット](https://github.com/google/fonts/tree/66a36c8c94b1a5d992ee4e7f392fccfe4945767c/ofl/notosansjp)
+- 原本：`NotoSansJP[wght].ttf`、9,589,900 bytes、Version 2.004-H2。METADATAの上流コミットは `notofonts/noto-cjk@523d033d6cb47f4a80c58a35753646f5c3608a78`
+- 原本SHA-256：`c2f3b4d463500a2ddcd3849cded1fceeb9fd6d1c32e6cbecd568453ba50fc68f`
+- 同梱物：`public/fonts/noto-sans-jp-400.woff2`、2,302,780 bytes（約2.20MiB）
+- 同梱物SHA-256：`845e6c7ae83229c2d8f68876046be1bcff26b2a28cd5a14f497d5c502e82e957`
+- 付属ライセンス：[OFL-NotoSansJP.txt](../../public/fonts/OFL-NotoSansJP.txt)、4,388 bytes、SHA-256 `1c05c68c34f9708415aada51f17e1b0092d2cea709bf4a94cd38114f9e73d7d9`
+- ライセンス：配布物に付属するSIL OFL 1.1。著作権表示を含め全文を無変更で同梱する。Reserved Font Nameは「Source」であり、派生物のfamilyはNoto Sans JP、styleはRegularとする
+- 加工：可変軸wghtを400へ固定し、instance名を更新、WOFF2圧縮。文字サブセットは削除していない。原本とのcmap一致（16,732コードポイント）、`fvar`の除去、`usWeightClass=400`を再読込して確認した
+- 加工環境：macOS 14.5 arm64、Python 3.10、fontTools 4.65.0、Brotli 1.2.0。フォント更新時だけ使用し、npm依存・アプリ実行時・通常ビルドには追加しない
+
+加工の再現手順（原本とOFLを上記コミットから取得してから実行）：
+
+```python
+from fontTools.ttLib import TTFont
+from fontTools.varLib.instancer import instantiateVariableFont
+
+font = TTFont("NotoSansJP[wght].ttf", recalcTimestamp=False)
+font = instantiateVariableFont(font, {"wght": 400}, inplace=True, updateFontNames=True)
+font.flavor = "woff2"
+font.save("noto-sans-jp-400.woff2")
+```
+
+`THIRD_PARTY_NOTICES.md` はnpm依存から生成するため、静的フォントの案内も生成スクリプトに
+追加した。ライセンス全文は生成対象から分離した `public/fonts/` に保存し、Viteでdistにも
+配布する。生成し直しても案内が失われない。依存の既存不整合（PR-2）で生成・チェックを
+実行できない場合は、依存一覧を書き換えず、静的フォント案内だけを同じ内容で追記する。
+
+PR-18（2026-10-15）で同じWOFF2を通常モードの入力本文・検索層にも適用した。フォントファイル・ハッシュ・ライセンスに変更はない。初回取得はフォーカス開始時ではなく、通常画面の初期表示から必要時に行われる。

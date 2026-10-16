@@ -11,6 +11,11 @@ import type { MarkdownEditorViewState } from '../../types/editorView'
 import type { InputReplacementRule } from '../../types/inputReplacement'
 import type { TextEditResult } from '../../utils/markdownEditor'
 import {
+  DEFAULT_FOCUS_EDITOR_FONT_SIZE,
+  focusEditorFontSizeRem,
+  type FocusEditorFontSize,
+} from '../../utils/focusEditorFontSize'
+import {
   selectTextMatchesForHighlight,
   type TextMatch,
 } from '../../utils/textSearch'
@@ -23,6 +28,8 @@ const props = withDefaults(
     characterCount: number
     editorInternalScroll: boolean
     focusMode?: boolean
+    focusEditorFontSize?: FocusEditorFontSize
+    previewMode?: boolean
     activeTabId?: string
     shortcutsEnabled?: boolean
     inputReplacementEnabled?: boolean
@@ -31,6 +38,8 @@ const props = withDefaults(
   }>(),
   {
     focusMode: false,
+    focusEditorFontSize: DEFAULT_FOCUS_EDITOR_FONT_SIZE,
+    previewMode: false,
     activeTabId: 'default',
     shortcutsEnabled: true,
     inputReplacementEnabled: true,
@@ -59,6 +68,7 @@ const isSearchOpen = ref<boolean>(false)
 const isReplaceExpanded = ref<boolean>(false)
 const source = computed<string>(() => props.modelValue)
 const documentKey = computed<string>(() => props.activeTabId)
+const fontSet: FontFaceSet | undefined = document.fonts
 
 function getMinimalTextEdit(
   currentValue: string,
@@ -376,7 +386,7 @@ function handleDocumentKeydown(event: KeyboardEvent): void {
     return
   }
 
-  if (event.key !== 'Escape') {
+  if (props.previewMode || event.key !== 'Escape' || event.shiftKey || event.altKey || event.ctrlKey || event.metaKey) {
     return
   }
 
@@ -447,6 +457,13 @@ function resizeTextarea(): void {
   syncSearchHighlightScroll()
 }
 
+function handleFontLoadingFinished(): void {
+  // swap後の折り返しで現在一致が画面外へ移るため、選択を変えず位置だけを再評価する。
+  resizeTextarea()
+  scrollCurrentMatchIntoView()
+  syncSearchHighlightScroll()
+}
+
 async function updateValue(event: Event): Promise<void> {
   emit('update:modelValue', (event.target as HTMLTextAreaElement).value)
   await nextTick()
@@ -483,6 +500,17 @@ watch(
   },
 )
 
+watch(() => props.focusEditorFontSize, async () => {
+  const element = textarea.value
+  if (!props.focusMode || !element) return
+  const { scrollTop, scrollLeft } = element
+  await nextTick()
+  // 折り返し変更によるブラウザの位置調整後、利用者の手動スクロールを可能な範囲で保つ。
+  element.scrollTop = scrollTop
+  element.scrollLeft = scrollLeft
+  syncSearchHighlightScroll()
+})
+
 watch(currentMatch, (match) => {
   if (match) {
     void selectTextMatch(match)
@@ -501,11 +529,15 @@ onMounted(() => {
   emit('scroll-element', textarea.value)
   resizeTextarea()
   document.addEventListener('keydown', handleDocumentKeydown)
+  fontSet?.addEventListener('loadingdone', handleFontLoadingFinished)
+  fontSet?.addEventListener('loadingerror', handleFontLoadingFinished)
 })
 
 onBeforeUnmount(() => {
   emit('scroll-element', null)
   document.removeEventListener('keydown', handleDocumentKeydown)
+  fontSet?.removeEventListener('loadingdone', handleFontLoadingFinished)
+  fontSet?.removeEventListener('loadingerror', handleFontLoadingFinished)
 })
 
 defineExpose({ captureViewState, restoreViewState, isConnected, openSearch })
@@ -515,16 +547,21 @@ defineExpose({ captureViewState, restoreViewState, isConnected, openSearch })
   <section
     id="input-panel"
     class="editor-panel panel"
+    :style="focusMode ? {
+      '--focus-editor-font-size': focusEditorFontSizeRem(focusEditorFontSize),
+      '--focus-editor-font-scale': focusEditorFontSize / DEFAULT_FOCUS_EDITOR_FONT_SIZE,
+    } : undefined"
     :class="{ 'editor-panel--guide-open': isInputGuideOpen && !focusMode }"
     :role="focusMode ? 'region' : 'tabpanel'"
     :aria-labelledby="focusMode ? undefined : 'input-tab'"
-    :aria-label="focusMode ? 'Markdown編集' : undefined"
+    :aria-label="focusMode ? (previewMode ? 'Markdownプレビュー' : 'Markdown編集') : undefined"
     :tabindex="focusMode ? undefined : 0"
   >
     <slot name="document-tabs" />
 
     <SearchReplacePanel
       v-if="isSearchOpen"
+      v-show="!previewMode"
       ref="searchPanel"
       :query="query"
       :replacement="replacement"
@@ -543,59 +580,65 @@ defineExpose({ captureViewState, restoreViewState, isConnected, openSearch })
     />
 
     <label class="visually-hidden" for="markdown-input">変換するMarkdown</label>
-    <div
-      class="text-area-shell"
-      :class="
-        [
-          editorInternalScroll
-            ? 'text-area-shell--internal-scroll'
-            : 'text-area-shell--expand',
-          {
-            'text-area-shell--highlighting':
-              isSearchOpen && matches.length > 0,
-          },
-        ]
-      "
-    >
+    <div class="editor-body">
+      <slot name="focus-preview" />
       <div
-        v-if="isSearchOpen && matches.length > 0"
-        ref="searchHighlightLayer"
-        class="search-highlight-layer"
-        aria-hidden="true"
-      >
-        <template
-          v-for="(segment, index) in searchHighlightSegments"
-          :key="index"
-        >
-          <mark
-            v-if="segment.kind !== 'plain'"
-            class="search-highlight"
-            :class="`search-highlight--${segment.kind}`"
-            v-text="segment.text"
-          />
-          <span v-else v-text="segment.text" />
-        </template>
-        <span v-if="modelValue.endsWith('\n')">&#8203;</span>
-      </div>
-
-      <textarea
-        id="markdown-input"
-        ref="textarea"
-        class="text-area"
+        :style="{ visibility: previewMode ? 'hidden' : undefined }"
+        :inert="previewMode"
+        :aria-hidden="previewMode ? true : undefined"
+        class="text-area-shell"
         :class="
-          editorInternalScroll ? 'text-area--internal-scroll' : 'text-area--expand'
+          [
+            editorInternalScroll
+              ? 'text-area-shell--internal-scroll'
+              : 'text-area-shell--expand',
+            {
+              'text-area-shell--highlighting':
+                isSearchOpen && matches.length > 0,
+            },
+          ]
         "
-        :value="modelValue"
-        :aria-describedby="focusMode ? undefined : 'markdown-input-count'"
-        placeholder="Markdownを入力してください"
-        spellcheck="true"
-        @input="updateValue"
-        @beforeinput="handleBeforeInput"
-        @compositionstart="handleCompositionStart"
-        @compositionend="handleCompositionEnd"
-        @keydown="handleKeydown"
-        @scroll="syncSearchHighlightScroll"
-      />
+      >
+        <div
+          v-if="isSearchOpen && matches.length > 0"
+          ref="searchHighlightLayer"
+          class="search-highlight-layer"
+          aria-hidden="true"
+        >
+          <template
+            v-for="(segment, index) in searchHighlightSegments"
+            :key="index"
+          >
+            <mark
+              v-if="segment.kind !== 'plain'"
+              class="search-highlight"
+              :class="`search-highlight--${segment.kind}`"
+              v-text="segment.text"
+            />
+            <span v-else v-text="segment.text" />
+          </template>
+          <span v-if="modelValue.endsWith('\n')">&#8203;</span>
+        </div>
+
+        <textarea
+          id="markdown-input"
+          ref="textarea"
+          class="text-area"
+          :class="
+            editorInternalScroll ? 'text-area--internal-scroll' : 'text-area--expand'
+          "
+          :value="modelValue"
+          aria-describedby="markdown-input-count"
+          placeholder="Markdownを入力してください"
+          spellcheck="true"
+          @input="updateValue"
+          @beforeinput="handleBeforeInput"
+          @compositionstart="handleCompositionStart"
+          @compositionend="handleCompositionEnd"
+          @keydown="handleKeydown"
+          @scroll="syncSearchHighlightScroll"
+        />
+      </div>
     </div>
 
     <section
@@ -608,8 +651,8 @@ defineExpose({ captureViewState, restoreViewState, isConnected, openSearch })
       <EditorInputGuideContent title-id="markdown-input-guide-title" />
     </section>
 
-    <div v-show="!focusMode" class="panel-footer">
-      <div class="input-guide-root">
+    <div class="panel-footer">
+      <div v-show="!focusMode" class="input-guide-root">
         <button
           v-tooltip="'文章検索（Ctrl / Command + F）'"
           class="editor-search-button"
@@ -632,8 +675,13 @@ defineExpose({ captureViewState, restoreViewState, isConnected, openSearch })
           <AppIcon name="help" />
         </button>
       </div>
-      <p id="markdown-input-count" class="character-count" aria-live="polite">
-        {{ characterCount.toLocaleString('ja-JP') }}文字
+      <p
+        id="markdown-input-count"
+        class="character-count"
+        :aria-live="focusMode ? 'off' : 'polite'"
+      >
+        {{ characterCount.toLocaleString('ja-JP') }}{{ focusMode ? '' : '文字' }}
+        <span v-if="focusMode" class="visually-hidden">（Markdown記号・空白・改行を含む入力文字数）</span>
       </p>
     </div>
   </section>

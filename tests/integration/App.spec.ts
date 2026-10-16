@@ -1,4 +1,4 @@
-import { flushPromises, mount } from '@vue/test-utils'
+import { flushPromises, mount, type VueWrapper } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   EDITOR_CONTENT_SAVE_DELAY_MS,
@@ -15,6 +15,7 @@ import {
 import { COPY_NOTICE_DURATION_MS } from '../../src/composables/useClipboard'
 import { CONVERSION_DEBOUNCE_DELAY_MS } from '../../src/utils/conversionTiming'
 import App from '../../src/App.vue'
+import * as markdownParser from '../../src/parser/parseMarkdown'
 
 describe('App', () => {
   beforeEach(() => {
@@ -33,6 +34,126 @@ describe('App', () => {
   async function completeConversion(): Promise<void> {
     await vi.advanceTimersByTimeAsync(CONVERSION_DEBOUNCE_DELAY_MS)
   }
+
+  async function pressFocusPreviewShortcut(wrapper: VueWrapper): Promise<void> {
+    const preview = wrapper.find('#focus-mode-preview')
+    const target = preview.exists() && preview.isVisible()
+      ? preview
+      : wrapper.get('#markdown-input')
+    await target.trigger('keydown', { key: 'Enter', ctrlKey: true })
+    await flushPromises()
+  }
+
+  async function changeFocusFontSize(wrapper: VueWrapper, size: number): Promise<HTMLSelectElement> {
+    const select = wrapper.get<HTMLSelectElement>('#focus-font-size-select')
+    await select.setValue(String(size))
+    return select.element
+  }
+
+  it('フォーカスの9段階サイズを即時保存し、本文・選択・位置と解析結果を維持する', async () => {
+    const wrapper = mount(App, { attachTo: document.body })
+    const input = wrapper.get<HTMLTextAreaElement>('#markdown-input')
+    await input.setValue('日本語 **本文**\n\n検索用の本文')
+    await completeConversion()
+    await wrapper.get('.focus-mode-button').trigger('click')
+    input.element.setSelectionRange(2, 6)
+    input.element.scrollTop = 37
+    input.element.scrollLeft = 4
+    const parse = vi.spyOn(markdownParser, 'parseMarkdown')
+    const button = wrapper.get('.focus-font-size-button')
+    expect(button.attributes('aria-label')).toBe('文字サイズ')
+    await button.trigger('click')
+    const select = wrapper.get<HTMLSelectElement>('#focus-font-size-select')
+    expect(document.activeElement).toBe(select.element)
+    expect(select.element.value).toBe('18')
+    expect(select.findAll('option').map((option) => option.attributes('value'))).toEqual(['8', '10', '12', '14', '16', '18', '20', '22', '24'])
+    expect(select.findAll('option').map((option) => option.text())).toEqual(['8px', '10px', '12px', '14px', '16px', '18px', '20px', '22px', '24px'])
+    expect(wrapper.find('#focus-font-size-description').exists()).toBe(false)
+    expect(select.attributes('aria-describedby')).toBeUndefined()
+    expect(wrapper.find('.focus-font-size-stepper').exists()).toBe(false)
+    for (const size of [8, 10, 12, 14, 16, 18, 20, 22, 24, 18]) {
+      const control = await changeFocusFontSize(wrapper, size)
+      await flushPromises()
+      expect(wrapper.get('#markdown-input').element).toBe(input.element)
+      expect(input.element.value).toBe('日本語 **本文**\n\n検索用の本文')
+      expect([input.element.selectionStart, input.element.selectionEnd, input.element.scrollTop, input.element.scrollLeft]).toEqual([2, 6, 37, 4])
+      expect(wrapper.get<HTMLElement>('#input-panel').element.style.getPropertyValue('--focus-editor-font-size')).toBe(`${size / 16}rem`)
+      expect(JSON.parse(localStorage.getItem(APP_SETTINGS_STORAGE_KEY)!).focusEditorFontSize).toBe(size)
+      expect(select.element.value).toBe(String(size))
+      expect(document.activeElement).toBe(control)
+    }
+    expect(parse).not.toHaveBeenCalled()
+    await wrapper.get('#focus-font-size-select').trigger('keydown', { key: 'Escape' })
+    await flushPromises()
+    expect(wrapper.find('#focus-font-size-panel').exists()).toBe(false)
+    expect(wrapper.get('.app').classes()).toContain('app--focus-mode')
+    expect(document.activeElement).toBe(button.element)
+    await wrapper.get('.focus-mode-exit-button').trigger('click')
+    expect(wrapper.get<HTMLElement>('#input-panel').element.style.getPropertyValue('--focus-editor-font-size')).toBe('')
+    wrapper.unmount()
+    const reloaded = mount(App)
+    await reloaded.get('.focus-mode-button').trigger('click')
+    await reloaded.get('.focus-font-size-button').trigger('click')
+    expect(reloaded.get<HTMLSelectElement>('#focus-font-size-select').element.value).toBe('18')
+    reloaded.unmount()
+  })
+
+  it('文字サイズと解説を排他で開き、外側クリック・フォーカス移動・再開始で閉じる', async () => {
+    const wrapper = mount(App, { attachTo: document.body })
+    await wrapper.get('.focus-mode-button').trigger('click')
+    await wrapper.get('.focus-mode-help-button').trigger('click')
+    await wrapper.get('.focus-font-size-button').trigger('click')
+    expect(wrapper.find('#focus-mode-help').exists()).toBe(false)
+    await wrapper.get('.focus-mode-help-button').trigger('click')
+    expect(wrapper.find('#focus-font-size-panel').exists()).toBe(false)
+    expect(wrapper.find('#focus-mode-help').exists()).toBe(true)
+    await wrapper.get('.focus-font-size-button').trigger('click')
+    await wrapper.get('#focus-font-size-select').trigger('keydown', { key: 'Enter', ctrlKey: true })
+    await flushPromises()
+    expect(wrapper.get('#focus-mode-preview').isVisible()).toBe(false)
+    await wrapper.get('#markdown-input').trigger('click')
+    expect(wrapper.find('#focus-font-size-panel').exists()).toBe(false)
+    await wrapper.get('.focus-font-size-button').trigger('click')
+    wrapper.get<HTMLTextAreaElement>('#markdown-input').element.focus()
+    await flushPromises()
+    expect(wrapper.find('#focus-font-size-panel').exists()).toBe(false)
+    await wrapper.get('.focus-font-size-button').trigger('click')
+    await wrapper.get('.focus-mode-exit-button').trigger('click')
+    await wrapper.get('.focus-mode-button').trigger('click')
+    expect(wrapper.find('#focus-font-size-panel').exists()).toBe(false)
+    wrapper.unmount()
+  })
+
+  it.each([8, 10, 12, 14, 24])('プレビュー中のサイズ%sへの変更も編集位置を保持し、モード往復・再読み込みへ引き継ぐ', async (size) => {
+    const wrapper = mount(App, { attachTo: document.body })
+    const input = wrapper.get<HTMLTextAreaElement>('#markdown-input')
+    await input.setValue('# 見出し\n\n本文')
+    await wrapper.get('.focus-mode-button').trigger('click')
+    input.element.setSelectionRange(2, 4)
+    input.element.scrollTop = 35
+    await pressFocusPreviewShortcut(wrapper)
+    const preview = wrapper.get<HTMLElement>('#focus-mode-preview')
+    preview.element.scrollTop = 46
+    await wrapper.get('.focus-font-size-button').trigger('click')
+    await changeFocusFontSize(wrapper, size)
+    expect(preview.isVisible()).toBe(true)
+    expect(preview.element.scrollTop).toBe(46)
+    await preview.trigger('click')
+    await pressFocusPreviewShortcut(wrapper)
+    expect(input.element.selectionStart).toBe(2)
+    expect(input.element.selectionEnd).toBe(4)
+    expect(input.element.scrollTop).toBe(35)
+    await wrapper.get('.focus-mode-exit-button').trigger('click')
+    await wrapper.get('.focus-mode-button').trigger('click')
+    expect(wrapper.get<HTMLElement>('#input-panel').element.style.getPropertyValue('--focus-editor-font-size')).toBe(`${size / 16}rem`)
+    wrapper.unmount()
+    const reloaded = mount(App)
+    expect(reloaded.get('.app').classes()).not.toContain('app--focus-mode')
+    await reloaded.get('.focus-mode-button').trigger('click')
+    await reloaded.get('.focus-font-size-button').trigger('click')
+    expect(reloaded.get<HTMLSelectElement>('#focus-font-size-select').element.value).toBe(String(size))
+    reloaded.unmount()
+  })
 
   it('入力を選択中の形式へリアルタイム変換し、文字数を表示する', async () => {
     const wrapper = mount(App)
@@ -799,6 +920,10 @@ describe('App', () => {
     expect(wrapper.get('.focus-mode-exit-button').element.nextElementSibling).toBe(
       wrapper.get('.focus-mode-help-button').element,
     )
+    expect(wrapper.get('.focus-mode-control-buttons').findAll('button')).toHaveLength(2)
+    expect(wrapper.get('.focus-mode-controls').find('.focus-font-size-button').exists()).toBe(false)
+    expect(wrapper.get('.focus-mode-font-controls').attributes('aria-label')).toBe('文字サイズ設定')
+    expect(wrapper.get('.focus-mode-font-controls').find('.focus-font-size-button').exists()).toBe(true)
     expect(wrapper.find('.focus-mode-search-button').exists()).toBe(false)
     expect(wrapper.find('.focus-mode-search-controls').exists()).toBe(false)
     expect(wrapper.get('.workspace-tabs').isVisible()).toBe(false)
@@ -807,7 +932,10 @@ describe('App', () => {
     expect(wrapper.find('.document-tabs').exists()).toBe(false)
     expect(wrapper.get('.focus-tab-name-button').text()).toBe('Untitled')
     expect(wrapper.get('.focus-tab-name-button').attributes('data-tooltip')).toBeUndefined()
-    expect(wrapper.find('.panel-footer').isVisible()).toBe(false)
+    expect(wrapper.get('#input-panel .panel-footer').isVisible()).toBe(true)
+    expect(wrapper.get('#markdown-input-count').text()).toContain('10')
+    expect(wrapper.get('#markdown-input-count').text()).not.toContain('10文字')
+    expect(wrapper.get('.editor-search-button').isVisible()).toBe(false)
     expect(wrapper.get('#input-panel').attributes('role')).toBe('region')
     expect(wrapper.get('#input-panel').attributes('aria-label')).toBe('Markdown編集')
 
@@ -823,6 +951,157 @@ describe('App', () => {
     expect(input.element.scrollTop).toBe(53)
     expect(document.activeElement).toBe(textareaElement)
     expect(wrapper.get('.workspace').attributes('data-active-panel')).toBe('input')
+    wrapper.unmount()
+  })
+
+  it('フォーカスプレビューへ最新入力を即時反映し、編集DOMと両表示の位置を保持する', async () => {
+    const wrapper = mount(App, { attachTo: document.body })
+    const input = wrapper.get<HTMLTextAreaElement>('#markdown-input')
+    await wrapper.get('#preview-view-tab').trigger('click')
+    await wrapper.get('.focus-mode-button').trigger('click')
+    await input.setValue('# 最新見出し\n\n**本文**😀')
+    input.element.setSelectionRange(2, 5)
+    input.element.scrollTop = 81
+    input.element.scrollLeft = 3
+    expect(wrapper.find('.focus-mode-preview-button').exists()).toBe(false)
+    expect(wrapper.find('.focus-mode-preview-controls').exists()).toBe(false)
+    await pressFocusPreviewShortcut(wrapper)
+    await flushPromises()
+    const preview = wrapper.get<HTMLElement>('#focus-mode-preview')
+    expect(preview.isVisible()).toBe(true)
+    expect(input.isVisible()).toBe(false)
+    expect(preview.get('h1').text()).toBe('最新見出し')
+    expect(preview.get('strong').text()).toBe('本文')
+    expect(document.activeElement).toBe(preview.element)
+    expect(wrapper.get('.focus-tab-name').isVisible()).toBe(true)
+    expect(wrapper.get('#markdown-input-count').text()).not.toContain('本文')
+    expect(wrapper.get('.output-panel').isVisible()).toBe(false)
+    expect(wrapper.findAll('#markdown-preview')).toHaveLength(1)
+    expect(wrapper.findAll('#focus-markdown-preview')).toHaveLength(1)
+    preview.element.scrollTop = 57
+    preview.element.scrollLeft = 9
+    await pressFocusPreviewShortcut(wrapper)
+    await flushPromises()
+    expect(wrapper.get('#markdown-input').element).toBe(input.element)
+    expect(input.element.selectionStart).toBe(2)
+    expect(input.element.selectionEnd).toBe(5)
+    expect(input.element.scrollTop).toBe(81)
+    expect(input.element.scrollLeft).toBe(3)
+    expect(document.activeElement).toBe(input.element)
+    await pressFocusPreviewShortcut(wrapper)
+    expect(preview.element.scrollTop).toBe(57)
+    expect(preview.element.scrollLeft).toBe(9)
+    await wrapper.get('.focus-mode-exit-button').trigger('click')
+    expect(wrapper.get('#preview-view-tab').attributes('aria-selected')).toBe('true')
+    expect(wrapper.get('#markdown-preview h1').text()).toBe('最新見出し')
+    wrapper.unmount()
+  })
+
+  it.each([{ ctrlKey: true }, { metaKey: true }])('フォーカス内のみショートカットで切り替える: %j', async (modifier) => {
+    const wrapper = mount(App, { attachTo: document.body })
+    const input = wrapper.get('#markdown-input')
+    await input.trigger('keydown', { key: 'Enter', ...modifier })
+    expect(wrapper.find('#focus-mode-preview').exists()).toBe(false)
+    await wrapper.get('.focus-mode-button').trigger('click')
+    await input.trigger('keydown', { key: 'Enter', ...modifier })
+    await flushPromises()
+    expect(wrapper.get('#focus-mode-preview').isVisible()).toBe(true)
+    await wrapper.get('#focus-mode-preview').trigger('keydown', { key: 'Enter', ...modifier })
+    await flushPromises()
+    expect(input.isVisible()).toBe(true)
+    expect(document.activeElement).toBe(input.element)
+    wrapper.unmount()
+  })
+
+  it('IME・キーリピート・追加修飾キー・処理済みの入力ではプレビューへ切り替えない', async () => {
+    const wrapper = mount(App, { attachTo: document.body })
+    await wrapper.get('.focus-mode-button').trigger('click')
+    const input = wrapper.get('#markdown-input')
+    for (const extra of [
+      { isComposing: true }, { keyCode: 229 }, { repeat: true }, { shiftKey: true },
+      { altKey: true }, { metaKey: true },
+    ]) {
+      await input.trigger('keydown', { key: 'Enter', ctrlKey: true, ...extra })
+      expect(wrapper.get('#focus-mode-preview').isVisible()).toBe(false)
+    }
+    const handled = new KeyboardEvent('keydown', { key: 'Enter', ctrlKey: true, bubbles: true, cancelable: true })
+    handled.preventDefault()
+    input.element.dispatchEvent(handled)
+    await flushPromises()
+    expect(wrapper.get('#focus-mode-preview').isVisible()).toBe(false)
+    await input.trigger('keydown', { key: 'Escape', shiftKey: true })
+    expect(wrapper.get('.app').classes()).toContain('app--focus-mode')
+    wrapper.unmount()
+  })
+
+  it('プレビューから検索・置換を開くと編集へ戻り、既存検索語を保持する', async () => {
+    const wrapper = mount(App, { attachTo: document.body })
+    await wrapper.get('#markdown-input').setValue('対象 本文 対象')
+    await wrapper.get('.focus-mode-button').trigger('click')
+    await wrapper.get('#markdown-input').trigger('keydown', { key: 'f', ctrlKey: true })
+    await flushPromises()
+    await wrapper.get('#markdown-search-input').setValue('対象')
+    await pressFocusPreviewShortcut(wrapper)
+    expect(wrapper.get('.search-replace-panel').isVisible()).toBe(false)
+    await wrapper.get('#focus-mode-preview').trigger('keydown', { key: 'h', ctrlKey: true })
+    await flushPromises()
+    expect(wrapper.get('#markdown-input').isVisible()).toBe(true)
+    expect(wrapper.get<HTMLInputElement>('#markdown-search-input').element.value).toBe('対象')
+    expect(wrapper.get('#markdown-replacement-input').isVisible()).toBe(true)
+    expect(document.activeElement).toBe(wrapper.get('#markdown-replacement-input').element)
+    wrapper.unmount()
+  })
+
+  it('プレビューのEscapeで通常へ戻り、再開始時は編集表示になる', async () => {
+    const wrapper = mount(App, { attachTo: document.body })
+    const input = wrapper.get<HTMLTextAreaElement>('#markdown-input')
+    await input.setValue('保存する本文')
+    await wrapper.get('.focus-mode-button').trigger('click')
+    input.element.setSelectionRange(1, 3)
+    input.element.scrollTop = 24
+    await pressFocusPreviewShortcut(wrapper)
+    await wrapper.get('#focus-mode-preview').trigger('keydown', { key: 'Escape' })
+    await flushPromises()
+    expect(wrapper.get('.app').classes()).not.toContain('app--focus-mode')
+    expect(input.element.selectionStart).toBe(1)
+    expect(input.element.selectionEnd).toBe(3)
+    expect(input.element.scrollTop).toBe(24)
+    expect(document.activeElement).toBe(input.element)
+    await wrapper.get('.focus-mode-button').trigger('click')
+    expect(wrapper.get('#focus-mode-preview').isVisible()).toBe(false)
+    expect(input.isVisible()).toBe(true)
+    wrapper.unmount()
+  })
+
+  it('空文書のプレビューを表示し、生HTMLと危険なリンクを実行可能な要素にしない', async () => {
+    const wrapper = mount(App, { attachTo: document.body })
+    await wrapper.get('.focus-mode-button').trigger('click')
+    await pressFocusPreviewShortcut(wrapper)
+    expect(wrapper.get('#focus-mode-preview').text()).toContain('Markdownプレビューがここに表示されます')
+    await pressFocusPreviewShortcut(wrapper)
+    const source = '<script>alert(1)</script>\n\n[危険](javascript:alert%281%29)\n\n**安全**'
+    await wrapper.get('#markdown-input').setValue(source)
+    await pressFocusPreviewShortcut(wrapper)
+    const preview = wrapper.get('#focus-mode-preview')
+    expect(preview.find('script').exists()).toBe(false)
+    expect(preview.find('[href^="javascript:"]').exists()).toBe(false)
+    expect(preview.get('strong').text()).toBe('安全')
+    expect(wrapper.get<HTMLTextAreaElement>('#markdown-input').element.value).toBe(source)
+    wrapper.unmount()
+  })
+
+  it('解析失敗時に古いプレビューを表示せず、原文を維持する', async () => {
+    const wrapper = mount(App, { attachTo: document.body })
+    await wrapper.get('#markdown-input').setValue('# 古い見出し')
+    await completeConversion()
+    await wrapper.get('.focus-mode-button').trigger('click')
+    vi.spyOn(markdownParser, 'parseMarkdown').mockImplementation(() => { throw new Error('parse failure') })
+    await wrapper.get('#markdown-input').setValue('失敗時の原文')
+    await pressFocusPreviewShortcut(wrapper)
+    expect(wrapper.get('#focus-mode-preview [role="alert"]').text()).toContain('入力内容は保持されています')
+    expect(wrapper.find('#focus-mode-preview h1').exists()).toBe(false)
+    await pressFocusPreviewShortcut(wrapper)
+    expect(wrapper.get<HTMLTextAreaElement>('#markdown-input').element.value).toBe('失敗時の原文')
     wrapper.unmount()
   })
 
@@ -872,6 +1151,38 @@ describe('App', () => {
     wrapper.unmount()
   })
 
+  it('フォーカス文字数が選択タブ・原文入力・全置換・空文書へ即時追従する', async () => {
+    const wrapper = mount(App, { attachTo: document.body })
+    const input = wrapper.get<HTMLTextAreaElement>('#markdown-input')
+    await input.setValue('別タブの本文')
+    await wrapper.get('.document-tab-add-button').trigger('click')
+    await input.setValue('# 日本語\n😀')
+    await wrapper.get('.focus-mode-button').trigger('click')
+    expect(wrapper.get('#markdown-input-count').text()).toContain('7')
+    expect(wrapper.get('#markdown-input-count').text()).not.toContain('7文字')
+    const textarea = input.element
+    await input.setValue('**太字**')
+    expect(wrapper.get('#markdown-input-count').text()).toContain('6')
+    expect(wrapper.get('#markdown-input-count').text()).not.toContain('6文字')
+    input.element.focus()
+    await input.trigger('keydown', { key: 'h', ctrlKey: true })
+    await flushPromises()
+    await wrapper.get('#markdown-search-input').setValue('太字')
+    await wrapper.get('#markdown-replacement-input').setValue('日本語😀')
+    await wrapper.findAll('.search-action-button')[1]!.trigger('click')
+    await flushPromises()
+    expect(input.element.value).toBe('**日本語😀**')
+    expect(wrapper.get('#markdown-input-count').text()).toContain('8')
+    expect(wrapper.get('#markdown-input-count').text()).not.toContain('8文字')
+    await input.setValue('')
+    expect(wrapper.get('#markdown-input-count').text()).toContain('0')
+    expect(wrapper.get('#markdown-input-count').text()).not.toContain('0文字')
+    await wrapper.get('.focus-mode-exit-button').trigger('click')
+    expect(wrapper.get('#markdown-input-count').text()).toBe('0文字')
+    expect(input.element).toBe(textarea)
+    wrapper.unmount()
+  })
+
   it('フォーカスモードの解説を開閉し、再度開始したときは閉じる', async () => {
     const wrapper = mount(App)
 
@@ -884,7 +1195,16 @@ describe('App', () => {
     expect(helpButton.attributes('aria-expanded')).toBe('true')
     expect(wrapper.find('#focus-mode-help .editor-input-guide').exists()).toBe(true)
     expect(wrapper.get('#focus-mode-help').text()).toContain('Ctrl / Command + B')
-    expect(wrapper.get('#focus-mode-help').text()).toContain('Shift + Tab')
+    expect(wrapper.get('#focus-mode-help').text()).toContain('Ctrl / Command + Enter')
+    expect(wrapper.get('#focus-mode-help').text()).toContain('フォーカスモード中のみ')
+    expect(wrapper.get('#focus-mode-help').text()).toContain('Ctrl / Command + F')
+    expect(wrapper.get('#focus-mode-help').text()).toContain('Ctrl + H / Command + Option + F')
+    expect(wrapper.get('#focus-mode-help').findAll('section').at(-1)?.text()).toBe(
+      '編集／プレビュー切り替えCtrl / Command + Enterフォーカスモード中のみ使用できます。',
+    )
+    expect(wrapper.get('#focus-mode-help').findAll('h3').map((heading) => heading.text())).toEqual([
+      '装飾ショートカット', '行の加工', '検索', '編集／プレビュー切り替え',
+    ])
 
     await wrapper.get('.focus-mode-exit-button').trigger('click')
     await wrapper.get('.focus-mode-button').trigger('click')
@@ -1264,6 +1584,7 @@ describe('App', () => {
         workspaceSplitRatio: 0.5,
         normalizeFullWidthMarkdown: false,
         scrollSync: true,
+        focusEditorFontSize: 18,
       }),
     )
 
