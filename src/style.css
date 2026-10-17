@@ -60,15 +60,22 @@ select:focus-visible {
   --page: #f5f2ea;
   --page-center: #faf8f2;
   --page-edge: #eeebe3;
+  --page-gradient: radial-gradient(
+    ellipse at 50% 50%,
+    var(--page-center) 0%,
+    var(--page) 60%,
+    var(--page-edge) 100%
+  );
   --surface: #ffffff;
+  --surface-frame: #f8f5ee;
   --surface-muted: var(--page-center);
-  --border: #d7deea;
+  --border: #dcd6c9;
   --text: #172033;
   --muted: #5d687c;
   --focus-icon-color: #7a8492;
-  --accent: #3759c7;
+  --accent: #6f695c;
   --accent-contrast: #ffffff;
-  --focus: #6f8cff;
+  --focus: var(--accent);
   --warning-bg: #fff8e6;
   --warning-border: #e7b84b;
   --warning-text: #684b00;
@@ -86,12 +93,7 @@ select:focus-visible {
   padding: 12px;
   color: var(--text);
   background-color: var(--page);
-  background-image: radial-gradient(
-    ellipse at 50% 50%,
-    var(--page-center) 0%,
-    var(--page) 60%,
-    var(--page-edge) 100%
-  );
+  background-image: var(--page-gradient);
 }
 
 .app--internal-scroll {
@@ -146,14 +148,14 @@ select:focus-visible {
   --page-center: #151d2a;
   --page-edge: #0e131c;
   --surface: #1a2230;
+  --surface-frame: var(--surface);
   --surface-muted: var(--page-center);
   --border: #344054;
   --text: #eef3fb;
   --muted: #aeb9ca;
   --focus-icon-color: #69778c;
-  --accent: #8da6ff;
-  --accent-contrast: #10182b;
-  --focus: #9aafff;
+  --accent: #a8b4c5;
+  --accent-contrast: var(--page);
   --warning-bg: #342a13;
   --warning-border: #8f6d22;
   --warning-text: #f6d98c;
@@ -270,7 +272,7 @@ h2 {
   border: 1px solid var(--border);
   border-radius: 14px;
   color: var(--text);
-  background: var(--surface);
+  background: var(--surface-frame);
   box-shadow: 0 20px 60px rgb(0 0 0 / 28%);
   overflow-y: auto;
 }
@@ -418,7 +420,7 @@ h2 {
   border: 1px solid var(--border);
   border-radius: 12px;
   color: var(--text);
-  background: var(--surface);
+  background: var(--surface-frame);
   box-shadow: 0 16px 44px rgb(18 28 48 / 24%);
 }
 
@@ -549,7 +551,7 @@ h2 {
   border-radius: 14px;
   flex-direction: column;
   color: var(--text);
-  background: var(--surface);
+  background: var(--surface-frame);
   box-shadow: 0 20px 60px rgb(0 0 0 / 28%);
 }
 
@@ -755,7 +757,7 @@ h2 {
 .document-tab-item--active {
   z-index: 1;
   border-color: var(--border);
-  background: var(--surface);
+  background: var(--surface-frame);
 }
 
 .document-tab-item--dragging {
@@ -810,7 +812,7 @@ h2 {
 
 .document-tab-button--active {
   color: var(--text);
-  background: var(--surface);
+  background: var(--surface-frame);
 }
 
 .document-tab-delete-button {
@@ -838,7 +840,7 @@ h2 {
   + .document-tab-delete-tooltip-target
   .document-tab-delete-button {
   color: var(--muted);
-  background: var(--surface);
+  background: var(--surface-frame);
 }
 
 .document-tab-delete-button:hover:not(:disabled),
@@ -919,7 +921,7 @@ h2 {
   border-radius: 11px;
   overflow-y: auto;
   color: var(--text);
-  background: var(--surface);
+  background: var(--surface-frame);
   box-shadow: 0 16px 40px rgb(18 28 48 / 24%);
 }
 
@@ -1050,7 +1052,7 @@ h2 {
   border: 1px solid var(--border);
   border-radius: 14px;
   flex-direction: column;
-  background: var(--surface);
+  background: var(--surface-frame);
   box-shadow: 0 12px 36px rgb(31 45 72 / 8%);
 }
 
@@ -1097,11 +1099,11 @@ h2 {
 .output-view-tab--active {
   border-color: var(--border);
   color: var(--text);
-  background: var(--surface);
+  background: var(--surface-frame);
 }
 
 .output-view-tab:hover:not(.output-view-tab--active) {
-  background: var(--surface);
+  background: var(--surface-frame);
 }
 
 .output-view-panel {
@@ -1254,7 +1256,8 @@ h2 {
   min-height: 480px;
   border-radius: 10px;
   flex: 1;
-  background: var(--surface-muted);
+  background-color: var(--page);
+  background-image: var(--page-gradient);
 }
 
 .text-area-shell--internal-scroll {
@@ -1291,6 +1294,7 @@ h2 {
 }
 
 .editor-panel :is(.text-area, .search-highlight-layer) {
+  background: transparent;
   font-family: var(--editor-font-family);
   font-weight: 400;
 }
@@ -1772,7 +1776,7 @@ h2 {
   overflow-y: auto;
   gap: 12px;
   color: var(--text);
-  background: var(--surface);
+  background: var(--surface-frame);
   box-shadow: 0 12px 32px rgb(31 45 72 / 10%);
   pointer-events: auto;
 }
@@ -1799,7 +1803,7 @@ h2 {
   border-radius: 12px;
   overflow-y: auto;
   color: var(--text);
-  background: var(--surface);
+  background: var(--surface-frame);
   box-shadow: 0 12px 32px rgb(31 45 72 / 10%);
 }
 
@@ -2169,7 +2173,7 @@ h2 {
     border: 1px solid var(--border);
     border-radius: 11px;
     grid-template-columns: 1fr 1fr;
-    background: var(--surface);
+    background: var(--surface-frame);
   }
 
   .workspace-tab {
@@ -2363,7 +2367,9 @@ h2 {
     --page: Canvas;
     --page-center: Canvas;
     --page-edge: Canvas;
+    --page-gradient: none;
     --surface: Canvas;
+    --surface-frame: Canvas;
     --surface-muted: Canvas;
     --text: CanvasText;
     --muted: CanvasText;
