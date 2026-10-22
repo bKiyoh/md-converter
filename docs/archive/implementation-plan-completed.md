@@ -2180,3 +2180,89 @@ product-spec・focus-mode-specを先に更新し、本マイルストーンだ�
   管理画面の設定と実際のデプロイログは今回確認していない。
 - リポジトリの指定更新と検証結果の記録は完了。コミット・プッシュ・デプロイは未実施で、公開先への反映確認は残件。
   今回の実装の持ち越しはなく、既存PR-3・PR-4などの保留項目は維持する。
+
+## PR-2 依存監査のHigh脆弱性とライセンス検証の解消
+
+2026-10-22の利用者のHigh対応依頼により、Node.js更新後にPR-2を単独で優先する。
+PR-1とPR-8・7・6の保留は維持する。製品動作の仕様変更は行わない。
+
+### 再現条件
+
+- Node.js 22.23.4・npm 12.2.1で `npm audit --json` がHigh 11件・Moderate 3件で失敗する
+- `npm ls --depth=0` は成功するが `npm run licenses:check` は通知文書の陳腐化で失敗する。
+  過去のインストール版不一致とは現時点の症状が異なる
+
+### 対象範囲
+
+- 公式アドバイザリとnpm配布情報で影響範囲・修正版・互換性を確認する
+- 原則として既存のメジャーと許可範囲を維持して依存とlockfileを更新する
+- 修正版がない依存経路は、同等の検査を保つ設定変更・依存の置き換えを検討し、理由を記録する
+- `npm ci` による再構築、第三者ライセンス通知の再生成・検証、既存テストによる回帰確認
+
+### 対象外
+
+- 変換・Parser・UI・保存の仕様変更、他の保留項目、既存PR-3のタイムアウト修正
+- Node.js固定版変更、コミット・プッシュ・デプロイ
+
+### 採用する依存変更
+
+- Vueはnpm配布元で確認した3.5.44へ更新する。監査で影響対象の3.5.41以下を除外する
+- `braces` はnpm配布の最新版3.0.3も影響対象であり、更新だけでは除去できない。
+  唯一の依存元 `@vue/eslint-config-typescript` を外し、既に間接依存だった
+  `typescript-eslint` と `vue-eslint-parser` を直接の開発依存として宣言する
+- [Vue ESLint公式ガイド](https://eslint.vuejs.org/user-guide/) と
+  [typescript-eslint公式ガイド](https://typescript-eslint.io/getting-started/) に沿って
+  既存のVue essential・TypeScript recommended・script言語制限を設定する。
+  代表的なVue・TS・JS・MJSファイルの有効ルールを変更前後で比較する
+- 強制ダウングレードや互換性のないoverrideは使用しない
+
+### 完了条件
+
+- クリーンインストール後の依存監査でHighとCriticalが0件になる
+- インストール済み依存とlockfileが一致し、ライセンス検証が成功する
+- lint・型チェック・全体テスト・ビルドを実行し、新規の回帰と既存の失敗を区別して記録する
+- 追加・削除・更新した依存の理由、残る監査項目と手動確認事項を記録する
+
+### 実装・検証結果（2026-10-22）
+
+- 更新前の監査はHigh 11件・Moderate 3件。更新と依存経路の除去後、`npm ci` から
+  再構築した環境で `npm audit --json` は全深刻度0件・終了コード0になった。
+  製品動作・変換仕様・Node.js固定版は変更していない。
+- Vueと関連パッケージを3.5.39から3.5.44へ更新した。
+  [公式アドバイザリ](https://github.com/vuejs/core/security/advisories/GHSA-g2v6-rqmx-r4w6)
+  と[公式リリース](https://github.com/vuejs/core/releases/tag/v3.5.44)を確認した。
+- `@vue/eslint-config-typescript` を削除し、`typescript-eslint` 8.63.0と
+  `vue-eslint-parser` 10.4.1を直接の開発依存として宣言した。
+  `fast-glob` → `micromatch` → `braces` の依存経路がlockfileからなくなった。
+  新規の実行時依存はない。ESLint・TypeScript本体の版は維持する。
+- `npm audit fix --ignore-scripts` は既存の許可範囲で25パッケージを更新し、High 6件で終了した。
+  残るVue関連とESLint設定の依存経路を上記の方法で解消した。
+  Vite 8.1.4→8.3.5、Vitest 4.1.10→4.1.12、brace-expansion 2.1.4→2.1.7／5.0.9→5.0.12、
+  nanoid 3.3.16→3.3.20、source-map-js 1.2.1→1.2.2、undici 7.28.0→7.30.1、
+  postcss-selector-parser 7.1.4→7.1.7などをlockfileで固定した。
+- `src/App.vue`・`src/parser/parseMarkdown.ts`・`eslint.config.js`・
+  `tests/unit/scripts/licenseNoticePackages.spec.mjs` の変更前後の有効ESLintルールを
+  ESLint APIで比較し、差分0件を確認した。
+- `tests/unit/scripts/eslintConfig.spec.mjs` に4件の回帰テストを追加した。
+  Vueのscriptとtemplate内のTypeScript構文、TSとVueでの明示的any検出、
+  Vue essentialとscript言語制限を入力と診断結果で確認し、すべて成功した。
+- `npm ci`、`npm ls --depth=0`、`npm ls --all --json`、`npm run lint`、
+  `npm run type-check`、`npm run build` は終了コード0。
+  クリーンインストールでは間接依存globの非推奨警告と任意依存fseventsの
+  install script制限の警告が出たが、依存の不整合はなく、ビルドは成功した。
+- `npm run licenses:generate` で306パッケージ・150種類のライセンス本文を再生成し、
+  `npm run licenses:check` が成功した。依存版不一致と通知の陳腐化は解消した。
+- `npm run test -- --maxWorkers=2` は577件成功・1件失敗（28ファイル中27ファイル成功、終了コード1）。
+  失敗は従来と同じ `MarkdownEditor.spec.ts` の
+  「総一致件数を維持しながらハイライトDOMを2,000件に制限する」の5秒タイムアウト。
+  PR-3として残し、全体テスト成功とは扱わない。
+- `git diff --check` は再生成した `THIRD_PARTY_NOTICES.md` のライセンス原文内の行末空白を検出した。
+  上流の本文を保持するため生成スクリプトやライセンス本文の整形は変更していない。
+  `git diff --check -- . ':(exclude)THIRD_PARTY_NOTICES.md'` は成功した。
+
+### 手動確認・残件
+
+- 実ブラウザでの操作確認と公開操作は未実施。デプロイ前後に、入力・4形式への変換・プレビュー・
+  コピー・タブ保存と再読込・フォーカスモード往復を確認する。
+- PR-2の対象実装と開発環境検証は完了。監査の残項目と追加実装の持ち越しはない。
+  既存PR-3・PR-4、Firefox編集位置復元とPR-1・PR-8・PR-7・PR-6の保留は維持する。
