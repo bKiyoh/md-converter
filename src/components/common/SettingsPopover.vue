@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { onBeforeUnmount, onMounted, ref } from 'vue'
 import AppIcon from './AppIcon.vue'
+import ThemeToggle from './ThemeToggle.vue'
 import IconButton from './IconButton.vue'
 
 defineProps<{
@@ -95,18 +96,12 @@ onBeforeUnmount(() => {
       <div class="setting-item">
         <div class="setting-row setting-row--static">
           <span class="setting-name">テーマ</span>
-          <IconButton
+          <ThemeToggle
             id="dark-mode-setting"
             class="setting-theme-button"
-            :accessible-label="
-              darkMode ? 'ライトモードに切り替える' : 'ダークモードに切り替える'
-            "
-            :tooltip="darkMode ? 'ライトモードに切り替える' : 'ダークモードに切り替える'"
-            :aria-pressed="darkMode"
-            @click="emit('update:darkMode', !darkMode)"
-          >
-            <AppIcon :name="darkMode ? 'sun' : 'moon'" />
-          </IconButton>
+            :dark-mode="darkMode"
+            @update:dark-mode="emit('update:darkMode', $event)"
+          />
         </div>
       </div>
 

@@ -922,7 +922,7 @@ describe('App', () => {
     )
     expect(wrapper.get('.focus-mode-control-buttons').findAll('button')).toHaveLength(2)
     expect(wrapper.get('.focus-mode-controls').find('.focus-font-size-button').exists()).toBe(false)
-    expect(wrapper.get('.focus-mode-font-controls').attributes('aria-label')).toBe('文字サイズ設定')
+    expect(wrapper.get('.focus-mode-font-controls').attributes('aria-label')).toBe('文字サイズ・テーマ設定')
     expect(wrapper.get('.focus-mode-font-controls').find('.focus-font-size-button').exists()).toBe(true)
     expect(wrapper.find('.focus-mode-search-button').exists()).toBe(false)
     expect(wrapper.find('.focus-mode-search-controls').exists()).toBe(false)
@@ -1426,6 +1426,65 @@ describe('App', () => {
     expect(wrapper.get('.app').classes()).not.toContain('app--focus-mode')
     expect(document.activeElement).toBe(settingsButton.element)
     wrapper.unmount()
+  })
+
+  it.each(['編集', 'プレビュー'])('フォーカスの%s中にテーマを切り替え、通常モードと保存設定へ反映する', async (view) => {
+    const wrapper = mount(App, { attachTo: document.body })
+    const input = wrapper.get<HTMLTextAreaElement>('#markdown-input')
+    await input.setValue('# テーマ確認\n\n本文を維持する')
+    await wrapper.get('.focus-mode-button').trigger('click')
+    input.element.setSelectionRange(3, 6)
+    input.element.scrollTop = 80
+    if (view === 'プレビュー') await pressFocusPreviewShortcut(wrapper)
+    const preview = wrapper.find<HTMLElement>('#focus-mode-preview')
+    if (preview.exists()) preview.element.scrollTop = 40
+
+    await wrapper.get('.focus-font-size-button').trigger('click')
+    const themeButton = wrapper.get('.focus-mode-theme-button')
+    expect(wrapper.get('.focus-font-size-root').element.nextElementSibling).toBe(themeButton.element)
+    expect(themeButton.attributes('aria-label')).toBe('ダークモードに切り替える')
+    expect(themeButton.attributes('data-tooltip')).toBe('ダークモードに切り替える')
+    expect(themeButton.attributes('aria-pressed')).toBe('false')
+    expect(themeButton.find('[data-icon="moon"]').exists()).toBe(true)
+
+    await themeButton.trigger('click')
+
+    expect(wrapper.get('.app').attributes('data-theme')).toBe('dark')
+    expect(wrapper.get('.app').classes()).toContain('app--focus-mode')
+    expect(wrapper.find('#focus-font-size-panel').exists()).toBe(false)
+    expect(themeButton.attributes('aria-label')).toBe('ライトモードに切り替える')
+    expect(themeButton.attributes('data-tooltip')).toBe('ライトモードに切り替える')
+    expect(themeButton.attributes('aria-pressed')).toBe('true')
+    expect(themeButton.find('[data-icon="sun"]').exists()).toBe(true)
+    expect(wrapper.get('#markdown-input').element).toBe(input.element)
+    expect(input.element.value).toBe('# テーマ確認\n\n本文を維持する')
+    expect([input.element.selectionStart, input.element.selectionEnd, input.element.scrollTop]).toEqual([3, 6, 80])
+    expect(wrapper.get('.text-area-shell').isVisible()).toBe(view === '編集')
+    if (preview.exists()) {
+      expect(preview.isVisible()).toBe(view === 'プレビュー')
+      expect(preview.element.scrollTop).toBe(40)
+    }
+
+    await vi.advanceTimersByTimeAsync(THEME_PREFERENCE_SAVE_DELAY_MS)
+    expect(localStorage.getItem(THEME_PREFERENCE_STORAGE_KEY)).toBe('dark')
+    await wrapper.get('.focus-mode-exit-button').trigger('click')
+    await wrapper.get('.settings-button').trigger('click')
+    expect(wrapper.get('#dark-mode-setting').attributes('aria-pressed')).toBe('true')
+    await wrapper.get('#dark-mode-setting').trigger('click')
+    await wrapper.get('.settings-button').trigger('click')
+    await wrapper.get('.focus-mode-button').trigger('click')
+    expect(wrapper.get('.focus-mode-theme-button').attributes('aria-pressed')).toBe('false')
+    await wrapper.get('.focus-mode-theme-button').trigger('click')
+    await vi.advanceTimersByTimeAsync(THEME_PREFERENCE_SAVE_DELAY_MS)
+    wrapper.unmount()
+
+    const reloaded = mount(App)
+    expect(reloaded.get('.app').attributes('data-theme')).toBe('dark')
+    await reloaded.get('.focus-mode-button').trigger('click')
+    expect(reloaded.get('.focus-mode-theme-button').attributes('aria-pressed')).toBe('true')
+    await reloaded.get('.focus-mode-theme-button').trigger('click')
+    expect(reloaded.get('.app').attributes('data-theme')).toBe('light')
+    reloaded.unmount()
   })
 
   it('設定内のテーマアイコンでポップオーバーを閉じずにテーマを切り替える', async () => {
