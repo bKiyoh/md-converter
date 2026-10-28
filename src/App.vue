@@ -444,7 +444,9 @@ onBeforeUnmount(() => {
         v-if="isFocusMode"
         :help-open="isFocusModeHelpOpen"
         :font-size="focusEditorFontSize"
+        :dark-mode="theme === 'dark'"
         @update:font-size="updateFocusEditorFontSize"
+        @update:dark-mode="theme = $event ? 'dark' : 'light'"
         @exit="exitFocusMode"
         @toggle-help="toggleFocusModeHelp"
       />

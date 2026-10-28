@@ -7,17 +7,20 @@ import {
 } from '../../utils/focusEditorFontSize'
 import AppIcon from '../common/AppIcon.vue'
 import IconButton from '../common/IconButton.vue'
+import ThemeToggle from '../common/ThemeToggle.vue'
 import EditorInputGuideContent from './EditorInputGuideContent.vue'
 
 const props = defineProps<{
   helpOpen: boolean
   fontSize: FocusEditorFontSize
+  darkMode: boolean
 }>()
 
 const emit = defineEmits<{
   exit: []
   toggleHelp: []
   'update:fontSize': [value: FocusEditorFontSize]
+  'update:darkMode': [value: boolean]
 }>()
 
 const sizeOpen = ref<boolean>(false)
@@ -105,7 +108,7 @@ onBeforeUnmount(() => document.removeEventListener('click', handleOutsideClick))
     </section>
   </aside>
 
-  <aside class="focus-mode-font-controls" aria-label="文字サイズ設定">
+  <aside class="focus-mode-font-controls" aria-label="文字サイズ・テーマ設定">
     <div ref="sizeRoot" class="focus-font-size-root" @focusout="handleFocusOut" @keydown="handleSizeKeydown">
       <IconButton
         class="focus-font-size-button"
@@ -136,5 +139,10 @@ onBeforeUnmount(() => document.removeEventListener('click', handleOutsideClick))
         </select>
       </section>
     </div>
+    <ThemeToggle
+      class="focus-mode-theme-button"
+      :dark-mode="darkMode"
+      @update:dark-mode="emit('update:darkMode', $event)"
+    />
   </aside>
 </template>
